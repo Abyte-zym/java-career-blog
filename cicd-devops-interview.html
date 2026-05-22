@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="2026 Java实习面试 — Git/CI/CD/DevOps面试10题，含标准答案。Jenkins Pipeline、GitHub Actions、Docker部署、蓝绿发布、灰度发布全覆盖。">
+<title>Git + CI/CD + DevOps 面试10题 | 2026 Java实习</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.8;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:1.8em;color:#38bdf8;margin:20px 0;text-align:center}
+h2{font-size:1.2em;color:#facc15;margin:30px 0 10px;border-left:4px solid #38bdf8;padding-left:12px}
+.qa{margin:15px 0;padding:15px;background:#1e293b;border-radius:8px}
+.q{color:#38bdf8;font-weight:bold;margin-bottom:8px}
+.a{color:#94a3b8}
+code{background:#334155;padding:2px 8px;border-radius:4px;font-size:0.9em}
+pre{background:#1a1a2e;padding:12px;border-radius:6px;overflow-x:auto;margin:8px 0;font-size:0.85em;color:#a5d6ff}
+.donate{text-align:center;margin:30px 0;padding:20px;background:#1e293b;border-radius:12px;border:2px solid #facc15}
+.donate img{width:200px;border-radius:12px;margin:10px}
+.donate p{color:#facc15;font-size:1.1em;margin:8px 0}
+.nav{text-align:center;margin:20px 0;display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.nav a{color:#38bdf8;text-decoration:none;padding:6px 14px;background:#1e293b;border-radius:20px;font-size:0.85em}
+.nav a:hover{background:#334155}
+.footer{text-align:center;margin:30px 0;color:#64748b;font-size:0.8em}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🔧 Git + CI/CD + DevOps 面试10题</h1>
+<p style="text-align:center;color:#94a3b8;margin-bottom:20px">2026 Java实习面试 · 版本控制+持续集成+运维部署全覆盖</p>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部文章</a>
+<a href="../java-interview-quiz/">☕ 题库</a>
+<a href="../java-resume-builder/">📝 简历</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../mock-interview-coaching/">🎓 模拟面试</a>
+</div>
+
+<h2>1. Git merge 和 Git rebase 的区别？什么时候用哪个？</h2>
+<div class="qa">
+<div class="q">面试官意图：考察版本控制底线能力——90%实习生说不清楚</div>
+<div class="a">
+<strong>merge</strong>：保留完整历史，产生合并提交。适合公共分支（main）、团队协作。<br>
+<strong>rebase</strong>：变基到目标分支顶端，历史线性干净。适合个人分支整理，<strong>禁止对公共分支rebase</strong>。<br>
+<strong>一句话</strong>：merge保留真相，rebase改写历史。团队协作优先merge，个人分支用rebase整理后merge。
+</div>
+</div>
+
+<h2>2. Git reset 和 Git revert 区别？</h2>
+<div class="qa">
+<div class="q">面试官意图：考察你对Git底层操作的理解</div>
+<div class="a">
+<strong>reset</strong>：移动HEAD指针到指定commit，<strong>改写历史</strong>。分三档：<code>--soft</code>(保留暂存和工作区)、<code>--mixed</code>(保留工作区)、<code>--hard</code>(全部丢弃)。<br>
+<strong>revert</strong>：生成一个新的反向commit来撤销，<strong>不改写历史</strong>。<br>
+<strong>关键</strong>：reset用于本地整理，revert用于远程分支（安全）。已推送的commit用revert。
+</div>
+</div>
+
+<h2>3. CI/CD 完整流程是什么？你项目中怎么做的？</h2>
+<div class="qa">
+<div class="q">面试官意图：考察DevOps认知——知道代码怎么从本地到线上</div>
+<div class="a">
+<strong>CI（持续集成）</strong>：代码push → 自动构建 → 自动测试 → 代码扫描 → 反馈结果<br>
+<strong>CD（持续交付/部署）</strong>：CI通过 → 构建镜像 → 推送仓库 → 部署到环境 → 冒烟测试<br>
+<strong>我的实践</strong>：秒杀项目用<code>docker-compose</code>一键部署，RAG项目加了Actuator监控 + 优雅停机。
+</div>
+</div>
+
+<h2>4. Docker 镜像分层机制？如何减小镜像体积？</h2>
+<div class="qa">
+<div class="q">面试官意图：考察Docker底层原理</div>
+<div class="a">
+<strong>分层原理</strong>：每个Dockerfile指令创建一个只读层，最终叠加成容器。相同层可复用（缓存加速）。<br>
+<strong>优化手段</strong>：
+1. 多阶段构建（Maven打包+运行时分开，最终镜像不含JDK）
+2. 合并RUN指令减少层数
+3. 用<code>.dockerignore</code>排除无用文件
+4. 选择alpine/slim基础镜像
+</div>
+</div>
+
+<h2>5. GitHub Actions 核心概念？</h2>
+<div class="qa">
+<div class="q">面试官意图：考察CI工具实操经验</div>
+<div class="a">
+<strong>核心三要素</strong>：<br>
+- <code>workflow</code>：定义在<code>.github/workflows/*.yml</code>，由事件触发<br>
+- <code>job</code>：一个workflow包含多个job，可并行/串行<br>
+- <code>step</code>：每个job包含多个step（run脚本或用actions）<br>
+<strong>常见场景</strong>：push自动跑测试、PR自动代码检查、tag自动构建镜像。
+</div>
+</div>
+
+<h2>6. Kubernetes 核心概念（Pod/Deployment/Service）</h2>
+<div class="qa">
+<div class="q">面试官意图：考察K8s基础认知</div>
+<div class="a">
+<strong>Pod</strong>：最小调度单元，包含1个或多个容器，共享网络/存储。<br>
+<strong>Deployment</strong>：声明式管理Pod副本数、滚动更新策略、回滚。<br>
+<strong>Service</strong>：为Pod提供稳定的访问入口（ClusterIP/NodePort/LoadBalancer），通过Label Selector匹配。<br>
+<strong>关系</strong>：Deployment管理Pod → Service暴露Pod。
+</div>
+</div>
+
+<h2>7. 蓝绿部署 vs 滚动发布 vs 灰度发布？</h2>
+<div class="qa">
+<div class="q">面试官意图：考察生产部署策略</div>
+<div class="a">
+<strong>蓝绿</strong>：两套完整环境，切换流量。优点：秒级切换、零停机。缺点：资源翻倍。<br>
+<strong>滚动</strong>：逐个替换实例，始终有实例在服务。K8s默认策略。<br>
+<strong>灰度（金丝雀）</strong>：先放1%流量验证新版本，逐步扩大。最安全但最复杂。<br>
+<strong>选择</strong>：小团队用滚动，大流量用灰度，金融系统用蓝绿。
+</div>
+</div>
+
+<h2>8. 什么是 IaC（基础设施即代码）？</h2>
+<div class="qa">
+<div class="q">面试官意图：考察运维自动化思维</div>
+<div class="a">
+<strong>定义</strong>：用代码（而非手动操作）管理和配置基础设施。<br>
+<strong>工具</strong>：Terraform（多云）、Ansible（配置管理）、Docker Compose（本地编排）、K8s YAML。<br>
+<strong>优势</strong>：版本控制、可重复、自动化、团队协作。<br>
+<strong>我的实践</strong>：项目用<code>docker-compose.yml</code>定义所有服务，git clone后一条命令拉起。
+</div>
+</div>
+
+<h2>9. 日志收集和监控怎么做？</h2>
+<div class="qa">
+<div class="q">面试官意图：考察可观测性认知</div>
+<div class="a">
+<strong>日志</strong>：应用输出到stdout → Docker采集 → ELK/Loki存储 → Grafana/Kibana展示<br>
+<strong>监控</strong>：Prometheus采集指标 → Grafana可视化 → AlertManager告警<br>
+<strong>链路追踪</strong>：traceId贯穿所有服务 → Jaeger/SkyWalking查看调用链<br>
+<strong>我的实践</strong>：项目加了MDC traceId + Actuator + @Slf4j结构化日志。
+</div>
+</div>
+
+<h2>10. 怎么保证线上服务不被打垮？</h2>
+<div class="qa">
+<div class="q">面试官意图：考察稳定性保障全貌</div>
+<div class="a">
+<strong>事前</strong>：压测（JMeter）、限流（Sentinel）、资源隔离（线程池/连接池）<br>
+<strong>事中</strong>：熔断降级（Sentinel/CircuitBreaker）、弹性扩容（K8s HPA）<br>
+<strong>事后</strong>：日志回溯、告警复盘、故障演练<br>
+<strong>我的实践</strong>：秒杀项目用Sentinel做QPS限流+熔断降级，RocketMQ削峰保护下游。
+</div>
+</div>
+
+<div class="donate">
+<p>☕ 这份资料帮到你了？请我喝杯咖啡 ☕</p>
+<img src="../wechat-qr.png" alt="微信赞赏码" onerror="this.style.display='none'">
+<p style="font-size:0.85em;color:#94a3b8">更多资源：<a href="../arsenal/" style="color:#38bdf8">弹药库</a> | <a href="../java-career-blog/" style="color:#38bdf8">25篇SEO文章</a></p>
+</div>
+
+<div class="footer">
+© 2026 Abyte-zym · 全部免费开放 · <a href="https://github.com/Abyte-zym" style="color:#38bdf8">GitHub</a>
+</div>
+</div>
+</body>
+</html>
