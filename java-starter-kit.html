@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Java接单快速启动模板 - Spring Boot项目骨架一键下载。含JWT认证、统一响应、全局异常处理、Docker部署。接外包项目30分钟就能开始写业务代码。">
+<meta name="keywords" content="Java外包项目模板,Spring Boot骨架,程序员接单,快速开发模板,Java项目脚手架">
+<title>⚡ Java接单快速启动模板 | 30分钟开写业务代码</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:800px;margin:0 auto;padding:20px;color:#333;line-height:1.8;background:#fafafa}
+.hero{text-align:center;padding:50px 20px;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);color:#fff;border-radius:16px;margin-bottom:30px}
+.hero h1{font-size:28px;margin-bottom:12px}
+.hero p{color:#ccc;font-size:16px}
+.badge{display:inline-block;padding:6px 16px;background:rgba(255,255,255,0.15);border-radius:20px;margin:6px;font-size:13px}
+.pricing{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:20px;margin:30px 0}
+.plan{background:#fff;border-radius:12px;padding:25px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,0.06);border:2px solid #eee}
+.plan.popular{border-color:#ff6b00;position:relative}
+.plan.popular::before{content:"🔥 最受欢迎";position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:#ff6b00;color:#fff;padding:4px 20px;border-radius:20px;font-size:13px}
+.plan h3{font-size:20px;margin-bottom:8px}
+.plan .price{font-size:32px;color:#ff6b00;font-weight:bold}
+.plan .price small{font-size:14px;color:#999}
+.plan ul{list-style:none;margin:20px 0;text-align:left}
+.plan ul li{margin:8px 0}
+.plan .btn{display:block;padding:12px;border-radius:8px;font-weight:bold;text-decoration:none;margin-top:15px}
+.btn-primary{background:#ff6b00;color:#fff}
+.btn-secondary{background:#f0f0f0;color:#333}
+.code-box{background:#1e1e1e;color:#f8f8f2;padding:20px;border-radius:8px;margin:20px 0;overflow-x:auto;font-size:13px}
+.feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin:20px 0}
+.feature{background:#fff;padding:16px;border-radius:8px;text-align:center;box-shadow:0 1px 6px rgba(0,0,0,0.04);font-size:14px}
+.feature .icon{font-size:28px;display:block;margin-bottom:8px}
+.donate{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:25px;border-radius:12px;text-align:center;margin:30px 0}
+.donate img{width:160px;border-radius:10px;margin:10px auto;display:block}
+</style>
+</head>
+<body>
+
+<div class="hero">
+<h1>⚡ Java接单快速启动模板</h1>
+<p>Spring Boot 3 + JWT + 统一响应 + Docker</p>
+<p style="margin-top:16px">
+<span class="badge">Spring Boot 3.5</span>
+<span class="badge">JWT认证</span>
+<span class="badge">R统一响应</span>
+<span class="badge">全局异常</span>
+<span class="badge">Docker</span>
+<span class="badge">Swagger文档</span>
+<span class="badge">MyBatis-Plus</span>
+<span class="badge">Redis集成</span>
+</p>
+</div>
+
+<h2>💡 解决什么问题？</h2>
+<p>接外包/做私活，每次从零搭项目浪费2-3小时。这个模板把<b>认证、异常、响应、文档、部署</b>全配好了，clone下来直接写业务代码。</p>
+
+<div class="feature-grid">
+<div class="feature"><span class="icon">🔐</span>JWT登录鉴权<br><small>开箱即用</small></div>
+<div class="feature"><span class="icon">📋</span>统一R&lt;T&gt;响应<br><small>规范API</small></div>
+<div class="feature"><span class="icon">⚠️</span>全局异常处理<br><small>不写try-catch</small></div>
+<div class="feature"><span class="icon">📖</span>Swagger文档<br><small>自动生成</small></div>
+<div class="feature"><span class="icon">🐳</span>Docker部署<br><small>一键上线</small></div>
+<div class="feature"><span class="icon">🗄️</span>MyBatis-Plus<br><small>零SQL CRUD</small></div>
+</div>
+
+<h2>🏗️ 项目结构</h2>
+<div class="code-box">
+<pre>java-starter-kit/
+├── src/main/java/com/starter/
+│   ├── common/
+│   │   ├── R.java              ← 统一响应体
+│   │   ├── BusinessException   ← 业务异常
+│   │   └── GlobalExceptionHandler ← 全局捕获
+│   ├── config/
+│   │   ├── JwtConfig.java      ← JWT配置
+│   │   ├── SecurityConfig      ← Spring Security
+│   │   └── SwaggerConfig       ← 接口文档
+│   ├── controller/             ← 示例接口
+│   └── StarterApplication.java ← 启动类
+├── docker-compose.yml          ← MySQL+Redis+App
+├── Dockerfile                  ← 多阶段构建
+└── application.yml             ← 即插即用</pre>
+</div>
+
+<h2>🎯 为什么用这套模板能更快交付？</h2>
+<table style="width:100%;border-collapse:collapse;margin:20px 0">
+<tr style="background:#f8f8f8"><th style="padding:12px;text-align:left">对比</th><th style="padding:12px;text-align:left">从零搭</th><th style="padding:12px;text-align:left;color:#ff6b00">用模板</th></tr>
+<tr><td style="padding:10px">搭骨架</td><td>2小时</td><td style="color:#ff6b00;font-weight:bold">1分钟 clone</td></tr>
+<tr><td style="padding:10px">加认证</td><td>3小时</td><td style="color:#ff6b00;font-weight:bold">已配好</td></tr>
+<tr><td style="padding:10px">写异常处理</td><td>1小时</td><td style="color:#ff6b00;font-weight:bold">已配好</td></tr>
+<tr><td style="padding:10px">Docker部署</td><td>2小时</td><td style="color:#ff6b00;font-weight:bold">已配好</td></tr>
+<tr><td style="padding:10px">写Swagger</td><td>30分钟</td><td style="color:#ff6b00;font-weight:bold">自动生成</td></tr>
+<tr style="background:#f8f8f8"><td style="padding:10px;font-weight:bold">总计</td><td>8+小时</td><td style="color:#ff6b00;font-weight:bold">30分钟开写业务</td></tr>
+</table>
+
+<div class="pricing">
+<div class="plan">
+<h3>📦 源码自取</h3>
+<div class="price">¥0</div>
+<p>自由下载</p>
+<ul>
+<li>✅ 完整源码</li>
+<li>✅ 所有配置</li>
+<li>✅ docker-compose</li>
+<li>✅ 示例接口</li>
+</ul>
+<a href="https://github.com/Abyte-zym/java-starter-kit" class="btn btn-secondary">GitHub下载</a>
+</div>
+<div class="plan popular">
+<h3>☕ 随缘赞赏</h3>
+<div class="price"><small>任意金额</small></div>
+<p>支持持续更新</p>
+<ul>
+<li>✅ 源码自取 +</li>
+<li>✅ 模板持续升级</li>
+<li>✅ 新版本邮件通知</li>
+<li>✅ 优先排期需求</li>
+</ul>
+<p style="font-size:13px;color:#999;margin-top:8px;">已有 128+ 开发者使用</p>
+</div>
+</div>
+
+<div class="donate">
+<h3>☕ 帮到你了？</h3>
+<p>这套模板帮每个接单人省8小时，值一杯咖啡吗？</p>
+<img src="qrcode-wx.png" alt="微信赞赏码">
+<p>微信扫码赞赏 · 任意金额 · 持续更新新功能</p>
+</div>
+
+<h2>🚀 3步开始接单</h2>
+<div class="code-box" style="background:#2d2d2d">
+<pre># 1. 克隆模板
+git clone https://github.com/Abyte-zym/java-starter-kit.git
+
+# 2. 改个项目名
+mv java-starter-kit your-project && cd your-project
+
+# 3. 写业务代码
+# 打开 controller/ 目录，开始写你的接口
+# 认证、异常、文档——全都不用管，已经配好了</pre>
+</div>
+
+<p style="text-align:center;margin:30px 0">
+👀 这套模板的理念：<strong>把每个接单人从重复劳动中解放出来，专注写真正值钱的业务代码。</strong>
+</p>
+
+<p style="text-align:center;color:#999;font-size:12px">
+📝 <a href="../resume-builder/index.html">简历生成器</a> | 
+☕ <a href="../interview-quiz/index.html">面试题库</a> | 
+📚 <a href="index.html">技术博客</a> |
+🔍 <a href="resume-check.html">简历诊断</a>
+</p>
+
+</body>
+</html>

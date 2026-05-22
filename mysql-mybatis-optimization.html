@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="MySQL索引优化+MyBatis调优面试10题，2026 Java实习高频考点。EXPLAIN执行计划解读、慢SQL定位、MyBatis批量优化、N+1问题解决。">
+<meta name="keywords" content="MySQL面试题,MyBatis面试,Java实习,SQL优化,EXPLAIN,慢查询,2026">
+<title>MySQL+MyBatis优化面试10题 | 2026 Java实习必备</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:800px;margin:0 auto;padding:20px;color:#333;line-height:1.8}
+h1{font-size:24px;border-bottom:3px solid #ff6b00;padding-bottom:10px;margin-bottom:20px}
+h2{font-size:18px;color:#ff6b00;margin:25px 0 12px}
+.question{background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0;border-left:4px solid #ff6b00}
+.answer{background:#fff;padding:12px;border-radius:6px;margin:5px 0 15px 15px;border:1px solid #eee}
+pre{background:#2d2d2d;color:#f8f8f2;padding:12px;border-radius:6px;overflow-x:auto;font-size:13px}
+code{background:#fff3e0;padding:2px 6px;border-radius:4px;font-size:13px}
+.donate-box{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:25px;border-radius:12px;text-align:center;margin:30px 0}
+.donate-box img{width:180px;margin:10px auto;display:block;border-radius:12px}
+.donate-box p{margin:5px 0;font-size:14px}
+a{color:#ff6b00;text-decoration:none}
+.nav{display:flex;gap:15px;flex-wrap:wrap;margin:20px 0;padding:10px;background:#f8f9fa;border-radius:8px}
+.nav a{padding:6px 14px;background:#fff;border-radius:20px;font-size:13px;border:1px solid #ddd}
+</style>
+</head>
+<body>
+<h1>🛢 MySQL+MyBatis 优化面试10题</h1>
+<p><strong>阅读量关键词：</strong> EXPLAIN执行计划 | 索引失效场景 | MyBatis N+1 | 慢SQL定位 | 批量优化 | 分库分表</p>
+
+<div class="nav">
+<a href="index.html">🏠 首页</a>
+<a href="redis-interview-cheatsheet.html">Redis</a>
+<a href="jvm-gc-interview-2026.html">JVM GC</a>
+<a href="spring-ai-intern-guide-2026.html">Spring AI</a>
+<a href="../interview-quiz/index.html">☕ 刷题</a>
+<a href="../resume-builder/index.html">📝 简历</a>
+</div>
+
+<div class="question"><h2>Q1: EXPLAIN执行计划怎么看？type字段优先级是什么？</h2></div>
+<div class="answer">
+<strong>标准答案：</strong><br>
+EXPLAIN是MySQL性能诊断的瑞士军刀。核心关注4个字段：<br><br>
+• <code>type</code>（访问类型）：<strong>system > const > eq_ref > ref > range > index > ALL</strong><br>
+• <code>key</code>：实际使用的索引名<br>
+• <code>rows</code>：预估扫描行数<br>
+• <code>Extra</code>：额外信息——Using filesort（需优化）、Using temporary（严重）、Using index（覆盖索引，好）<br><br>
+<pre>EXPLAIN SELECT * FROM orders WHERE user_id=100 AND status='paid';
+-- type: ref  ✅
+-- key: idx_user_status  ✅
+-- rows: 10  ✅</pre>
+</div>
+
+<div class="question"><h2>Q2: MySQL索引失效的10种场景？</h2></div>
+<div class="answer">
+<strong>背这10条，面试够用了：</strong><br>
+① LIKE '%keyword' — 左模糊<br>
+② 联合索引不满足最左前缀<br>
+③ WHERE子句中对索引列使用函数 <code>WHERE YEAR(date)=2026</code><br>
+④ 隐式类型转换 <code>WHERE phone=13800138000</code>（phone是varchar）<br>
+⑤ OR条件中有非索引列<br>
+⑥ != 或 <> 操作符<br>
+⑦ IS NULL / IS NOT NULL（视数据分布）<br>
+⑧ 范围查询右边的列（联合索引 a_b_c，WHERE a=1 AND b>2 AND c=3 → c不走索引）<br>
+⑨ 不使用索引列做计算 <code>WHERE age+1=20</code><br>
+⑩ 全表扫描更快时MySQL自动放弃索引（数据量小时）
+</div>
+
+<div class="question"><h2>Q3: 怎么定位和优化一条慢SQL？</h2></div>
+<div class="answer">
+<strong>四步法：</strong><br>
+① <strong>开启慢查询日志</strong> <code>SET GLOBAL slow_query_log=ON; SET long_query_time=0.5;</code><br>
+② <strong>抓出慢SQL</strong> <code>mysqldumpslow -s t -t 10 slow.log</code><br>
+③ <strong>EXPLAIN分析</strong> 看type/rows/Extra<br>
+④ <strong>针对性优化</strong>：加索引→改SQL→拆表→加缓存<br><br>
+<strong>举例：</strong>发现 <code>SELECT * FROM order WHERE status='pending' ORDER BY create_time</code> 走了 filesort→加联合索引 <code>idx_status_time(status, create_time)</code> → rows从50万降到200，耗时从3s降到50ms。
+</div>
+
+<div class="question"><h2>Q4: MyBatis怎么解决N+1查询问题？</h2></div>
+<div class="answer">
+<strong>N+1场景：</strong>查订单列表→循环查每个订单的明细→100条订单发101条SQL。<br><br>
+<strong>三种解决方案：</strong><br>
+① <strong>嵌套查询+延迟加载：</strong> <code>&lt;association fetchType="lazy"&gt;</code> — 需要时再查，减少首屏SQL<br>
+② <strong>JOIN直接查：</strong> 一条SQL LEFT JOIN搞定，适合关联数据少的场景<br>
+③ <strong>批量查询（推荐）：</strong> 先查订单→收集所有order_id→一次IN查所有明细→Java层组装<br>
+<pre><!-- MyBatis批量嵌套映射 -->
+<resultMap id="orderMap" type="Order">
+    <collection property="items" column="id" 
+        select="findItemsByOrderIds" />
+</resultMap></pre>
+</div>
+
+<div class="question"><h2>Q5: MyBatis #{}和${}区别？为什么SQL注入？</h2></div>
+<div class="answer">
+<strong>核心区别：</strong><br>
+• <code>#{}</code>：预编译占位符 → <code>SELECT * FROM user WHERE id=?</code> → 防注入 ✅<br>
+• <code>${}</code>：字符串拼接 → <code>SELECT * FROM user WHERE id=1 OR 1=1</code> → 危险 ❌<br><br>
+<strong>${}何时用？</strong> 动态表名、ORDER BY字段名——必须用且必须做白名单校验。<br>
+<pre>// ❌ 危险
+SELECT * FROM ${tableName} WHERE id=#{id}
+// 攻击者传 tableName="user; DROP TABLE user--"
+
+// ✅ 安全：白名单校验
+if (!ALLOWED_TABLES.contains(tableName)) throw...</pre>
+</div>
+
+<div class="question"><h2>Q6: MyBatis批量插入怎么优化？</h2></div>
+<div class="answer">
+<strong>三种方案，性能递增：</strong><br>
+① <strong>foreach拼接（推荐500条内）</strong><br>
+<pre>INSERT INTO user(name,age) VALUES
+<foreach collection="list" item="u" separator=",">
+    (#{u.name}, #{u.age})
+</foreach></pre>
+② <strong>ExecutorType.BATCH 批量提交</strong> — 适合超大量，MyBatis内置<br>
+③ <strong>原生JDBC addBatch</strong> — 终极方案，绕过MyBatis一层开销<br><br>
+实测数据：10000条插入→foreach 8s → BATCH 2s → JDBC addBatch 1.2s
+</div>
+
+<div class="question"><h2>Q7: MySQL事务隔离级别有哪些？MVCC怎么实现的？</h2></div>
+<div class="answer">
+<strong>4个隔离级别：</strong> READ UNCOMMITTED → READ COMMITTED → REPEATABLE READ(InnoDB默认) → SERIALIZABLE<br><br>
+<strong>MVCC核心原理：</strong><br>
+• 每行数据隐藏列：<code>DB_TRX_ID</code>(最后修改事务ID) + <code>DB_ROLL_PTR</code>(回滚指针指向上一个版本)<br>
+• Undo Log版本链：每次更新产生旧版本，串联成链<br>
+• ReadView快照：事务开始时生成，根据事务ID判断可见性<br>
+• RC级别：每次SELECT重新生成ReadView<br>
+• RR级别：事务内第一次SELECT生成ReadView，之后复用
+</div>
+
+<div class="question"><h2>Q8: 分库分表怎么做？常用方案对比？</h2></div>
+<div class="answer">
+<strong>分片策略：</strong><br>
+• <strong>垂直拆分：</strong> 按业务模块（订单库/用户库）— 简单，但单表仍可能大<br>
+• <strong>水平拆分：</strong> 按哈希(user_id%16)或范围(按时间)拆多张表<br><br>
+<strong>常用中间件：</strong><br>
+• <strong>ShardingSphere-JDBC：</strong> 客户端分片，无代理层，性能好<br>
+• <strong>MyCat：</strong> 代理层，跨语言支持但多一跳<br>
+• <strong>Vitess：</strong> Google开源，适合超大规模<br><br>
+<strong>核心问题：</strong> 分布式ID(雪花算法)、跨库事务(Seata)、跨库JOIN(应用层聚合)
+</div>
+
+<div class="question"><h2>Q9: 覆盖索引是什么？怎么利用它优化？</h2></div>
+<div class="answer">
+<strong>覆盖索引：</strong> SELECT的列都在索引中，不需要回表查聚簇索引。<br><br>
+<pre>-- ❌ 需要回表（name不在索引里）
+CREATE INDEX idx_age ON user(age);
+SELECT name FROM user WHERE age=20;  -- 还要去主键索引找name
+
+-- ✅ 覆盖索引
+CREATE INDEX idx_age_name ON user(age, name);
+SELECT name FROM user WHERE age=20;  -- Extra: Using index  ✅</pre>
+<strong>实战技巧：</strong> 用 <code>EXPLAIN</code> 看 Extra 列是否出现 <code>Using index</code>。高频查询尽量设计覆盖索引。
+</div>
+
+<div class="question"><h2>Q10: 千万级大表怎么平滑迁移？</h2></div>
+<div class="answer">
+<strong>四步平滑迁移法：</strong><br>
+① <strong>双写阶段：</strong> 新老表同时写，读老表<br>
+② <strong>历史数据搬迁：</strong> 分批次迁移（每次1000条），不锁表<br>
+③ <strong>校验数据：</strong> 逐条对比或抽样校验一致性<br>
+④ <strong>切读：</strong> 灰度切流（1%→10%→100%），有问题随时回滚<br><br>
+<strong>不会丢数据：</strong> 双写+定时对账+消息队列重试。面试说出这4步就已经是专家水平。
+</div>
+
+<div class="donate-box">
+<h3>☕ 帮到你了？请我喝杯咖啡</h3>
+<p>这些面试题来自真实面经整理，持续更新中</p>
+<img src="qrcode-wx.png" alt="微信赞赏码">
+<p>微信扫码 · 金额随意 · 你的支持是我更新的动力</p>
+</div>
+
+<p style="text-align:center;color:#999;font-size:12px;margin-top:20px">
+📊 <a href="../interview-simulator/index.html">面试模拟器</a> | 
+📝 <a href="../resume-builder/index.html">简历生成器</a> | 
+🔍 <a href="resume-check.html">简历诊断</a> | 
+📚 <a href="index.html">更多文章</a>
+</p>
+</body>
+</html>
