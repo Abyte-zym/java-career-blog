@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>系统设计面试10题 | Java实习 2026 高频考点</title>
+<meta name="description" content="2026 Java开发系统设计面试必考10题：短URL、秒杀、Feed流、分布式ID、限流、排行榜、附近的人、消息推送、文件上传、API网关。每道题含架构图和答案要点。">
+<meta name="keywords" content="系统设计面试,Java系统设计,秒杀系统设计,分布式ID,限流算法,短URL设计,Feed流设计,2026面试">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.8;padding:20px}
+.container{max-width:860px;margin:0 auto}
+h1{font-size:2em;background:linear-gradient(135deg,#38bdf8,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:30px 0 10px}
+.subtitle{color:#94a3b8;margin-bottom:30px;font-size:1.1em}
+.qa{background:#1e293b;border-radius:12px;padding:25px;margin:16px 0;border-left:4px solid #38bdf8}
+.qa h3{color:#38bdf8;margin-bottom:12px;font-size:1.15em}
+.qa p,.qa li{color:#cbd5e1;margin:6px 0;font-size:0.98em}
+.qa ul{padding-left:20px}
+code{background:#334155;padding:2px 8px;border-radius:4px;font-size:0.9em;color:#38bdf8}
+pre{background:#1a1a2e;padding:15px;border-radius:8px;overflow-x:auto;font-size:0.88em;margin:10px 0}
+.arch{background:#0f172a;border:1px dashed #475569;padding:12px;border-radius:8px;margin:10px 0;font-family:monospace;font-size:0.85em;color:#94a3b8;white-space:pre;line-height:1.6}
+.donate{text-align:center;margin:40px 0;padding:30px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;border:1px solid #334155}
+.donate h2{color:#fbbf24;margin-bottom:10px}
+.donate p{color:#94a3b8;margin-bottom:15px}
+.donate img{width:200px;border-radius:12px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;margin:30px 0;justify-content:center}
+.nav a{background:#1e293b;color:#38bdf8;padding:6px 14px;border-radius:20px;font-size:0.85em;text-decoration:none;transition:all .3s}
+.nav a:hover{background:#38bdf8;color:#0f172a}
+footer{text-align:center;color:#475569;margin:40px 0 20px;font-size:0.85em}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🏗️ 系统设计面试10题</h1>
+<p class="subtitle">2026 Java后端面试 · 系统设计高频考点 · 每道题含架构思路</p>
+
+<div class="qa"><h3>Q1：设计一个短URL系统（如TinyURL）</h3>
+<p><strong>核心考点：</strong>哈希算法选择、Base62编码、重定向策略</p>
+<div class="arch">用户 → API Gateway → 短URL服务 → Redis缓存 → MySQL
+                ↓ 生成算法
+    longUrl → MD5(前8位) → Base62 → 短码 → 存库 → 返回</div>
+<p>关键点：用<code>MurmurHash</code>比MD5碰撞率低；短码设唯一索引防重复；302临时重定向保留统计；预生成批量短码提升并发。</p>
+</div>
+
+<div class="qa"><h3>Q2：秒杀系统架构设计</h3>
+<p><strong>核心考点：</strong>分层过滤、库存原子扣减、削峰填谷</p>
+<div class="arch">CDN静态化 → Nginx限流(令牌桶) → Gateway鉴权 
+→ Redis Lua原子扣减 → RocketMQ异步下单 → MySQL落库
+→ Sentinel熔断保护 → 前端排队提示</div>
+<p>库存用<code>Redis Lua脚本</code>原子操作；消息队列削峰时注意<code>消息表+定时对账</code>保证一致性；热点商品库存分段存储分散压力。</p>
+</div>
+
+<div class="qa"><h3>Q3：设计一个Feed流系统（如微博/Twitter）</h3>
+<p><strong>核心考点：</strong>推拉模式选择、时间线生成、缓存策略</p>
+<div class="arch">粉丝少(< 1万)：推模式 → 发帖时写入所有粉丝的Timeline Redis List
+粉丝多(> 1万)：拉模式 → 读时聚合关注者的最近帖子
+混合：大V推活跃粉丝 + 普通用户拉</div>
+<p>Timeline用<code>Redis Sorted Set</code>（score=时间戳）；热点Feed预计算缓存；分页用<code>ZREVRANGE</code>。</p>
+</div>
+
+<div class="qa"><h3>Q4：分布式唯一ID生成方案</h3>
+<p><strong>核心考点：</strong>雪花算法、号段模式、时钟回拨处理</p>
+<div class="arch">Snowflake (64bit):
+[1bit未用] [41bit毫秒] [10bit机器ID] [12bit序列号]
+→ 理论409.6万/s，全局递增</div>
+<p>美团Leaf方案：号段模式批量取号，减少DB访问；时钟回拨用<code>等待+借用未来时间</code>处理；UUID无序不推荐做数据库主键。</p>
+</div>
+
+<div class="qa"><h3>Q5：如何设计一个API限流系统？</h3>
+<p><strong>核心考点：</strong>固定窗口 vs 滑动窗口 vs 令牌桶 vs 漏桶</p>
+<div class="arch">方案对比：
+令牌桶(Sentinel/Guava) → 允许突发，最常用
+滑动窗口(Redis ZSet)  → 精确但占内存
+漏桶                  → 恒定速率，不常用</div>
+<p>生产方案：<code>Sentinel</code>控制台配置流控规则 + <code>Nacos</code>动态推送；集群限流用Redis+Lua原子计数，单机限流用<code>RateLimiter</code>。</p>
+</div>
+
+<div class="qa"><h3>Q6：设计一个实时排行榜（Top 100）</h3>
+<p><strong>核心考点：</strong>Redis Sorted Set、分段排序、定时刷新</p>
+<div class="arch">Redis ZADD leaderboard score userId
+ZREVRANGE leaderboard 0 99  → Top100
+ZINCRBY leaderboard 1 userId → 更新分数</div>
+<p>千万级数据：<code>分段排序</code>——前1000名实时更新，后面的定时批量计算；热度衰减用<code>时间加权分数</code>（score = 原始分 × e^(-λt)）。</p>
+</div>
+
+<div class="qa"><h3>Q7：设计"附近的人"功能</h3>
+<p><strong>核心考点：</strong>GeoHash编码、Redis GEO、空间索引</p>
+<div class="arch">经纬度 → GeoHash编码 → Redis GEOADD locations lng lat userId
+→ GEORADIUS locations lng lat 5 km → 排序返回</div>
+<p>GeoHash长度越长精度越高（7位≈153m）；热门区域用<code>GeoHash前缀分组</code>减少扫描；更新频率控制在分钟级避免写放大。</p>
+</div>
+
+<div class="qa"><h3>Q8：设计消息推送系统（App Push）</h3>
+<p><strong>核心考点：</strong>长连接管理、离线消息、全量推送</p>
+<div class="arch">用户设备 → WebSocket长连接 → 推送网关 → Kafka消息队列
+→ 消费者按userID分发 → 厂商通道(APNs/FCM/华为) → 手机通知栏</div>
+<p>连接管理：<code>Netty</code>维护长连接，心跳检测30s；离线消息存Redis等用户上线再推；全量推送走厂商批量接口，限制QPS。</p>
+</div>
+
+<div class="qa"><h3>Q9：设计大文件上传系统</h3>
+<p><strong>核心考点：</strong>分片上传、断点续传、秒传检测</p>
+<div class="arch">前端 → 计算MD5 → 请求初始化(秒传检测)
+→ 分片上传(5MB/片) → Redis记录进度
+→ 全部完成 → 合并分片 → 存储OSS → 返回URL</div>
+<p>秒传：<code>MD5查Redis</code>，相同文件直接返回已有URL；并发上传用<code>Redis Bitmap</code>标记分片状态；合并时校验MD5完整性。</p>
+</div>
+
+<div class="qa"><h3>Q10：设计API网关</h3>
+<p><strong>核心考点：</strong>路由转发、鉴权、限流、协议转换</p>
+<div class="arch">客户端 → API Gateway → 认证(JWT解析)
+→ 限流(令牌桶)  → 路由(Nacos服务发现)
+→ 负载均衡     → 后端微服务 → 响应聚合返回</div>
+<p>核心组件：<code>Spring Cloud Gateway</code> + <code>Nacos</code>注册中心；自定义<code>GlobalFilter</code>实现鉴权和日志；<code>Resilience4j</code>断路器保护下游。</p>
+</div>
+
+<div class="donate">
+<h2>☕ 有帮助？请我喝杯咖啡</h2>
+<p>这些内容全是免费开源的。如果帮到了你的面试准备，欢迎赞赏支持 🙏</p>
+<img src="../../mm_facetoface_collect_qrcode_1779427130944.png" alt="赞赏码" onerror="this.style.display='none'" />
+</div>
+
+<div class="nav">
+<a href="index.html">📚 博客首页</a>
+<a href="../java-interview-quiz/index.html">☕ 面试题库</a>
+<a href="../java-resume-builder/index.html">📝 简历生成</a>
+<a href="../interview-simulator/index.html">🎯 模拟器</a>
+<a href="../java-skill-radar/index.html">📊 技能雷达</a>
+<a href="../arsenal/index.html">🎯 弹药库</a>
+</div>
+
+<footer>
+© 2026 Java面试通关指南 · 系统设计篇 · 全部免费开源
+</footer>
+</div>
+</body>
+</html>
