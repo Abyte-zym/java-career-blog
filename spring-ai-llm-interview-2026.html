@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="2026 Spring AI+大模型面试10题——RAG/Agent/向量检索/Prompt工程/Spring AI 2.0新特性，Java实习面试必背">
+<title>Spring AI + 大模型面试10题 | Java实习面试题库 2026</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.7}
+.container{max-width:800px;margin:0 auto;padding:20px}
+h1{color:#38bdf8;font-size:1.8em;margin:24px 0 16px;border-left:4px solid #38bdf8;padding-left:12px}
+h2{color:#38bdf8;font-size:1.2em;margin:28px 0 12px}
+.card{background:#1e293b;border-radius:12px;padding:24px;margin:16px 0;border:1px solid #334155}
+.question{color:#fbbf24;font-weight:700;font-size:1.05em;margin-bottom:8px}
+.answer{color:#cbd5e1;margin-bottom:16px}
+code{background:#334155;padding:2px 8px;border-radius:4px;font-size:0.9em;color:#38bdf8}
+pre{background:#0f172a;padding:16px;border-radius:8px;overflow-x:auto;margin:12px 0;border:1px solid #334155}
+pre code{background:none;padding:0}
+.donate{text-align:center;padding:32px 20px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;margin:32px 0;border:2px solid #38bdf8}
+.donate h3{color:#fbbf24;margin-bottom:12px}
+.donate img{width:200px;border-radius:12px;margin:12px auto;display:block}
+.donate p{color:#94a3b8;font-size:0.9em}
+.nav{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0;padding:16px;background:#1e293b;border-radius:12px}
+.nav a{color:#38bdf8;text-decoration:none;font-size:0.85em;padding:6px 12px;background:#0f172a;border-radius:6px;transition:all 0.2s}
+.nav a:hover{background:#38bdf8;color:#0f172a}
+.highlight{color:#fbbf24;font-weight:600}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🤖 Spring AI + 大模型面试10题</h1>
+<p style="color:#94a3b8;margin-bottom:24px">2026年Java实习面试最热方向——Spring AI 2.0刚出，企业疯狂招会AI的Java开发。背完这10题，面试直接领先90%候选人。</p>
+
+<div class="card">
+<div class="question">Q1: 什么是RAG？它的核心流程是什么？</div>
+<div class="answer">
+<b>RAG = Retrieval-Augmented Generation（检索增强生成）</b>。核心流程三步：<br><br>
+① <b>文档预处理</b>：上传PDF/Word→解析→分块（Chunk 500-1000字）→Embedding向量化→存入向量数据库（Redis/PGVector）<br>
+② <b>检索</b>：用户提问→同样向量化→向量库Top-K相似度检索（通常K=3-5）<br>
+③ <b>生成</b>：检索结果拼入Prompt→调用大模型→基于上下文生成回答<br><br>
+<b>为什么用RAG？</b>解决大模型的两大痛点：<span class="highlight">知识时效性</span>（不依赖训练数据截止日期）和<span class="highlight">幻觉问题</span>（回答有据可查）。
+</div>
+</div>
+
+<div class="card">
+<div class="question">Q2: Spring AI是什么？和LangChain4j有什么区别？</div>
+<div class="answer">
+<b>Spring AI</b>是Spring官方推出的AI集成框架（2026年2.0已GA），让Java开发者用Spring生态的方式接入大模型。<br><br>
+核心能力：<br>
+• <code>ChatClient</code> — 对话接口，支持流式输出<br>
+• <code>EmbeddingModel</code> — 文本向量化<br>
+• <code>VectorStore</code> — 向量数据库抽象（Redis/PGVector/Milvus）<br>
+• <code>Tool Calling</code> — Agent工具调用<br><br>
+<b>vs LangChain4j</b>：Spring AI <span class="highlight">天然集成Spring Boot生态</span>（@Bean注入、Actuator监控、@Conditional自动配置），对Spring团队更友好。LangChain4j社区更大、模型支持更广。
+</div>
+</div>
+
+<div class="card">
+<div class="question">Q3: AI Agent的核心公式是什么？Agent怎么实现工具调用？</div>
+<div class="answer">
+<b>Agent = LLM + Planning（规划）+ Memory（记忆）+ Tools（工具）</b><br><br>
+<b>工具调用流程</b>：<br>
+① LLM分析用户意图→决定调用哪个工具<br>
+② 输出结构化指令（如<code>{"tool":"search","args":{"query":"Java面试"}}</code>）<br>
+③ 代码层解析指令→执行工具→拿结果<br>
+④ 结果反馈给LLM→LLM基于结果生成最终回答<br><br>
+<b>关键</b>：模型只做<span class="highlight">决策</span>（选哪个工具、传什么参数），真正执行是你的代码。Spring AI通过<code>@Tool</code>注解注册工具方法。
+</div>
+</div>
+
+<div class="card">
+<div class="question">Q4: Prompt工程的核心技巧有哪些？</div>
+<div class="answer">
+<b>五大技巧</b>：<br>
+① <b>角色设定</b>：<code>"你是一个资深Java面试官..."</code> — 限定回答风格<br>
+② <b>Few-shot示例</b>：给2-3个问答范例，引导输出格式<br>
+③ <b>思维链（CoT）</b>：加<code>"让我们一步步思考"</code> — 提升推理准确率40%+<br>
+④ <b>结构化输出</b>：要求返回JSON/Markdown格式<br>
+⑤ <b>负面约束</b>：<code>"不要编造信息，不知道就说不知道"</code> — 防幻觉<br><br>
+<b>2026年趋势</b>：自动Prompt优化（DSPy）+ 多模态Prompt（图文混合）。
+</div>
+</div>
+
+<div class="card">
+<div class="question">Q5: 向量数据库怎么选？Redis和Milvus的区别？</div>
+<div class="answer">
+| 维度 | Redis Stack | Milvus |
+|------|------------|--------|
+| 定位 | 缓存+向量二合一 | 专用向量数据库 |
+| 性能 | 低延迟（内存） | 高吞吐（GPU加速） |
+| 规模 | 百万级向量 | 十亿级向量 |
+| 运维 | 轻量，已有Redis团队首选 | 需独立部署 |
+| 场景 | 中小规模RAG | 企业级语义搜索 |
+<br><br>
+<b>我的项目选Redis</b>：秒杀系统已用Redis做缓存，加向量功能无需引入新组件，<span class="highlight">架构简洁</span>。
+</div>
+</div>
+
+<div class="card">
+<div class="question">Q6: 怎么解决RAG的"上下文窗口"问题？</div>
+<div class="answer">
+检索回来的文档片段总和可能超过大模型的Token上限。解决方案：<br><br>
+① <b>重排序（Re-ranking）</b>：先用简单检索召回Top-10，再用Cross-encoder精排保留Top-3<br>
+② <b>切片策略优化</b>：小chunk（256-512 token）+ overlap（10-20%）<br>
+③ <b>摘要压缩</b>：检索后先用小模型压缩片段再送入大模型<br>
+④ <b>Token计数防御</b>：代码层面检查<code>totalTokens > maxTokens</code>时自动截断
+</div>
+</div>
+
+<div class="card">
+<div class="question">Q7: 如何评估RAG系统的回答质量？</div>
+<div class="answer">
+<b>三个维度</b>：<br>
+① <b>忠实度（Faithfulness）</b>：回答是否基于检索的文档？→ 用NLI模型检测幻觉比例<br>
+② <b>相关性（Relevance）</b>：回答是否切题？→ 人工打分或用GPT-4做裁判<br>
+③ <b>召回率（Recall）</b>：检索到了多少相关文档？→ 对比关键词检索和向量检索的命中率<br><br>
+<b>我的项目实践</b>：每次RAG调用记录<span class="highlight">"检索文档数+生成耗时+用户反馈"</span>三元组，持续监控质量。
+</div>
+</div>
+
+<div class="card">
+<div class="question">Q8: Spring AI 2.0有哪些新特性？（2026必问）</div>
+<div class="answer">
+① <b>Tool Calling升级</b>：@Tool注解简化工具注册，支持多工具并行调用<br>
+② <b>Advisors链</b>：类似Spring Interceptor的AOP机制，可插入日志/重试/缓存<br>
+③ <b>多模态支持</b>：图片+文本混合输入（GPT-4o/Claude Vision）<br>
+④ <b>ChatMemory</b>：内置对话记忆管理（内存/JDBC/Redis实现）<br>
+⑤ <b>速率限制</b>：内置Token桶限流，防止API超额<br>
+⑥ <b>Spring Boot 4.x兼容</b>：全面适配最新Spring生态
+</div>
+</div>
+
+<div class="card">
+<div class="question">Q9: 项目中怎么避免大模型API调用超时和失败？</div>
+<div class="answer">
+<b>三层防护</b>：<br>
+① <b>重试机制</b>：指数退避重试（1s→2s→4s，最多3次），<code>@Retryable</code>注解<br>
+② <b>超时设置</b>：连接超时5s + 读取超时30s，超过返回降级回答<br>
+③ <b>熔断降级</b>：连续失败5次→熔断30秒→返回缓存答案或"服务繁忙"<br><br>
+<b>监控</b>：记录每次AI调用的<span class="highlight">耗时+成功/失败+Token消耗</span>，接入Actuator端点。
+</div>
+</div>
+
+<div class="card">
+<div class="question">Q10: 2026年Java+AI方向面试最可能被问什么？</div>
+<div class="answer">
+<b>三道必考题</b>：<br>
+① <b>"你怎么把AI落到业务里的？"</b> → 讲RAG项目：文档上传→检索→生成全链路<br>
+② <b>"Spring AI和直接调HTTP API有什么区别？"</b> → 自动配置、连接池管理、流式输出、Actuator监控<br>
+③ <b>"Agent多步推理怎么做？"</b> → 讲Agent Loop：Plan→Decide→Act→Observe循环<br><br>
+<b>一句话总结</b>：<span class="highlight">"我能用Spring Boot的思维接大模型——不光是调API，而是做工程化落地。"</span>
+</div>
+</div>
+
+<div class="donate">
+<h3>☕ 这些内容对你有帮助？</h3>
+<p>所有工具和文章永久免费。如果帮到了你，请我喝杯咖啡~</p>
+<img src="mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏码" loading="lazy">
+<p style="margin-top:8px;font-size:0.8em">微信扫码赞赏 · 持续输出更多干货</p>
+</div>
+
+<div class="nav">
+<strong style="color:#94a3b8;width:100%">📂 全部免费工具：</strong>
+<a href="../java-interview-quiz/index.html">☕ 面试题库</a>
+<a href="../interview-simulator/index.html">🎯 模拟面试</a>
+<a href="../resume-builder/index.html">📝 简历生成</a>
+<a href="../java-rank-test/index.html">⚔️ 段位测试</a>
+<a href="../java-handwriting-practice/index.html">💻 手撕代码</a>
+<a href="../java-cheatsheet/index.html">📋 速查卡片</a>
+<a href="../java-starter-kit/index.html">🛠 脚手架</a>
+<a href="../arsenal/index.html">🎯 弹药库</a>
+<a href="../salary-report-2026.html">💰 薪资查询</a>
+<a href="../offer-compare/index.html">📊 Offer对比</a>
+<a href="../tools-navigator.html">🔧 工具导航</a>
+<a href="../interview-day-guide/index.html">📋 面试指南</a>
+<a href="../interview-replay/index.html">🧠 复盘助手</a>
+<a href="../resume-check.html">🔍 简历诊断</a>
+<a href="../resume-diagnosis/index.html">🤖 AI诊断</a>
+<a href="../java-skill-radar/index.html">📊 技能雷达</a>
+<a href="../index.html">📚 全部文章</a>
+<a href="https://github.com/Abyte-zym">🐙 GitHub</a>
+</div>
+
+</div>
+</body>
+</html>
