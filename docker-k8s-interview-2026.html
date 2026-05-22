@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Docker+K8s面试10题 | 2026 Java实习高频考点</title>
+<meta name="description" content="2026年Java后端实习最常考的Docker+Kubernetes面试题。Dockerfile指令、镜像分层、K8s核心组件、Pod/Deployment/Service区别，含标准答案和代码片段。">
+<meta name="keywords" content="Docker面试题,K8s面试题,Kubernetes面试,Java实习2026,容器面试,Pod面试题">
+<link rel="canonical" href="https://abyte-zym.github.io/java-career-blog/docker-k8s-interview-2026.html">
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.8;max-width:800px;margin:0 auto;padding:20px;color:#333}
+h1{font-size:1.8em;border-bottom:3px solid #2496ed;padding-bottom:10px}
+h2{font-size:1.3em;color:#2496ed;margin-top:30px}
+.qa{margin:20px 0;padding:15px;background:#f8f9fa;border-radius:8px;border-left:4px solid #2496ed}
+.q{font-weight:bold;color:#1a1a2e}
+.a{color:#444;margin-top:8px}
+code{background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:0.9em}
+pre{background:#1a1a2e;color:#f8f8f2;padding:15px;border-radius:8px;overflow-x:auto}
+.donate{text-align:center;margin:40px 0;padding:20px;background:#fffbf0;border:2px dashed #ff9800;border-radius:12px}
+.donate img{width:200px;border-radius:8px}
+.donate p{color:#666;font-size:0.9em}
+.nav{margin-bottom:20px}
+.nav a{color:#2496ed;margin-right:15px;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="nav">
+  <a href="https://abyte-zym.github.io/java-career-blog/">← 博客首页</a>
+  <a href="https://abyte-zym.github.io/java-interview-quiz/">面试题库</a>
+  <a href="https://abyte-zym.github.io/interview-simulator/">模拟器</a>
+</div>
+
+<h1>🐳 Docker + Kubernetes 面试10题（2026 Java实习版）</h1>
+<p>面试官问"用过Docker吗"——别只说"用过"。下面这10道题覆盖了Docker+K8s在Java后端面试中90%的考点，背下来直接答出高级感。</p>
+
+<div class="qa">
+<div class="q">Q1: Docker镜像、容器、仓库三者关系？</div>
+<div class="a">
+<b>镜像</b>是只读模板（类似Java的Class）<br>
+<b>容器</b>是镜像的运行实例（类似Java的Object）<br>
+<b>仓库</b>是镜像的存储和分发中心（类似Maven中央仓库）<br><br>
+面试金句："镜像是构建时产物，容器是运行时实体。Docker利用UnionFS实现镜像分层，不同镜像共享相同的Base Layer，这就是为什么拉取镜像这么快。"
+</div>
+</div>
+
+<div class="qa">
+<div class="q">Q2: Dockerfile常用指令有哪些？COPY和ADD区别？</div>
+<div class="a">
+<pre>
+FROM openjdk:17-slim          # 基础镜像
+WORKDIR /app                   # 工作目录
+COPY target/*.jar app.jar     # 复制文件
+RUN apt-get update             # 构建时执行
+EXPOSE 8080                    # 声明端口
+CMD ["java","-jar","app.jar"] # 容器启动命令
+</pre>
+<b>COPY vs ADD：</b>COPY只复制本地文件；ADD还能解压tar和下载URL。面试官想听的是"ADD有隐式行为，推荐用COPY保持Dockerfile可预测性"。
+</div>
+</div>
+
+<div class="qa">
+<div class="q">Q3: Docker镜像分层是什么？为什么重要？</div>
+<div class="a">
+每个Dockerfile指令创建一个新层，层之间是增量存储。<b>关键价值：</b>
+- 不同镜像共享相同层（如都基于openjdk:17）
+- 更新时只推送变化的层，不是整个镜像
+- 写时复制（CoW）：容器运行时修改文件会拷贝到可写层<br>
+面试金句："这就是为什么Docker镜像构建要按变化频率排序——把不常变的放在前面（如apt-get），常在变的（如COPY代码）放最后，最大化缓存命中。"
+</div>
+</div>
+
+<div class="qa">
+<div class="q">Q4: K8s核心组件有哪些？各自做什么？</div>
+<div class="a">
+<b>Master节点：</b>
+- <b>API Server</b> — 整个集群的入口，所有操作都通过它
+- <b>etcd</b> — 分布式KV存储，保存集群所有状态
+- <b>Scheduler</b> — 决定Pod调度到哪个Node
+- <b>Controller Manager</b> — 维护期望状态（如副本数不够就自动拉起）
+
+<b>Worker节点：</b>
+- <b>kubelet</b> — 每个节点的Agent，负责Pod生命周期
+- <b>kube-proxy</b> — 网络代理，实现Service的负载均衡
+</div>
+</div>
+
+<div class="qa">
+<div class="q">Q5: Pod、Deployment、Service三者区别？</div>
+<div class="a">
+<b>Pod</b> — K8s最小调度单元，1+容器共享网络和存储。一般1 Pod = 1应用容器<br>
+<b>Deployment</b> — 管理Pod的"期望状态"。声明"我要3个副本"→Deployment自动保活。支持滚动更新和回滚<br>
+<b>Service</b> — Pod的网络抽象。Pod IP会变，Service提供稳定的VIP和DNS名<br><br>
+面试金句："Pod是'谁干活'，Deployment是'干多少'，Service是'怎么找到干活的人'。"
+</div>
+</div>
+
+<div class="qa">
+<div class="q">Q6: K8s的Service有哪几种类型？</div>
+<div class="a">
+<b>ClusterIP</b>（默认）— 集群内部访问，不对外暴露<br>
+<b>NodePort</b> — 在每个Node上开端口 → 外部可访问<br>
+<b>LoadBalancer</b> — 云厂商的LB直接指向Service<br>
+<b>ExternalName</b> — DNS CNAME映射<br><br>
+面试金句："Java微服务部署到K8s，服务间调用用ClusterIP+服务名（Nacos/Eureka在这里就被K8s Service替代了）。对外暴露API用Ingress+ClusterIP，不直接用NodePort。"
+</div>
+</div>
+
+<div class="qa">
+<div class="q">Q7: K8s探针（Probe）是什么？三种探针区别？</div>
+<div class="a">
+<b>Liveness Probe</b>（存活探针）— 容器还活着吗？失败→杀掉重启<br>
+<b>Readiness Probe</b>（就绪探针）— 能接流量吗？失败→从Service摘除<br>
+<b>Startup Probe</b>（启动探针）— 启动完了吗？在它成功之前禁用其他探针<br><br>
+Java场景：Readiness写/actuator/health，Spring Boot Actuator自带。防止Pod还在初始化就被流量打挂了。
+</div>
+</div>
+
+<div class="qa">
+<div class="q">Q8: docker-compose和K8s什么关系？什么时候用哪个？</div>
+<div class="a">
+<b>docker-compose</b> — 单机多容器编排。开发环境/测试环境/小项目<br>
+<b>K8s</b> — 集群级别容器编排。生产环境/多机/自动伸缩<br><br>
+面试金句："docker-compose.yml就像是租房合同——单机够用。K8s就像是物业管理公司——管理整个小区的房子。我的项目开发阶段用docker-compose本地调试，生产部署到K8s集群。"
+</div>
+</div>
+
+<div class="qa">
+<div class="q">Q9: Docker网络模式有哪些？</div>
+<div class="a">
+<b>bridge</b>（默认）— 容器通过docker0网桥通信<br>
+<b>host</b> — 容器直接用宿主机网络，性能最高但端口冲突<br>
+<b>none</b> — 完全隔离<br>
+<b>overlay</b> — 跨主机的容器通信（Swarm/K8s用）<br><br>
+Java项目常用：docker-compose默认bridge，多个容器用服务名互访。
+</div>
+</div>
+
+<div class="qa">
+<div class="q">Q10: 你的项目里Docker怎么用的？踩过什么坑？</div>
+<div class="a">
+<b>用法：</b>"我的微服务秒杀项目写了Dockerfile+docker-compose.yml，一键启动MySQL+Redis+Nacos+应用。RAG知识库项目也是Docker部署。"<br><br>
+<b>坑（面试加分）：</b>
+- MySQL容器重启后数据丢失 → 加了volume持久化<br>
+- 容器间通信用localhost不行 → 改成服务名（docker-compose自动DNS）<br>
+- Java应用OOM被K8s杀掉 → 加了<code>-XX:+UseContainerSupport</code>让JVM感知容器内存限制<br>
+- 镜像太大 → 改用多阶段构建，最终镜像从500MB降到150MB
+</div>
+</div>
+
+<div class="donate">
+  <p>☕ 这份Docker+K8s面试指南对你有帮助？请我喝杯咖啡～</p>
+  <img src="https://raw.githubusercontent.com/Abyte-zym/jarvis-backup/main/donate-qr.png" alt="微信赞赏码">
+  <p>← 微信扫码赞赏，金额随意</p>
+  <p style="margin-top:10px">📧 面试辅导/简历诊断：<a href="https://abyte-zym.github.io/java-resume-builder/">免费简历生成器</a></p>
+</div>
+
+<p style="text-align:center;color:#999;font-size:0.8em">
+  <a href="https://abyte-zym.github.io/java-interview-quiz/">面试题库</a> · 
+  <a href="https://abyte-zym.github.io/interview-simulator/">模拟器</a> · 
+  <a href="https://abyte-zym.github.io/java-resume-builder/">简历生成器</a> · 
+  <a href="https://abyte-zym.github.io/java-starter-kit/">脚手架</a>
+</p>
+</body>
+</html>
