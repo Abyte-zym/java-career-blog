@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拼多多+快手+亚信+Strikingly Java面试真题合集 | Java实习面试通关</title>
+<meta name="description" content="拼多多交易核心团队、快手商业化引擎、亚信科技通信软件、Strikingly硅谷远程——4家公司真实Java面试真题汇总，每题含标准答案。">
+<meta name="keywords" content="拼多多Java面试题,快手Java面试,亚信科技面试,Strikingly面试,Java实习面经,2026面试真题">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.8;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:1.8em;color:#38bdf8;margin:20px 0 10px;text-align:center}
+h2{color:#facc15;margin:30px 0 15px;font-size:1.3em;border-bottom:2px solid #334155;padding-bottom:8px}
+.meta{text-align:center;color:#94a3b8;margin-bottom:30px;font-size:0.9em}
+.question{background:#1e293b;border-radius:12px;padding:24px;margin:20px 0;border-left:4px solid #38bdf8}
+.question h3{color:#facc15;margin-bottom:12px}
+.answer{background:#0f172a;border-radius:8px;padding:16px;margin-top:12px;border:1px solid #334155}
+.answer strong{color:#4ade80}
+code{background:#1e293b;padding:2px 6px;border-radius:4px;font-size:0.9em;color:#f472b6}
+.company-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.85em;margin-right:8px}
+.pdd{background:rgba(255,46,46,0.2);color:#ff2e2e}
+.kuaishou{background:rgba(255,72,0,0.2);color:#ff4800}
+.asiainfo{background:rgba(0,122,255,0.2);color:#007aff}
+.strikingly{background:rgba(88,86,214,0.2);color:#a855f7}
+.donate{text-align:center;margin:40px 0;padding:24px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;border:2px solid #facc15}
+.donate p{color:#facc15;font-size:1.2em;margin-bottom:12px}
+.donate img{width:200px;border-radius:12px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:30px 0}
+.nav a{background:#1e293b;color:#94a3b8;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:0.85em;transition:all .2s}
+.nav a:hover{background:#38bdf8;color:#0f172a}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🎯 大厂Java实习面试真题合集</h1>
+<p class="meta">拼多多 · 快手 · 亚信科技 · Strikingly | 2026年5月 · 真实面经整理</p>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../interview-quiz/">☕ 题库</a>
+<a href="../java-skill-radar/">📊 雷达</a>
+</div>
+
+<h2><span class="company-badge pdd">拼多多</span> 交易核心团队 - 服务端研发</h2>
+
+<div class="question">
+<h3>Q1：秒杀场景下库存扣减怎么保证不超卖？</h3>
+<div class="answer">
+<strong>答案：</strong>Redis+Lua脚本原子扣减。Lua脚本先 <code>GET</code> 检查库存，库存>0才 <code>DECR</code> 扣减，整个操作在Redis单线程内完成→原子性。扣减成功后异步发RocketMQ消息落库。如果MQ消费失败，用<strong>消息表+定时对账</strong>补偿。
+</div>
+</div>
+
+<div class="question">
+<h3>Q2：RocketMQ怎么保证消息不丢？</h3>
+<div class="answer">
+<strong>答案：</strong>三层保障——①生产端：同步刷盘+发送确认（<code>SendStatus.SEND_OK</code>）+失败重试3次；②Broker端：主从同步+异步刷盘改为同步刷盘；③消费端：手动ACK（<code>ConsumeConcurrentlyStatus.RECONSUME_LATER</code>）+消费幂等（业务唯一键去重）。
+</div>
+</div>
+
+<h2><span class="company-badge kuaishou">快手</span> 算法引擎部 - 留用实习</h2>
+
+<div class="question">
+<h3>Q3：Spring Cloud Alibaba的核心组件有哪些？各自作用？</h3>
+<div class="answer">
+<strong>答案：</strong>Nacos（服务注册+配置中心）、Sentinel（限流熔断降级）、RocketMQ（消息队列削峰）、Seata（分布式事务）、Gateway（API网关统一鉴权路由）。实习项目里用Nacos做服务发现，Sentinel配置QPS限流规则，RocketMQ异步下单。
+</div>
+</div>
+
+<div class="question">
+<h3>Q4：Java中volatile关键字的作用？和synchronized区别？</h3>
+<div class="answer">
+<strong>答案：</strong>volatile保证<strong>可见性</strong>（修改立即刷回主存）和<strong>禁止指令重排序</strong>（内存屏障），但不保证原子性。synchronized保证原子性+可见性+有序性，但性能差。经典场景：DCL单例用volatile防止指令重排导致的半初始化对象问题。
+</div>
+</div>
+
+<h2><span class="company-badge asiainfo">亚信科技</span> 通信软件巨头</h2>
+
+<div class="question">
+<h3>Q5：MySQL索引失效的常见场景？</h3>
+<div class="answer">
+<strong>答案：</strong>①最左前缀不匹配（联合索引只查右边列）；②范围查询右边列失效；③LIKE以%开头；④对索引列做函数操作（WHERE YEAR(date)）；⑤隐式类型转换（字符串不加引号）；⑥OR条件有非索引列；⑦MySQL优化器认为全表扫描更快。
+</div>
+</div>
+
+<div class="question">
+<h3>Q6：Spring Boot自动配置原理？</h3>
+<div class="answer">
+<strong>答案：</strong><code>@SpringBootApplication</code> 里的 <code>@EnableAutoConfiguration</code> 导入 <code>AutoConfigurationImportSelector</code>，读取 <code>META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</code> 文件，加载所有自动配置类。配合 <code>@ConditionalOnClass</code>/<code>@ConditionalOnMissingBean</code> 等条件注解按需生效。
+</div>
+</div>
+
+<h2><span class="company-badge strikingly">Strikingly</span> 硅谷远程 · YC孵化</h2>
+
+<div class="question">
+<h3>Q7：英文技术面试怎么准备？</h3>
+<div class="answer">
+<strong>答案：</strong>核心是<strong>准备技术词汇的英文表达</strong>——HashMap、concurrency、garbage collection、microservices这些词英文怎么说。自我介绍准备3句话英文版。面试中遇到听不懂的，大方说"Could you rephrase that?"。Strikingly英文读写是硬要求，口语可以边工作边练。
+</div>
+</div>
+
+<div class="question">
+<h3>Q8：远程办公需要哪些自我管理能力？</h3>
+<div class="answer">
+<strong>答案：</strong>①清晰的任务拆解和目标管理（Jira/Trello）；②主动汇报进度——不要等别人问；③固定工作时间+独立工作环境；④文档化一切——远程团队靠文档沟通。面试时用实验室经历举例：独立搭建Docker集群→证明远程独立工作能力。
+</div>
+</div>
+
+<h2>🔥 通用高频冲刺题</h2>
+
+<div class="question">
+<h3>Q9：HashMap底层实现？JDK7和JDK8有什么区别？</h3>
+<div class="answer">
+<strong>答案：</strong>底层是数组+链表+红黑树（JDK8）。put流程：hash→定位数组下标→链表头插（7）/尾插（8）→链表长度≥8且数组长度≥64时转红黑树。JDK8改尾插是为了避免并发扩容时的死循环。扩容：容量达到负载因子(0.75)时扩容为2倍，rehash重新分配。
+</div>
+</div>
+
+<div class="question">
+<h3>Q10：你在项目中遇到的最难的技术问题？怎么解决的？</h3>
+<div class="answer">
+<strong>答案模板：</strong>"秒杀项目中Redis和数据库的最终一致性是最难的。Redis扣库存成功但MQ消费失败→库存少了但订单没生成。解决方案：①消息表——发MQ前先写本地消息表；②定时对账——每5分钟扫消息表，状态为'待处理'的重试；③消费幂等——用订单号做去重键。最终压测零丢失。"
+</div>
+</div>
+
+<div class="donate">
+<p>☕ 4家公司10道真题，帮到你了？</p>
+<p style="color:#94a3b8;font-size:0.9em">请作者喝杯咖啡，持续更新更多大厂真题</p>
+<img src="../mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏码">
+<p style="font-size:0.8em;color:#64748b;margin-top:8px">微信扫码赞赏</p>
+</div>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部60+篇文章</a>
+<a href="../arsenal/">🎯 Java面试弹药库</a>
+<a href="../interview-quiz/">☕ 真题题库</a>
+<a href="../java-skill-radar/">📊 技能雷达</a>
+</div>
+
+<div style="text-align:center;margin-top:40px">
+<p style="color:#94a3b8">覆盖拼多多/快手/亚信/Strikingly真实面试真题</p>
+<p style="color:#64748b;font-size:0.8em">© 2026 Abyte-zym · GitHub Pages</p>
+</div>
+
+</div>
+</body>
+</html>
