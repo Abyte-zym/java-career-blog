@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java面试通关清单 · 30天准备计划 | 2026</title>
+<meta name="description" content="面试前30天每天做什么？这清单帮你从Java基础到系统设计全部覆盖。完成一项勾一项，面试前确保准备充分。免费工具+赞赏支持。">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0f0f23;color:#e0e0e0;line-height:1.8;max-width:800px;margin:0 auto;padding:20px}
+h1{color:#ff6b6b;font-size:1.8em;text-align:center;margin:20px 0}
+.sub{text-align:center;color:#999;margin-bottom:30px}
+.day-block{background:#1a1a2e;border-radius:10px;padding:15px;margin:10px 0;border-left:3px solid #444;transition:all 0.3s}
+.day-block:hover{border-left-color:#ff6b6b;transform:translateX(5px)}
+.day-block.done{opacity:0.5;text-decoration:line-through}
+.day-num{display:inline-block;background:#ff6b6b;color:#fff;padding:2px 10px;border-radius:12px;font-weight:bold;margin-right:10px;font-size:0.8em}
+.phase{color:#ff6b6b;font-size:1.3em;margin:30px 0 15px;border-bottom:1px solid #333;padding-bottom:5px}
+.checklist-item{display:flex;align-items:flex-start;gap:10px;padding:5px 0}
+.checklist-item input[type="checkbox"]{margin-top:6px;transform:scale(1.3);accent-color:#ff6b6b}
+.progress-bar{background:#1a1a2e;height:10px;border-radius:5px;margin:20px 0;overflow:hidden}
+.progress-fill{background:linear-gradient(90deg,#ff6b6b,#ff8e53);height:100%;border-radius:5px;transition:width 0.5s}
+.stats{text-align:center;color:#ff6b6b;font-size:1.2em;margin:10px 0}
+.appreciation{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border:1px solid #333;border-radius:15px;padding:30px;text-align:center;margin:30px 0}
+.appreciation h3{color:#ff6b6b}
+.appreciation p{color:#999;margin:10px 0}
+.print-btn{display:block;margin:20px auto;padding:12px 30px;background:#ff6b6b;color:#fff;border:none;border-radius:25px;font-size:1em;cursor:pointer}
+.share-section{text-align:center;margin:20px 0}
+</style>
+</head>
+<body>
+
+<h1>📋 Java面试30天通关清单</h1>
+<p class="sub">勾掉一项就离Offer近一步 | 2026年5月版</p>
+
+<div class="progress-bar">
+<div class="progress-fill" id="progressBar" style="width:0%"></div>
+</div>
+<div class="stats" id="stats">完成: 0/30</div>
+
+<div class="phase">🔵 第一周：Java核心 (Day 1-7)</div>
+
+<div class="day-block" id="d1">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 1</span> HashMap底层原理：数组+链表+红黑树，put流程，1.7 vs 1.8区别，扩容机制</span></div>
+</div>
+
+<div class="day-block" id="d2">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 2</span> ConcurrentHashMap：1.7分段锁 vs 1.8 CAS+synchronized，sizeCtl，扩容迁移</span></div>
+</div>
+
+<div class="day-block" id="d3">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 3</span> JVM内存模型：堆/栈/方法区/程序计数器，对象创建流程，OOM排查思路</span></div>
+</div>
+
+<div class="day-block" id="d4">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 4</span> GC机制：标记清除/复制/标记整理/分代，CMS vs G1 vs ZGC，GC日志解读</span></div>
+</div>
+
+<div class="day-block" id="d5">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 5</span> 并发编程：synchronized锁升级，volatile，AQS，线程池参数调优</span></div>
+</div>
+
+<div class="day-block" id="d6">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 6</span> Java集合框架：ArrayList vs LinkedList，HashSet，TreeMap红黑树</span></div>
+</div>
+
+<div class="day-block" id="d7">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 7</span> 设计模式：单例DCL，工厂，代理，策略，观察者，Spring中用了哪些模式</span></div>
+</div>
+
+<div class="phase">🟢 第二周：框架+数据库 (Day 8-14)</div>
+
+<div class="day-block" id="d8">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 8</span> Spring Boot核心：自动配置原理，Starter机制，@SpringBootApplication拆解</span></div>
+</div>
+
+<div class="day-block" id="d9">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 9</span> Spring IoC/DI/AOP：Bean生命周期，循环依赖三级缓存，动态代理JDK vs CGLIB</span></div>
+</div>
+
+<div class="day-block" id="d10">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 10</span> @Transactional本质：AOP代理调用，失效5场景，传播行为7种</span></div>
+</div>
+
+<div class="day-block" id="d11">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 11</span> MySQL索引：B+树，最左前缀，覆盖索引，索引下推，EXPLAIN解读</span></div>
+</div>
+
+<div class="day-block" id="d12">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 12</span> SQL优化：慢查询定位，索引失效10场景，分库分表，读写分离</span></div>
+</div>
+
+<div class="day-block" id="d13">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 13</span> Redis核心：5数据类型，缓存穿透/击穿/雪崩，分布式锁Redisson</span></div>
+</div>
+
+<div class="day-block" id="d14">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 14</span> MyBatis：缓存机制，#{} vs ${}，分页插件，延迟加载，MyBatis-Plus</span></div>
+</div>
+
+<div class="phase">🟡 第三周：分布式+微服务 (Day 15-21)</div>
+
+<div class="day-block" id="d15">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 15</span> Spring Cloud Alibaba全家桶：Nacos+Sentinels+Gateway+Seata</span></div>
+</div>
+
+<div class="day-block" id="d16">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 16</span> 分布式事务：2PC/TCC/消息表/Seata AT，CAP+BASE理论</span></div>
+</div>
+
+<div class="day-block" id="d17">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 17</span> 消息队列：RocketMQ架构，事务消息，顺序消费，重复消费幂等</span></div>
+</div>
+
+<div class="day-block" id="d18">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 18</span> 系统设计：短URL/秒杀/Feed流/附近的人，4种常见场景设计</span></div>
+</div>
+
+<div class="day-block" id="d19">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 19</span> 计算机网络：TCP三次握手/四次挥手，HTTP/1.1 vs HTTP/2，HTTPS加密</span></div>
+</div>
+
+<div class="day-block" id="d20">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 20</span> 操作系统：进程线程协程，虚拟内存，零拷贝，epoll，CPU飙高排查</span></div>
+</div>
+
+<div class="day-block" id="d21">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 21</span> Docker+K8s+Linux：Docker分层，docker-compose，kubectl常用命令</span></div>
+</div>
+
+<div class="phase">🔴 第四周：AI+软技能+冲刺 (Day 22-30)</div>
+
+<div class="day-block" id="d22">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 22</span> Spring AI+RAG：核心公式Agent=LLM+Planning+Memory+Tools，RAG完整流程</span></div>
+</div>
+
+<div class="day-block" id="d23">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 23</span> 项目话术1：RAG知识库项目2分钟介绍（背景+难点+成果）</span></div>
+</div>
+
+<div class="day-block" id="d24">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 24</span> 项目话术2：秒杀系统2分钟介绍（QPS/Redis Lua/MQ削峰）</span></div>
+</div>
+
+<div class="day-block" id="d25">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 25</span> 自我介绍模板：1分钟版+2分钟版，对镜子练习3遍</span></div>
+</div>
+
+<div class="day-block" id="d26">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 26</span> 算法手写：LRU缓存、单例DCL、快排、生产者消费者、二叉树遍历</span></div>
+</div>
+
+<div class="day-block" id="d27">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 27</span> HR面准备：优缺点、职业规划、期望薪资、反问环节（用上面的10题）</span></div>
+</div>
+
+<div class="day-block" id="d28">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 28</span> 模拟面试：找同学或对着镜子模拟一次完整面试，录音回放</span></div>
+</div>
+
+<div class="day-block" id="d29">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 29</span> 查漏补缺：回顾前28天标记的薄弱项，针对性补强</span></div>
+</div>
+
+<div class="day-block" id="d30">
+<div class="checklist-item"><input type="checkbox" onchange="updateProgress()"><span><span class="day-num">Day 30</span> 🎉 面试当天：深呼吸，你是最棒的。回顾急救包，自信上场！</span></div>
+</div>
+
+<div class="share-section" style="margin-top:30px">
+<button class="print-btn" onclick="window.print()">🖨️ 打印成PDF</button>
+<button class="print-btn" style="background:#16213e;margin-left:10px" onclick="shareProgress()">📤 分享我的进度</button>
+</div>
+
+<div class="appreciation">
+<h3>🙏 这个清单帮到你了？</h3>
+<p>30天计划 + 40篇面试文章 + 全站免费工具 = 我一个人的业余产出</p>
+<p>如果觉得有用，请我喝杯咖啡 ☕ 任何金额都是继续更新的动力</p>
+<p style="color:#ff6b6b;font-size:1.2em;margin:15px 0">微信赞赏码 → 贴在文章底部</p>
+<p style="opacity:0.7;font-size:0.85em">全站免费 · 持续更新 · 帮助更多Java求职者</p>
+</div>
+
+<script>
+function updateProgress() {
+    const total = 30;
+    const checked = document.querySelectorAll('input[type="checkbox"]:checked').length;
+    document.getElementById('progressBar').style.width = (checked/total*100) + '%';
+    document.getElementById('stats').textContent = '完成: ' + checked + '/' + total;
+    
+    // Save to localStorage
+    const states = {};
+    document.querySelectorAll('input[type="checkbox"]').forEach((cb,i) => states[i] = cb.checked);
+    localStorage.setItem('java-checklist', JSON.stringify(states));
+}
+
+function shareProgress() {
+    const checked = document.querySelectorAll('input[type="checkbox"]:checked').length;
+    const text = '🚀 我的Java面试30天清单完成了 ' + checked + '/30！\n🔗 Abyte-zym.github.io/java-interview-checklist';
+    navigator.clipboard?.writeText(text);
+    alert('进度已复制！分享给一起准备面试的朋友吧');
+}
+
+// Load saved state
+try {
+    const saved = JSON.parse(localStorage.getItem('java-checklist'));
+    if (saved) {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        Object.entries(saved).forEach(([i, checked]) => {
+            if (checkboxes[i] && checked) checkboxes[i].checked = true;
+        });
+    }
+} catch(e) {}
+updateProgress();
+</script>
+
+</body>
+</html>
