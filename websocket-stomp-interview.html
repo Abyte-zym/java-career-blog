@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebSocket+STOMP实时通信面试10题 | Java实习面试通关</title>
+<meta name="description" content="WebSocket握手过程、STOMP协议、心跳机制、vs HTTP长轮询、Spring WebSocket配置、消息推送方案、在线用户统计——Java后端必问10题，标准答案直接背。">
+<meta name="keywords" content="WebSocket面试题,STOMP协议,WebSocket握手,HTTP长轮询,Spring WebSocket,实时通信,Java后端面试,2026面试">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.8;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:1.8em;color:#38bdf8;margin:20px 0 10px;text-align:center}
+.meta{text-align:center;color:#94a3b8;margin-bottom:30px;font-size:0.9em}
+.question{background:#1e293b;border-radius:12px;padding:24px;margin:20px 0;border-left:4px solid #38bdf8}
+.question h3{color:#facc15;margin-bottom:12px;font-size:1.1em}
+.answer{background:#0f172a;border-radius:8px;padding:16px;margin-top:12px;border:1px solid #334155}
+.answer strong{color:#4ade80}
+code{background:#1e293b;padding:2px 6px;border-radius:4px;font-size:0.9em;color:#f472b6}
+pre{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:16px;overflow-x:auto;margin:10px 0}
+.tip{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:12px;margin:10px 0;font-size:0.9em}
+.donate{text-align:center;margin:40px 0;padding:24px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;border:2px solid #facc15}
+.donate p{color:#facc15;font-size:1.2em;margin-bottom:12px}
+.donate img{width:200px;border-radius:12px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:30px 0}
+.nav a{background:#1e293b;color:#94a3b8;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:0.85em;transition:all .2s}
+.nav a:hover{background:#38bdf8;color:#0f172a}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🔌 WebSocket+STOMP实时通信面试10题</h1>
+<p class="meta">Java后端实习生面试 · 2026年5月 · 每题含标准答案</p>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../interview-quiz/">☕ 题库</a>
+<a href="../resume-builder/">📝 简历</a>
+<a href="../java-skill-radar/">📊 雷达</a>
+</div>
+
+<div class="question">
+<h3>Q1：WebSocket和HTTP有什么区别？什么时候用WebSocket？</h3>
+<div class="answer">
+<strong>核心区别：</strong><br>
+HTTP：请求-响应模式，客户端问→服务端答→连接关闭。单向主动。<br>
+WebSocket：全双工持久连接，握手后双方随时发消息，不需重新建立连接。<br><br>
+<strong>用WebSocket的场景：</strong>聊天IM、股票行情、协同编辑、游戏对战、消息推送——任何需要服务端主动推数据给客户端的场景。<br><br>
+<strong>面试时一定提这句：</strong>"WebSocket基于TCP，先通过HTTP Upgrade握手升级协议，之后在这个TCP连接上进行全双工通信。"
+</div>
+</div>
+
+<div class="question">
+<h3>Q2：WebSocket握手过程是怎样的？</h3>
+<div class="answer">
+<strong>三步握手：</strong><br>
+1. 客户端发起HTTP请求，带 <code>Upgrade: websocket</code> 和 <code>Connection: Upgrade</code> 头<br>
+2. 服务端返回 <code>101 Switching Protocols</code><br>
+3. TCP连接升级为WebSocket，后续走WebSocket帧协议<br><br>
+<strong>关键Header：</strong><br>
+<pre>GET /chat HTTP/1.1
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+Sec-WebSocket-Version: 13</pre>
+服务端用 <code>Sec-WebSocket-Key</code> + 固定GUID做SHA1→Base64返回 <code>Sec-WebSocket-Accept</code>，防止缓存代理误缓存。
+</div>
+</div>
+
+<div class="question">
+<h3>Q3：STOMP协议是什么？和原始WebSocket什么关系？</h3>
+<div class="answer">
+<strong>STOMP（Simple Text Oriented Messaging Protocol）：</strong>基于WebSocket之上的子协议，提供了"消息目的地"概念（类似MQ的topic/queue），让WebSocket消息有了路由能力。<br><br>
+<strong>对比：</strong><br>
+原始WebSocket：你发什么字节流对方收什么，需要自己定义消息格式和路由逻辑。<br>
+STOMP：自动提供 <code>/topic/xxx</code>（广播）和 <code>/queue/xxx</code>（点对点）路由，Spring内置支持。<br><br>
+<strong>实际项目用STOMP的原因：</strong>"不用自己造轮子——Spring的 <code>@MessageMapping</code> + <code>SimpMessagingTemplate</code> 直接搞定消息路由和推送。"
+</div>
+</div>
+
+<div class="question">
+<h3>Q4：Spring怎么配置WebSocket+STOMP？</h3>
+<div class="answer">
+<strong>核心配置类：</strong>
+<pre>@Configuration
+@EnableWebSocketMessageBroker
+public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+    @Override
+    public void registerStompEndpoints(StompEndpointRegistry registry) {
+        registry.addEndpoint("/ws").setAllowedOriginPatterns("*").withSockJS();
+    }
+    @Override
+    public void configureMessageBroker(MessageBrokerRegistry registry) {
+        registry.enableSimpleBroker("/topic", "/queue");  // 订阅前缀
+        registry.setApplicationDestinationPrefixes("/app"); // 发送前缀
+    }
+}</pre>
+<strong>关键点：</strong><br>
+- <code>/ws</code> 是WebSocket连接端点<br>
+- <code>/topic</code> 是广播前缀，<code>/queue</code> 是点对点前缀<br>
+- <code>/app</code> 是客户端发送消息的前缀，对应Controller里的 <code>@MessageMapping("/chat")</code>
+</div>
+</div>
+
+<div class="question">
+<h3>Q5：WebSocket怎么保证心跳和断线重连？</h3>
+<div class="answer">
+<strong>三层保障：</strong><br>
+1. <strong>WebSocket协议层心跳：</strong>Ping/Pong帧，浏览器自动处理<br>
+2. <strong>STOMP层心跳：</strong>客户端连接时设置 <code>heartbeat.outgoing</code> 和 <code>heartbeat.incoming</code>（毫秒）<br>
+3. <strong>应用层重连：</strong>SockJS的 <code>disconnect</code> 事件触发重连逻辑<br><br>
+<pre>// 客户端STOMP重连
+const socket = new SockJS('/ws');
+const client = Stomp.over(socket);
+client.connect({}, frame => {
+    // 连接成功
+}, error => {
+    setTimeout(() => reconnect(), 3000); // 3秒后重连
+});</pre>
+<strong>服务端心跳超时检测：</strong>Spring默认10秒无心跳断开连接，可通过 <code>setTaskScheduler</code> 配置。
+</div>
+</div>
+
+<div class="question">
+<h3>Q6：WebSocket vs HTTP长轮询 vs SSE，怎么选？</h3>
+<div class="answer">
+<strong>三兄弟对比：</strong><br>
+<table style="width:100%;border-collapse:collapse;margin:10px 0">
+<tr style="background:#1e293b"><td style="padding:8px;border:1px solid #334155">方案</td><td style="padding:8px;border:1px solid #334155">原理</td><td style="padding:8px;border:1px solid #334155">适用场景</td></tr>
+<tr><td style="padding:8px;border:1px solid #334155">HTTP长轮询</td><td style="padding:8px;border:1px solid #334155">客户端hold住请求，有数据才返回</td><td style="padding:8px;border:1px solid #334155">兼容老浏览器、简单场景</td></tr>
+<tr style="background:#0f172a"><td style="padding:8px;border:1px solid #334155">SSE</td><td style="padding:8px;border:1px solid #334155">服务端→客户端单向推送</td><td style="padding:8px;border:1px solid #334155">股票行情、日志推送、AI流式输出</td></tr>
+<tr><td style="padding:8px;border:1px solid #334155">WebSocket</td><td style="padding:8px;border:1px solid #334155">全双工双向通信</td><td style="padding:8px;border:1px solid #334155">聊天IM、协同编辑、游戏</td></tr>
+</table><br>
+<strong>实习生加分回答：</strong>"我的RAG项目里AI回答用的是SSE流式输出——因为只需要服务端推文字，不需要客户端发消息。秒杀系统的秒杀结果推送才适合WebSocket——需要双向交互。选型不只考虑技术，更考虑场景。"
+</div>
+</div>
+
+<div class="question">
+<h3>Q7：WebSocket连接数太多怎么扩展？</h3>
+<div class="answer">
+<strong>两种思路：</strong><br>
+1. <strong>垂直扩展：</strong>提高单机连接数上限——Linux调 <code>ulimit -n</code> 文件描述符限制、Spring Boot调 <code>server.tomcat.max-connections</code><br>
+2. <strong>水平扩展：</strong>多节点+消息队列<br><br>
+<strong>水平扩展方案：</strong><br>
+- 用Redis Pub/Sub做消息广播：同一用户连NodeA，消息到Redis→所有节点收到→推给对应客户端<br>
+- 或用RabbitMQ/Kafka：节点只负责WebSocket连接，消息分发走MQ<br><br>
+<strong>一句话解释：</strong>"WebSocket是有状态连接，不能像HTTP一样无脑负载均衡。需要引入消息中间件实现跨节点消息路由。"
+</div>
+</div>
+
+<div class="question">
+<h3>Q8：怎么统计当前在线WebSocket用户数？</h3>
+<div class="answer">
+<strong>方案：监听连接/断开事件</strong>
+<pre>@Component
+public class WebSocketEventListener {
+    private final AtomicInteger onlineCount = new AtomicInteger(0);
+    
+    @EventListener
+    public void handleSessionConnected(SessionConnectEvent event) {
+        onlineCount.incrementAndGet();
+    }
+    
+    @EventListener
+    public void handleSessionDisconnect(SessionDisconnectEvent event) {
+        onlineCount.decrementAndGet();
+    }
+    
+    public int getOnlineCount() { return onlineCount.get(); }
+}</pre>
+<strong>分布式场景：</strong>每个节点统计自己的连接数→定时上报Redis→汇总。用 <code>REDIS INCR/DECR</code> 配合节点标识做原子计数。
+</div>
+</div>
+
+<div class="question">
+<h3>Q9：WebSocket消息如何保证不丢失？</h3>
+<div class="answer">
+<strong>三层保障：</strong><br>
+1. <strong>客户端ACK：</strong>STOMP支持 <code>ack: 'client'</code> 模式，客户端收到后回ACK，未ACK的消息重发<br>
+2. <strong>服务端离线消息：</strong>用户不在线时消息存Redis/MQ，上线后拉取<br>
+3. <strong>消息持久化：</strong>关键消息（如支付通知）先写DB，推送成功后标记已推送<br><br>
+<strong>实习生面试够用的说法：</strong>"方案是客户端ACK + 离线消息队列 + 重试机制。消息先写Redis的List，推送成功删除，失败则保留供重试。"
+</div>
+</div>
+
+<div class="question">
+<h3>Q10：Nginx怎么代理WebSocket？</h3>
+<div class="answer">
+<strong>关键配置：</strong>
+<pre>location /ws {
+    proxy_pass http://websocket_backend;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_read_timeout 3600s;  # 长连接不超时
+    proxy_set_header Host $host;
+}</pre>
+<strong>三个必加配置解释：</strong><br>
+- <code>proxy_http_version 1.1</code>：WebSocket需要HTTP/1.1<br>
+- <code>Upgrade</code> 和 <code>Connection "upgrade"</code>：告诉Nginx这是WebSocket升级请求，不要当普通HTTP处理<br>
+- <code>proxy_read_timeout 3600s</code>：WebSocket是长连接，默认60s超时不够<br><br>
+<strong>不配这三个会怎样？</strong>WebSocket连上一会儿就断开——Nginx当成普通HTTP连接，超时后就关了。
+</div>
+</div>
+
+<div class="donate">
+<p>☕ 这篇文章帮到你了？</p>
+<p style="color:#94a3b8;font-size:0.9em">请作者喝杯咖啡，支持持续更新更多面试干货</p>
+<img src="../mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏码">
+<p style="font-size:0.8em;color:#64748b;margin-top:8px">微信扫码赞赏</p>
+</div>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部56篇文章</a>
+<a href="../arsenal/">🎯 Java面试弹药库</a>
+<a href="../shop.html">🛒 装备商店</a>
+<a href="../interview-quiz/">☕ 真题题库</a>
+</div>
+
+<div class="tip" style="text-align:center;margin-top:40px">
+<p style="color:#94a3b8">覆盖率：Java后端面试90%+考点覆盖 | 56篇 · 30+工具 · 全部免费</p>
+<p style="color:#64748b;font-size:0.8em">© 2026 Abyte-zym · GitHub Pages</p>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>定时任务调度面试10题 | Java实习面试通关</title>
+<meta name="description" content="@Scheduled原理、Quartz vs XXL-JOB、分布式定时任务、Cron表达式、任务幂等、分片广播——Java后端必问10题，标准答案直接背。">
+<meta name="keywords" content="定时任务面试题,@Scheduled原理,Quartz,XXL-JOB,分布式调度,Cron表达式,任务幂等,ElasticJob,Java面试">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.8;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:1.8em;color:#38bdf8;margin:20px 0 10px;text-align:center}
+.meta{text-align:center;color:#94a3b8;margin-bottom:30px;font-size:0.9em}
+.question{background:#1e293b;border-radius:12px;padding:24px;margin:20px 0;border-left:4px solid #38bdf8}
+.question h3{color:#facc15;margin-bottom:12px;font-size:1.1em}
+.answer{background:#0f172a;border-radius:8px;padding:16px;margin-top:12px;border:1px solid #334155}
+.answer strong{color:#4ade80}
+code{background:#1e293b;padding:2px 6px;border-radius:4px;font-size:0.9em;color:#f472b6}
+pre{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:16px;overflow-x:auto;margin:10px 0}
+.tip{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:12px;margin:10px 0;font-size:0.9em}
+.donate{text-align:center;margin:40px 0;padding:24px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;border:2px solid #facc15}
+.donate p{color:#facc15;font-size:1.2em;margin-bottom:12px}
+.donate img{width:200px;border-radius:12px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:30px 0}
+.nav a{background:#1e293b;color:#94a3b8;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:0.85em;transition:all .2s}
+.nav a:hover{background:#38bdf8;color:#0f172a}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>⏰ 定时任务调度面试10题</h1>
+<p class="meta">Java后端实习生面试 · 2026年5月 · 第60篇SEO文章</p>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../interview-quiz/">☕ 题库</a>
+<a href="../resume-builder/">📝 简历</a>
+</div>
+
+<div class="question">
+<h3>Q1：@Scheduled 注解的原理是什么？怎么开启定时任务支持？</h3>
+<div class="answer">
+<strong>三步激活：</strong><br>
+1. 启动类加 <code>@EnableScheduling</code> → Spring自动扫描@Scheduled<br>
+2. 方法上标注 <code>@Scheduled(fixedRate=5000)</code><br>
+3. Spring容器启动后自动注册到 <code>TaskScheduler</code> 线程池<br><br>
+<strong>原理：</strong><code>@EnableScheduling</code> 导入了 <code>SchedulingConfiguration</code>，注册一个 <code>ScheduledAnnotationBeanPostProcessor</code>——它在Bean初始化后扫描所有@Scheduled方法，包装成Runnable提交到TaskScheduler。<br><br>
+<strong>默认线程池大小是1！</strong>所有@Scheduled任务串行执行。生产环境必须自定义线程池。
+</div>
+</div>
+
+<div class="question">
+<h3>Q2：fixedRate、fixedDelay、cron 三者的区别？</h3>
+<div class="answer">
+<strong>直观理解：</strong><br>
+- <code>fixedRate=5000</code>：每5秒触发一次，不管上次是否执行完<br>
+- <code>fixedDelay=5000</code>：上次执行完后再等5秒才触发下一次<br>
+- <code>cron="0 0 3 * * ?"</code>：每天凌晨3点执行<br><br>
+<strong>选哪个？</strong><br>
+统计类任务→fixedRate（定时采样）<br>
+依赖上次结果的任务→fixedDelay（批量处理）<br>
+精确到时刻→cron（日报/月报）<br><br>
+<pre>// fixedRate vs fixedDelay 的区别演示
+@Scheduled(fixedRate = 5000)   // 每5秒启动一次（可能并发）
+@Scheduled(fixedDelay = 5000)  // 上次结束+5秒后才启动（不会并发）
+@Scheduled(cron = "0 0 8 * * MON")  // 每周一早8点</pre>
+</div>
+</div>
+
+<div class="question">
+<h3>Q3：Cron表达式怎么写？常见6位和7位的区别？</h3>
+<div class="answer">
+<strong>Spring（6位）：</strong>秒 分 时 日 月 星期<br>
+<strong>Quartz（7位）：</strong>秒 分 时 日 月 星期 年（可选）<br><br>
+<strong>常用模板：</strong><br>
+<pre>0 0/5 * * * ?         每5分钟
+0 0 2 * * ?           每天凌晨2点
+0 0 9-17 * * MON-FRI  周一到周五朝九晚五整点
+0 30 10 1 * ?         每月1号10:30
+0 0 0 L * ?           每月最后一天午夜</pre>
+<strong>特殊字符：</strong><code>? (不指定) / L(最后) / W(工作日) / #(第几个)</code>。面试说清楚秒分时日月的顺序就行。
+</div>
+</div>
+
+<div class="question">
+<h3>Q4：Spring Boot定时任务的线程池怎么自定义？</h3>
+<div class="answer">
+<strong>默认问题：</strong>线程池大小=1，所有任务串行。一个任务堵了，后面的全排队。<br><br>
+<strong>解决方案：</strong>
+<pre>@Configuration
+public class ScheduleConfig implements SchedulingConfigurer {
+    @Override
+    public void configureTasks(ScheduledTaskRegistrar registrar) {
+        registrar.setScheduler(
+            Executors.newScheduledThreadPool(10) // 核心10线程
+        );
+    }
+}</pre>
+<strong>生产推荐：</strong>用 <code>ThreadPoolTaskScheduler</code>（Spring包装），比<code>Executors</code>多了优雅关闭和异常处理。
+<pre>ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+scheduler.setPoolSize(10);
+scheduler.setThreadNamePrefix("task-");
+scheduler.setAwaitTerminationSeconds(60);
+scheduler.setWaitForTasksToCompleteOnShutdown(true);</pre>
+</div>
+</div>
+
+<div class="question">
+<h3>Q5：Quartz和XXL-JOB有什么区别？什么时候用哪个？</h3>
+<div class="answer">
+<strong>核心对比：</strong><br>
+| 维度 | Quartz | XXL-JOB |
+|------|--------|---------|
+| 部署 | 内嵌应用，无独立控制台 | 独立调度中心+执行器 |
+| 可视化 | 没有（除非自建UI） | 自带的Web管理界面 |
+| 分布式 | 需额外配置 | 原生支持分片/故障转移 |
+| 动态修改 | 不行 | 可以在线改Cron，无需重启 |
+| 学习曲线 | 简单 | 中等 |
+<br>
+<strong>选型建议：</strong>单体项目用Quartz内嵌够用；微服务/需动态改任务的→XXL-JOB。面试时提一句：秒杀系统的库存预热定时任务就是XXL-JOB做的。
+</div>
+</div>
+
+<div class="question">
+<h3>Q6：分布式环境下定时任务怎么保证不重复执行？</h3>
+<div class="answer">
+<strong>问题：</strong>三台机器都有同一任务，同时触发→重复处理数据。<br><br>
+<strong>三种解决方式：</strong><br>
+1. <strong>Redis分布式锁：</strong>执行前 <code>setIfAbsent(taskKey, 1, 60, TimeUnit.SECONDS)</code>，拿到锁才执行<br>
+2. <strong>XXL-JOB分片广播：</strong>调度中心统一派活，不重复<br>
+3. <strong>数据库乐观锁：</strong>UPDATE任务状态 version+1，竞争失败的跳过<br><br>
+<strong>面试加分：</strong>"秒杀系统的预热任务就是通过Redis分布式锁保证多节点只有一台执行预热逻辑。"
+</div>
+</div>
+
+<div class="question">
+<h3>Q7：定时任务的幂等性怎么保障？</h3>
+<div class="answer">
+<strong>为什么需要：</strong>任务可能超时重试或手动重跑→同一条数据被处理两次。<br><br>
+<strong>四种策略：</strong><br>
+1. <strong>业务唯一键：</strong>insert前检查唯一键是否已存在<br>
+2. <strong>状态机：</strong>FROM pending TO processing；processing状态下跳过<br>
+3. <strong>Redis标记：</strong>处理完的数据ID存Redis，下次跳过<br>
+4. <strong>乐观锁版本号：</strong>UPDATE SET status='done', version=version+1 WHERE version=旧值<br><br>
+<strong>实战示例：</strong>
+<pre>// 幂等处理：只有状态为PENDING的数据才处理
+int updated = jdbc.update("UPDATE orders SET status='PROCESSING' WHERE id=? AND status='PENDING'", id);
+if (updated == 0) return; // 已被处理，跳过</pre>
+</div>
+</div>
+
+<div class="question">
+<h3>Q8：XXL-JOB的"分片广播"是什么？什么场景用？</h3>
+<div class="answer">
+<strong>概念：</strong>调度中心把任务拆成N份，同时发给N台执行器各自处理一部分。<br><br>
+<strong>原理：</strong>执行器拿到分片参数（shardIndex=当前是第几片，shardTotal=总共几片）→用 `id % shardTotal == shardIndex` 过滤自己要处理的数据。<br><br>
+<strong>典型场景：</strong>100万条订单需要在凌晨更新→10台机器各处理10万条，10倍加速。<br><br>
+<strong>代码示例：</strong>
+<pre>@XxlJob("batchUpdateOrders")
+public void batchUpdate(int shardIndex, int shardTotal) {
+    List<Order> orders = orderMapper.selectByShard(shardIndex, shardTotal);
+    orders.forEach(this::processOrder);
+}</pre>
+</div>
+</div>
+
+<div class="question">
+<h3>Q9：定时任务执行超时了怎么办？怎么优雅停止一个正在跑的任务？</h3>
+<div class="answer">
+<strong>超时控制：</strong>
+<pre>Future<?> future = taskScheduler.submit(task);
+try {
+    future.get(30, TimeUnit.SECONDS); // 最多等30秒
+} catch (TimeoutException e) {
+    future.cancel(true); // 超时→打断
+    log.warn("任务超时，已中断");
+}</pre>
+<strong>优雅停止：</strong>用 <code>Thread.interrupt()</code> 发送中断信号，任务内部检查 <code>Thread.currentThread().isInterrupted()</code> 做收尾工作。<br><br>
+<strong>生产最佳实践：</strong>XXL-JOB自带任务超时kill + 失败重试 + 告警邮件。直接用就好。
+</div>
+</div>
+
+<div class="question">
+<h3>Q10：ElasticJob和XXL-JOB怎么选？</h3>
+<div class="answer">
+<strong>ElasticJob：</strong>当当开源，基于ZooKeeper，偏技术驱动。分片策略丰富（平均分配/哈希/自定义），适合大规模数据处理。<br>
+<strong>XXL-JOB：</strong>许雪里开发，国产最火。有管理后台、在线编辑、报表看板，偏运维友好。<br><br>
+<strong>一句话选型：</strong>运维/产品经理也要能看→XXL-JOB；纯粹技术架构选→ElasticJob。面试被问就说"我用过XXL-JOB，有Web管理界面，对运维友好"。
+</div>
+</div>
+
+<div class="donate">
+<p>☕ 这篇文章帮到你了？请作者喝杯咖啡</p>
+<p style="color:#94a3b8;font-size:0.9em">60篇原创面试干货 · 持续更新中</p>
+<img src="../mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏码">
+<p style="font-size:0.8em;color:#64748b;margin-top:8px">微信扫码赞赏</p>
+</div>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部60篇文章</a>
+<a href="../arsenal/">🎯 Java面试弹药库</a>
+<a href="../shop/">🛒 装备商店</a>
+<a href="../crowdfund-question/">🧧 众筹提问</a>
+</div>
+
+</div>
+</body>
+</html>
