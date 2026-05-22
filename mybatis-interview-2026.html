@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyBatis面试10题 | 2026 Java实习面试通关</title>
+<meta name="description" content="MyBatis面试必问10题：#{} vs ${}、一级二级缓存、分页插件原理、延迟加载、动态SQL、MyBatis-Plus。含标准答案+代码片段。">
+<meta name="keywords" content="MyBatis面试题, MyBatis-Plus面试, Java实习面试, #{}和${}区别, MyBatis缓存">
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:800px;margin:0 auto;padding:20px;line-height:1.8;color:#333;background:#fafafa}
+h1{font-size:1.8em;border-bottom:3px solid #e74c3c;padding-bottom:10px}
+.question{background:#fff;border-left:4px solid #e74c3c;padding:15px 20px;margin:20px 0;border-radius:0 8px 8px 0;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.question h3{margin:0 0 8px 0;color:#c0392b}
+.answer{background:#fffef5;padding:12px 18px;border-radius:6px;margin:8px 0;border:1px solid #eee}
+code{background:#2d2d2d;color:#f8f8f2;padding:2px 8px;border-radius:4px;font-size:0.9em}
+pre{background:#2d2d2d;color:#f8f8f2;padding:16px;border-radius:8px;overflow-x:auto;font-size:0.85em}
+.donate{text-align:center;margin:40px 0;padding:20px;background:linear-gradient(135deg,#fff5f5,#ffe8e8);border-radius:12px}
+.donate img{width:200px;border-radius:12px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;margin:30px 0;padding:15px;background:#fff;border-radius:12px}
+.nav a{background:#e74c3c;color:#fff;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:0.85em}
+.footer{margin-top:30px;padding-top:15px;border-top:2px solid #eee;text-align:center;color:#999;font-size:0.85em}
+</style>
+</head>
+<body>
+
+<h1>🔥 MyBatis面试10题（2026版）</h1>
+<p>更新时间：2026年5月 | 来源：真实面经汇总 | 每道题3句话答案+代码片段</p>
+
+<div class="nav">
+<a href="index.html">📚 全部文章</a>
+<a href="https://Abyte-zym.github.io/java-resume-builder">📝 简历生成</a>
+<a href="https://Abyte-zym.github.io/java-interview-quiz">☕ 面试题库</a>
+<a href="https://Abyte-zym.github.io/java-interview-simulator">🎯 模拟面试</a>
+<a href="https://Abyte-zym.github.io/java-skill-radar">📊 技能雷达</a>
+</div>
+
+<div class="question">
+<h3>1. MyBatis中 #{} 和 ${} 的区别是什么？</h3>
+<div class="answer">
+<strong>标准答案：</strong><br>
+🔹 <code>#{}</code>是预编译占位符，会被替换为<code>?</code>，通过PreparedStatement安全设置参数，<strong>防止SQL注入</strong>。<br>
+🔹 <code>${}</code>是字符串直接拼接，<strong>存在SQL注入风险</strong>，只用于表名、字段名等动态替换场景。<br>
+🔹 <strong>面试加分：</strong>"生产环境99%用#{}，${}只用于ORDER BY动态字段排序，且必须配合白名单校验。"<br>
+<pre>-- #{}
+SELECT * FROM user WHERE id = #{id}  -- SQL: WHERE id = ?
+
+-- ${}（危险）
+SELECT * FROM user ORDER BY ${column}  -- 仅此场景，加白名单</pre>
+</div>
+</div>
+
+<div class="question">
+<h3>2. MyBatis一二级缓存是什么？有什么区别？</h3>
+<div class="answer">
+<strong>标准答案：</strong><br>
+🔹 <strong>一级缓存</strong>：SqlSession级别，默认开启，同一个SqlSession内的相同查询只查一次数据库。<br>
+🔹 <strong>二级缓存</strong>：Mapper级别（跨SqlSession），需要手动配置<code>&lt;cache&gt;</code>开启，多个SqlSession共享。<br>
+🔹 <strong>关键点：</strong>二级缓存在分布式环境下会<strong>数据不一致</strong>——A服务更新了数据，B服务的缓存不会感知，<strong>所以生产环境基本不用，统一用Redis替代</strong>。<br>
+<pre>&lt;mapper namespace="UserMapper"&gt;
+    &lt;cache eviction="LRU" flushInterval="60000" size="512"/&gt;
+&lt;/mapper&gt;</pre>
+</div>
+</div>
+
+<div class="question">
+<h3>3. MyBatis分页怎么实现？原理是什么？</h3>
+<div class="answer">
+<strong>标准答案：</strong><br>
+🔹 使用<strong>PageHelper分页插件</strong>，在查询前调用<code>PageHelper.startPage(page, size)</code>。<br>
+🔹 原理：PageHelper是<strong>MyBatis拦截器</strong>，在SQL执行前拦截，自动拼接LIMIT语句。<br>
+🔹 <strong>面试加分：</strong>"底层用ThreadLocal绑定分页参数，执行后自动清理。MyBatis-Plus内置分页插件更简洁。"<br>
+<pre>PageHelper.startPage(1, 10);
+List&lt;User&gt; list = userMapper.selectAll();  // SQL自动加 LIMIT 0,10</pre>
+</div>
+</div>
+
+<div class="question">
+<h3>4. MyBatis延迟加载原理？</h3>
+<div class="answer">
+<strong>标准答案：</strong><br>
+🔹 延迟加载（懒加载）：关联对象在被<strong>真正使用时</strong>才去数据库查询，不是查询主对象时就一并查出。<br>
+🔹 原理：MyBatis使用<strong>CGLIB/Javassist动态代理</strong>，为关联属性创建代理对象，首次调用getter时触发查询。<br>
+🔹 配置：<code>lazyLoadingEnabled=true</code> + <code>aggressiveLazyLoading=false</code><br>
+<pre>&lt;settings&gt;
+    &lt;setting name="lazyLoadingEnabled" value="true"/&gt;
+    &lt;setting name="aggressiveLazyLoading" value="false"/&gt;
+&lt;/settings&gt;</pre>
+</div>
+</div>
+
+<div class="question">
+<h3>5. MyBatis-Plus和原生MyBatis有什么区别？</h3>
+<div class="answer">
+<strong>标准答案：</strong><br>
+🔹 MP是MyBatis的增强工具，内置通用CRUD（<code>BaseMapper.selectById()</code>），不用写XML。<br>
+🔹 提供<strong>条件构造器Wrapper</strong>、分页插件、乐观锁、逻辑删除开箱即用。<br>
+🔹 <strong>面试加分：</strong>"MP适合快速开发，但复杂多表查询仍用原生XML，两者可以共存。"<br>
+<pre>// MyBatis-Plus：一行代码查全部
+List&lt;User&gt; users = userMapper.selectList(
+    new LambdaQueryWrapper&lt;User&gt;().eq(User::getStatus, 1)
+);</pre>
+</div>
+</div>
+
+<div class="question">
+<h3>6. MyBatis动态SQL有哪些标签？</h3>
+<div class="answer">
+<strong>标准答案：</strong><br>
+🔹 <code>&lt;if&gt;</code>：条件判断；<code>&lt;where&gt;</code>：自动去掉第一个AND/OR。<br>
+🔹 <code>&lt;foreach&gt;</code>：遍历集合生成IN查询；<code>&lt;trim&gt;</code>：自定义截断。<br>
+🔹 <strong>重点：</strong><code>&lt;choose&gt; &lt;when&gt; &lt;otherwise&gt;</code>实现多分支条件，类似switch-case。<br>
+</div>
+</div>
+
+<div class="question">
+<h3>7. MyBatis中resultType和resultMap有什么区别？</h3>
+<div class="answer">
+<strong>标准答案：</strong><br>
+🔹 <code>resultType</code>：自动映射，要求<strong>数据库字段名和Java属性名完全一致</strong>。<br>
+🔹 <code>resultMap</code>：手动定义映射关系，处理<strong>字段名不一致、嵌套对象、一对多/多对一</strong>场景。<br>
+🔹 <strong>面试加分：</strong>"生产环境统一用resultMap——可读性更好，方便后续维护和关联查询。"<br>
+</div>
+</div>
+
+<div class="question">
+<h3>8. MyBatis中如何实现一对一、一对多关联查询？</h3>
+<div class="answer">
+<strong>标准答案：</strong><br>
+🔹 <strong>一对一</strong>：<code>&lt;association&gt;</code>标签，如User关联Dept。<br>
+🔹 <strong>一对多</strong>：<code>&lt;collection&gt;</code>标签，如Dept包含List&lt;User&gt;。<br>
+🔹 <strong>N+1问题：</strong>查询N个主对象时执行N次子查询。解决方案：用<strong>JOIN语句一次性查出</strong>，或配置懒加载。<br>
+</div>
+</div>
+
+<div class="question">
+<h3>9. MyBatis插件（拦截器）原理？</h3>
+<div class="answer">
+<strong>标准答案：</strong><br>
+🔹 MyBatis插件通过<strong>JDK动态代理</strong>拦截Executor、StatementHandler、ParameterHandler、ResultSetHandler四个核心对象。<br>
+🔹 使用<code>@Intercepts</code>注解声明拦截点，<code>@Signature</code>指定拦截的方法。<br>
+🔹 <strong>典型应用：</strong>PageHelper分页插件、慢SQL监控、数据脱敏。<br>
+<pre>@Intercepts(@Signature(type=StatementHandler.class,method="prepare",args={Connection.class,Integer.class}))
+public class SlowSqlInterceptor implements Interceptor { ... }</pre>
+</div>
+</div>
+
+<div class="question">
+<h3>10. MyBatis批量插入怎么优化？</h3>
+<div class="answer">
+<strong>标准答案：</strong><br>
+🔹 <strong>方法一：</strong><code>&lt;foreach&gt;</code>拼VALUES多行——一条SQL插多条，但<strong>数据量大时SQL过长可能导致OOM</strong>。<br>
+🔹 <strong>方法二（推荐）：</strong>MyBatis-Plus的<code>saveBatch</code>或JDBC的<code>executeBatch</code>——每1000条一批。<br>
+🔹 <strong>面试加分：</strong>"还应关闭二级缓存、事务控制、适当调大数据库buffer_pool。"<br>
+</div>
+</div>
+
+<div class="donate">
+<p>☕ 这10道题帮到你了？</p>
+<p>请作者喝杯咖啡，创作更多面试干货</p>
+<img src="qrcode-wx.png" alt="微信赞赏码">
+<p style="font-size:0.85em;color:#666">扫码赞赏 · 支持开源工具</p>
+</div>
+
+<div class="nav">
+<a href="redis-interview-cheatsheet.html">← Redis面试</a>
+<a href="springboot-interview-2026.html">Spring Boot面试 →</a>
+<a href="index.html">📚 返回首页</a>
+</div>
+
+<div class="footer">
+<p>📊 <strong>全站17篇SEO文章 + 16个Java工具</strong> | 全部免费 · 赞赏支持</p>
+<p>© 2026 Java面试通关 | <a href="https://github.com/Abyte-zym">GitHub</a></p>
+</div>
+</body>
+</html>
