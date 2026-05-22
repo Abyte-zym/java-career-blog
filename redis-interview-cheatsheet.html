@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="2026 Java实习必背：Redis面试10题，缓存穿透/击穿/雪崩/分布式锁/持久化，附代码示例和标准答案">
+    <meta name="keywords" content="redis面试题, java实习, redis缓存, 分布式锁, 2026面试">
+    <title>Redis面试10题速通 | Java实习必备 | 2026</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#1a1a2e;color:#e0e0e0;line-height:1.8;padding:20px}
+        .container{max-width:800px;margin:0 auto}
+        h1{color:#ff6b6b;font-size:1.8em;margin:20px 0;text-align:center}
+        h2{color:#ffd93d;font-size:1.3em;margin:30px 0 10px;border-left:3px solid #ff6b6b;padding-left:10px}
+        .q{background:#16213e;padding:15px;border-radius:8px;margin:15px 0;border:1px solid #0f3460}
+        .q-title{color:#ff6b6b;font-weight:bold;margin-bottom:8px}
+        .answer{color:#a0a0a0;font-size:0.95em}
+        code{background:#0f3460;color:#ffd93d;padding:2px 6px;border-radius:4px;font-size:0.9em}
+        pre{background:#0f3460;padding:12px;border-radius:8px;overflow-x:auto;font-size:0.85em;margin:8px 0}
+        .sponsor{background:linear-gradient(135deg,#ff6b6b,#ee5a24);padding:20px;border-radius:12px;text-align:center;margin:30px 0;color:#fff}
+        .sponsor img{width:160px;height:160px;border-radius:12px;margin:10px 0}
+        .sponsor p{font-size:0.9em;margin:5px 0}
+        .tools{background:#16213e;padding:20px;border-radius:12px;margin:20px 0;text-align:center}
+        .tools a{display:inline-block;background:#ff6b6b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;margin:5px;font-size:0.9em}
+        .tools a:hover{background:#ee5a24}
+        footer{text-align:center;color:#666;padding:20px;font-size:0.85em}
+    </style>
+</head>
+<body>
+<div class="container">
+
+<h1>🔥 Redis面试10题速通（2026 Java实习版）</h1>
+<p style="text-align:center;color:#999">基于真实面经提炼 | 3分钟背一道 | 面试官最常问的都在这里</p>
+
+<div class="tools">
+    <p>📦 更多免费工具：</p>
+    <a href="https://Abyte-zym.github.io/java-resume-builder/">📝 简历生成器</a>
+    <a href="https://Abyte-zym.github.io/java-interview-quiz/">☕ 面试题库</a>
+    <a href="https://Abyte-zym.github.io/java-career-blog/">📚 更多文章</a>
+</div>
+
+<h2>1. Redis为什么这么快？</h2>
+<div class="q">
+    <div class="q-title">💡 面试标准答案：</div>
+    <div class="answer">
+        ① 纯内存操作，数据存在RAM里，读写速度纳米秒级<br>
+        ② 单线程模型，避免多线程上下文切换和锁竞争（Redis 6.0后I/O多线程但命令执行仍单线程）<br>
+        ③ IO多路复用（epoll），一个线程处理多个客户端连接<br>
+        ④ 高效的数据结构，每种数据类型都做了底层优化（如ziplist→listpack）
+    </div>
+</div>
+
+<h2>2. 缓存穿透是什么？怎么解决？</h2>
+<div class="q">
+    <div class="q-title">💡 面试标准答案：</div>
+    <div class="answer">
+        穿透：查询一个<strong>根本不存在</strong>的数据，缓存和数据库都没有，导致每次请求都打到数据库。<br>
+        解决方案：<br>
+        ① <strong>布隆过滤器</strong>：将所有可能存在的key哈希到一个bitmap中，查询时先判断key是否存在<br>
+        ② <strong>缓存空值</strong>：即使查不到也缓存一个null，设置短过期时间（30秒）
+    </div>
+</div>
+
+<h2>3. 缓存击穿和缓存雪崩有什么区别？</h2>
+<div class="q">
+    <div class="q-title">💡 面试标准答案：</div>
+    <div class="answer">
+        <strong>击穿</strong>：单一热点key过期瞬间，大量请求打到数据库 → 互斥锁/逻辑过期/热点数据永不过期<br>
+        <strong>雪崩</strong>：大量key同时过期或Redis宕机 → TTL加随机值/多级缓存/限流降级<br>
+        一句话区分：击穿是一把刀捅一个洞，雪崩是整面墙塌了
+    </div>
+</div>
+
+<h2>4. Redis分布式锁怎么实现？</h2>
+<div class="q">
+    <div class="q-title">💡 面试标准答案：</div>
+    <div class="answer">
+        <strong>核心命令</strong>：<code>SET lock_key value NX EX 30</code><br>
+        NX=key不存在才设置（互斥），EX=设置过期时间（防死锁）<br><br>
+        <strong>关键细节</strong>：<br>
+        ① value用UUID，释放锁时校验——防止A释放了B的锁<br>
+        ② 释放锁用Lua脚本保证原子性：<code>if redis.get(lock)==uuid then redis.del(lock)</code><br>
+        ③ <strong>Redisson的Watchdog</strong>：业务没执行完自动续期，完美解决锁过期问题<br>
+    </div>
+    <pre>// Redisson一行搞定
+RLock lock = redisson.getLock("order:" + orderId);
+lock.lock(30, TimeUnit.SECONDS);  // Watchdog自动续期</pre>
+</div>
+
+<h2>5. Redis持久化RDB和AOF怎么选？</h2>
+<div class="q">
+    <div class="q-title">💡 面试标准答案：</div>
+    <div class="answer">
+        <strong>RDB</strong>：定时全量快照。性能高但可能丢数据<br>
+        <strong>AOF</strong>：记录每次写命令。数据安全但文件大恢复慢<br>
+        <strong>最佳实践</strong>：<code>混合持久化</code>（Redis 4.0+），RDB全量+AOF增量
+    </div>
+</div>
+
+<h2>6. Redis主从复制和哨兵模式？</h2>
+<div class="q">
+    <div class="q-title">💡 面试标准答案：</div>
+    <div class="answer">
+        <strong>主从</strong>：读写分离，主写从读，不能自动故障切换<br>
+        <strong>哨兵</strong>：监控主节点+自动选举新主+通知客户端 → 高可用<br>
+        <strong>集群</strong>：数据分片（16384槽），每对主从独立，解决单机容量瓶颈
+    </div>
+</div>
+
+<h2>7. 缓存淘汰策略有哪些？</h2>
+<div class="q">
+    <div class="q-title">💡 面试标准答案：</div>
+    <div class="answer">
+        <code>volatile-lru</code>：从设置了过期时间的key中淘汰最近最少使用的<br>
+        <code>allkeys-lru</code>：从所有key中淘汰最近最少使用的<br>
+        <code>volatile-lfu</code>：淘汰使用频率最低的<br>
+        <code>volatile-ttl</code>：淘汰快过期的<br>
+        生产环境一般用<strong>allkeys-lru</strong>
+    </div>
+</div>
+
+<h2>8. Redis中的BigKey和HotKey？</h2>
+<div class="q">
+    <div class="q-title">💡 面试标准答案：</div>
+    <div class="answer">
+        <strong>BigKey</strong>：单个key的value过大（string>10KB或集合元素>1万），会导致网络阻塞、慢查询<br>
+        → 拆分（hash分桶）、异步删除（UNLINK代替DEL）<br>
+        <strong>HotKey</strong>：单个key的QPS过高导致单节点压力<br>
+        → 本地缓存（Caffeine）+ 读写分离 + key散列
+    </div>
+</div>
+
+<h2>9. Redis事务和MySQL事务有什么不同？</h2>
+<div class="q">
+    <div class="q-title">💡 面试标准答案：</div>
+    <div class="answer">
+        Redis事务不保证原子性——某条命令失败不影响其他命令执行（不回滚）<br>
+        MySQL事务保证ACID，失败回滚<br>
+        Redis用Lua脚本实现原子性——比事务更可靠
+    </div>
+</div>
+
+<h2>10. 你在项目里怎么用Redis的？</h2>
+<div class="q">
+    <div class="q-title">💡 面试标准答案（结合秒杀项目）：</div>
+    <div class="answer">
+        <strong>秒杀系统三处用到Redis：</strong><br>
+        ① <strong>库存扣减</strong>：Lua脚本原子操作，保证不超卖<br>
+        ② <strong>分布式锁</strong>：Redisson防止用户重复下单<br>
+        ③ <strong>令牌桶限流</strong>：控制秒杀接口QPS，保护下游<br>
+        <strong>RAG系统用到Redis：</strong><br>
+        缓存AI回答结果，命中率40%+，响应时间从2秒降到200ms
+    </div>
+</div>
+
+<div class="sponsor">
+    <p>☕ 这篇文章对你有帮助？</p>
+    <p>扫一扫赞赏，让我知道你在看</p>
+    <img src="qrcode-wx.png" alt="赞赏码">
+    <p style="font-size:0.8em;opacity:0.8">每一次赞赏都是一份动力 🚀</p>
+</div>
+
+<footer>
+    <p>📚 <a href="https://Abyte-zym.github.io/java-career-blog/" style="color:#ff6b6b">返回博客首页</a> | 
+    📝 <a href="https://Abyte-zym.github.io/java-resume-builder/" style="color:#ff6b6b">简历生成器</a> |
+    ☕ <a href="https://Abyte-zym.github.io/java-interview-quiz/" style="color:#ff6b6b">面试题库</a></p>
+    <p>© 2026 Java Career Blog | SEO关键词: Redis面试题 Java实习 2026</p>
+</footer>
+
+</div>
+</body>
+</html>
