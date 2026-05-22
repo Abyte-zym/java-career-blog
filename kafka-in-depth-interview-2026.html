@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kafka深度面试10题 | Java实习面试通关</title>
+<meta name="description" content="Kafka分区策略·ISR机制·Exactly-Once语义·消费者组重平衡·零拷贝原理·幂等生产者——Java后端必问Kafka面试10题，每题含标准答案+代码示例。">
+<meta name="keywords" content="Kafka面试题,Kafka分区,ISR机制,Exactly-Once,消费者组重平衡,零拷贝,Kafka幂等,Java后端面试,2026面试">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.8;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:1.8em;color:#38bdf8;margin:20px 0 10px;text-align:center}
+.meta{text-align:center;color:#94a3b8;margin-bottom:30px;font-size:.9em}
+.question{background:#1e293b;border-radius:12px;padding:24px;margin:20px 0;border-left:4px solid #38bdf8}
+.question h3{color:#facc15;margin-bottom:12px;font-size:1.1em}
+.answer{background:#0f172a;border-radius:8px;padding:16px;margin-top:12px;border:1px solid #334155}
+.answer strong{color:#4ade80}
+code{background:#1e293b;padding:2px 6px;border-radius:4px;font-size:.9em;color:#f472b6}
+pre{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:16px;overflow-x:auto;margin:10px 0}
+.tip{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:8px;padding:12px;margin:10px 0;font-size:.9em}
+.donate{text-align:center;margin:40px 0;padding:24px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;border:2px solid #facc15}
+.donate p{color:#facc15;font-size:1.2em;margin-bottom:12px}
+.donate img{width:200px;border-radius:12px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:30px 0}
+.nav a{background:#1e293b;color:#94a3b8;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:.85em;transition:all .2s}
+.nav a:hover{background:#38bdf8;color:#0f172a}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>📨 Kafka深度面试10题</h1>
+<p class="meta">Java后端实习生面试 · 2026年5月 · 每题含标准答案</p>
+
+<div class="nav">
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../interview-quiz/">☕ 题库</a>
+<a href="../java-skill-radar/">📊 雷达</a>
+<a href="../resume-builder/">📝 简历</a>
+</div>
+
+<div class="question">
+<h3>Q1：Kafka为什么这么快？零拷贝是什么？</h3>
+<div class="answer">
+<strong>四大原因：</strong><br>
+1. <strong>顺序写入磁盘：</strong>Kafka把消息顺序追加到日志文件末尾，磁盘顺序写速度(600MB/s+)远高于随机写(100KB/s)。<br>
+2. <strong>零拷贝(Zero-Copy)：</strong>消费时直接通过<code>sendfile()</code>系统调用，数据从磁盘→内核PageCache→网卡，完全不过用户态、不复制。<br>
+3. <strong>PageCache缓存：</strong>利用OS的页面缓存，热数据直接读内存。<br>
+4. <strong>批量发送+压缩：</strong>Producer将多条消息打包成batch，用snappy/gzip压缩后一次发送。<br><br>
+<strong>面试多说一句：</strong>零拷贝比传统read→write少2次CPU拷贝+2次上下文切换，吞吐量提升3-5倍。
+</div>
+</div>
+
+<div class="question">
+<h3>Q2：Kafka的分区策略有哪些？</h3>
+<div class="answer">
+<strong>三种分区策略：</strong><br>
+1. <strong>指定分区：</strong>Producer消息带partition号→直接发到指定分区。<br>
+2. <strong>Key哈希：</strong>没有partition但有key→<code>hash(key) % partition_count</code>。相同key永远进同一分区=消息有序。<br>
+3. <strong>轮询(Round-Robin)：</strong>既没有partition也没有key→均匀分布到所有分区。<br><br>
+<pre>// 自定义分区器：按订单金额分发
+public class AmountPartitioner implements Partitioner {
+    public int partition(String topic, Object key, byte[] kb, Object val, byte[] vb, Cluster c) {
+        long amount = ((Order) val).getAmount();
+        return (int) (amount % c.partitionCountForTopic(topic));
+    }
+}</pre>
+</div>
+</div>
+
+<div class="question">
+<h3>Q3：ISR是什么？为什么重要？</h3>
+<div class="answer">
+<strong>ISR = In-Sync Replicas（同步副本集）：</strong>当前与Leader保持同步的Follower集合。<br><br>
+<strong>核心作用：</strong>Kafka不要求所有副本都同步才commit——只等ISR里的副本确认。这样在性能和数据可靠性间取得平衡。<br><br>
+<strong>Follower被踢出ISR的条件：</strong>超过<code>replica.lag.time.max.ms</code>(默认30秒)没同步。<br><br>
+<strong>面试加分：</strong>配置<code>min.insync.replicas=2</code>可以保证至少2个副本确认才返回ack——否则会出现Leader挂了数据丢失的场景。
+</div>
+</div>
+
+<div class="question">
+<h3>Q4：Kafka如何实现Exactly-Once语义？</h3>
+<div class="answer">
+<strong>三层保障：</strong><br>
+1. <strong>幂等生产者（Idempotent Producer）：</strong>给每个Producer分配PID，每条消息带Sequence Number。Broker发现重复SN直接丢弃→单分区内不重复。<br>
+2. <strong>事务（Transactions）：</strong>跨分区原子写入。Producer调用<code>initTransactions()</code>→<code>beginTransaction()</code>→发送→<code>commitTransaction()</code>。<br>
+3. <strong>Consumer配合：</strong>设置<code>isolation.level=read_committed</code>，只读已提交的事务消息，屏蔽未提交的脏数据。<br><br>
+<strong>配置：</strong>
+<pre>// 幂等生产者
+enable.idempotence=true
+// 事务
+transactional.id=tx-001</pre>
+</div>
+</div>
+
+<div class="question">
+<h3>Q5：消费者组重平衡(Rebalance)是怎么回事？怎么避免？</h3>
+<div class="answer">
+<strong>触发条件：</strong>消费者增减/分区变化/消费者超时没有心跳(默认<code>session.timeout.ms=45s</code>)。<br><br>
+<strong>三种策略：</strong>
+<strong>Range（默认）：</strong>按分区序号均分，可能不均。
+<strong>RoundRobin：</strong>依次轮流分配，均匀。
+<strong>Sticky：</strong>尽量保持之前的分配，减少不必要的迁移。<br><br>
+<strong>避免频繁Rebalance：</strong>
+1. 调大<code>session.timeout.ms</code>（如120s）
+2. 调大<code>max.poll.interval.ms</code>（两次poll间隔，防止处理太慢被踢）
+3. 使用<strong>静态成员(Static Membership)</strong>：<code>group.instance.id</code>固定组成员ID，重启后不触发Rebalance
+</div>
+</div>
+
+<div class="question">
+<h3>Q6：Kafka如何保证消息不丢失？</h3>
+<div class="answer">
+<strong>生产者端：</strong>
+- <code>acks=all</code>（或-1）：所有ISR确认才返回
+- <code>retries=Integer.MAX_VALUE</code>：无限重试
+- <code>enable.idempotence=true</code>：防重<br>
+<strong>Broker端：</strong>
+- <code>min.insync.replicas>=2</code>
+- <code>unclean.leader.election.enable=false</code>：禁止落后副本竞选Leader<br>
+<strong>消费者端：</strong>
+- <code>enable.auto.commit=false</code>：手动提交offset
+- 先处理消息再commit（不是先commit再处理）<br><br>
+<strong>一句话：</strong>acks=all + 手动提交 + ISR>=2 = 三重保险。
+</div>
+</div>
+
+<div class="question">
+<h3>Q7：Kafka中partition和consumer的对应关系？</h3>
+<div class="answer">
+<strong>核心规则：同一消费者组内，一个分区只能被一个消费者消费，但一个消费者可以消费多个分区。</strong><br><br>
+<strong>推论：</strong>
+- 消费者数 > 分区数 → 多余的消费者闲着
+- 分区数 > 消费者数 → 每个消费者扛多个分区
+- 最佳配置：分区数 = 消费者数 x 2（留扩展空间）<br><br>
+<strong>面试场景题：</strong>"QPS要10万，一条消息处理10ms，怎么设计？"<br>
+→ 10万QPS × 10ms = 1000分区，15个消费者实例，每台扛67个分区。
+</div>
+</div>
+
+<div class="question">
+<h3>Q8：Kafka和RocketMQ选哪个？</h3>
+<div class="answer">
+<strong>快速对比：</strong><br>
+| 维度 | Kafka | RocketMQ |
+| 事务消息 | 较新 | ✅ 原生支持，金融级 |
+| 延迟消息 | 无内置 | ✅ 18个级别 |
+| 吞吐量 | ✅ 更高 | 中等 |
+| 消息回溯 | 按offset | 按时间 |
+| 运维 | 复杂 | ✅ 阿里出品，好用 |
+<br>
+<strong>选型口诀：</strong>高吞吐大数据→Kafka；金融/订单无丢失→RocketMQ；中小团队→RocketMQ省心。<br>
+<strong>你的秒杀项目：</strong>选RocketMQ——因为需要事务消息确保下单一致性。
+</div>
+</div>
+
+<div class="question">
+<h3>Q9：Kafka的消息怎么保证顺序？</h3>
+<div class="answer">
+<strong>Kafka只保证单个分区内有序。</strong><br><br>
+<strong>全局有序：</strong>
+- 只用1个分区（牺牲并行度）
+- 或用同一个key让同业务进同一分区<br><br>
+<strong>生产者端：</strong>
+- <code>max.in.flight.requests.per.connection=1</code>（幂等开启后自动设5也行）<br>
+<strong>消费者端：</strong>
+- 单线程消费一个分区
+- 多线程消费→维护内存队列保证有序<br><br>
+<strong>面试亮点：</strong>提到"Kafka用key哈希+单分区消费保证业务级有序，RocketMQ用消息组(MessageGroup)做全局有序更简单。"
+</div>
+</div>
+
+<div class="question">
+<h3>Q10：Kafka Controller是什么？怎么选举的？</h3>
+<div class="answer">
+<strong>Controller</strong>是集群中某个特殊的Broker，负责管理分区和副本的状态。<br><br>
+<strong>核心职责：</strong>
+- 分区Leader选举
+- 监听Broker上下线
+- ISR变更通知
+- 分区重分配<br>
+<strong>选举机制：</strong>
+所有Broker启动时在ZooKeeper的<code>/controller</code>节点上抢注册——谁先创建临时节点谁就是Controller。Controller挂了→临时节点自动删除→剩下的Broker重新抢。<br><br>
+<strong>面试多说：</strong>Kafka 3.x已移除ZooKeeper依赖(改用KRaft)，Controller选举基于Raft协议，更简单。
+</div>
+</div>
+
+<div class="donate">
+<p>☕ 这篇文章帮到你了？</p>
+<p style="color:#94a3b8;font-size:.9em">请作者喝杯咖啡，支持持续更新更多面试干货</p>
+<img src="../mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏码">
+<p style="font-size:.8em;color:#64748b;margin-top:8px">微信扫码赞赏</p>
+</div>
+
+<div class="nav">
+<a href="../arsenal/">🎯 Java面试弹药库</a>
+<a href="../interview-quiz/">☕ 真题题库</a>
+<a href="../shop/">🛒 装备商店</a>
+<a href="../java-weekly-newsletter/">📬 通关周刊</a>
+</div>
+
+<div class="tip" style="text-align:center;margin-top:40px">
+<p style="color:#94a3b8">覆盖率：Java后端面试90%+考点覆盖 | 60+篇 · 30+工具 · 全部免费</p>
+<p style="color:#64748b;font-size:.8em">© 2026 Abyte-zym · GitHub Pages</p>
+</div>
+
+</div>
+</body>
+</html>
