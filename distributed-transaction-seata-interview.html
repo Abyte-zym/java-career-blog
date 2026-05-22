@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>分布式事务Seata面试10题 | Java实习面试通关</title>
+<meta name="description" content="2PC/3PC/TCC/SAGA/Seata AT/TCC模式、XA协议、最大努力通知、可靠消息最终一致性——Java后端必问10题，标准答案直接背。">
+<meta name="keywords" content="分布式事务面试题,Seata面试题,2PC 3PC,TCC事务,SAGA模式,最大努力通知,可靠消息最终一致性,XA协议,Java后端面试,2026面试">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.8;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:1.8em;color:#38bdf8;margin:20px 0 10px;text-align:center}
+.meta{text-align:center;color:#94a3b8;margin-bottom:30px;font-size:0.9em}
+.question{background:#1e293b;border-radius:12px;padding:24px;margin:20px 0;border-left:4px solid #38bdf8}
+.question h3{color:#facc15;margin-bottom:12px;font-size:1.1em}
+.answer{background:#0f172a;border-radius:8px;padding:16px;margin-top:12px;border:1px solid #334155}
+.answer strong{color:#4ade80}
+code{background:#1e293b;padding:2px 6px;border-radius:4px;font-size:0.9em;color:#f472b6}
+pre{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:16px;overflow-x:auto;margin:10px 0}
+.tip{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:12px;margin:10px 0;font-size:0.9em}
+.donate{text-align:center;margin:40px 0;padding:24px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;border:2px solid #facc15}
+.donate p{color:#facc15;font-size:1.2em;margin-bottom:12px}
+.donate img{width:200px;border-radius:12px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:30px 0}
+.nav a{background:#1e293b;color:#94a3b8;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:0.85em;transition:all .2s}
+.nav a:hover{background:#38bdf8;color:#0f172a}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🔀 分布式事务Seata面试10题</h1>
+<p class="meta">Java后端实习生面试 · 2026年5月 · 含标准答案+代码示例</p>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../interview-quiz/">☕ 题库</a>
+<a href="../resume-builder/">📝 简历</a>
+</div>
+
+<div class="question">
+<h3>Q1：分布式事务为什么需要？本地事务ACID在微服务架构下有什么问题？</h3>
+<div class="answer">
+<strong>一句话：</strong>一个业务操作跨多个微服务，每个服务有自己的数据库。本地事务只保证自己的ACID，无法保证全局一致性。<br><br>
+<strong>例子：</strong>下单操作→扣库存(库存服务)+扣余额(账户服务)+生成订单(订单服务)。如果扣库存成功但扣余额失败——扣了库存没收到钱，系统数据不一致。<br><br>
+<strong>核心矛盾：</strong>CAP定理——无法同时满足一致性(C)、可用性(A)、分区容错性(P)。分布式系统必选P，在C和A之间做权衡。多数业务场景选择AP(最终一致性)。
+</div>
+</div>
+
+<div class="question">
+<h3>Q2：2PC(两阶段提交)原理是什么？有什么致命缺陷？</h3>
+<div class="answer">
+<strong>两阶段：</strong><br>
+<strong>阶段一(Prepare)：</strong>协调者向所有参与者发"准备提交"请求→各参与者执行事务但不提交→返回YES/NO<br>
+<strong>阶段二(Commit/Rollback)：</strong>全部YES→发"提交"→全部NO则发"回滚"<br><br>
+<strong>致命缺陷：</strong><br>
+1. <strong>同步阻塞：</strong>Prepare阶段锁资源，第二阶段结束前不释放→高并发下锁等待<br>
+2. <strong>单点故障：</strong>协调者挂了→所有参与者阻塞等待<br>
+3. <strong>数据不一致：</strong>第二阶段如果协调者只发了部分commit→部分参与者提交、部分没收到→数据不一致
+</div>
+</div>
+
+<div class="question">
+<h3>Q3：3PC怎么改进2PC？</h3>
+<div class="answer">
+<strong>3PC = CanCommit + PreCommit + DoCommit</strong><br><br>
+1. <strong>CanCommit：</strong>协调者问"能提交吗？"——只检查不执行，无锁<br>
+2. <strong>PreCommit：</strong>执行事务+写undo/redo日志<br>
+3. <strong>DoCommit：</strong>最终提交<br><br>
+<strong>改进点：</strong>引入<strong>超时机制</strong>——PreCommit阶段超时→自动提交(因为已经确认了CanCommit)。避免了2PC协调者挂掉导致的无限阻塞。<br><br>
+<strong>代价：</strong>多一轮通信，性能更低。实际生产中<strong>很少用3PC</strong>。
+</div>
+</div>
+
+<div class="question">
+<h3>Q4：TCC模式原理？Try/Confirm/Cancel各做什么？</h3>
+<div class="answer">
+<strong>TCC = Try + Confirm + Cancel</strong><br>
+<pre>
+Try: 预留资源（冻结库存、冻结余额）→ 不真正扣
+Confirm: 真正执行（扣减冻结的库存、转账）→ 幂等
+Cancel: 回滚（解冻库存、退款）→ 补偿操作
+</pre>
+<strong>例子（下单）：</strong><br>
+- Try：库存服务冻结1件商品、账户服务冻结100元<br>
+- Confirm：库存服务扣减冻结的1件、账户服务扣100元<br>
+- Cancel：库存服务解冻1件、账户服务退100元<br><br>
+<strong>优缺点：</strong>每个服务需要提供Try/Confirm/Cancel三个接口→<strong>业务侵入性强</strong>。但性能好（无锁）、一致性高。
+</div>
+</div>
+
+<div class="question">
+<h3>Q5：Seata AT模式怎么工作的？和XA有什么区别？</h3>
+<div class="answer">
+<strong>Seata AT = 自动补偿型分布式事务</strong><br>
+1. <strong>一阶段(执行业务SQL)：</strong>Seata拦截SQL→记录undo_log→业务SQL正常提交<br>
+2. <strong>二阶段(提交/回滚)：</strong>全局提交→异步删undo_log；回滚→读undo_log反向补偿<br><br>
+<strong>Seata AT vs XA：</strong><br>
+| | XA | Seata AT |<br>
+| 锁释放 | 二阶段才释放 | 一阶段就释放 |<br>
+| 性能 | 差 | 较好 |<br>
+| 侵入性 | 无 | 无(自动代理) |<br>
+| 一致性 | 强一致 | 最终一致 |<br><br>
+<strong>适用场景：</strong>传统单体拆分微服务的第一阶段——改了代码结构但不想改业务逻辑时用Seata AT。
+</div>
+</div>
+
+<div class="question">
+<h3>Q6：可靠消息最终一致性怎么实现？RocketMQ事务消息原理？</h3>
+<div class="answer">
+<strong>流程：</strong><br>
+1. 生产者发<strong>半消息(half message)</strong>——消费者看不到<br>
+2. 执行本地事务（如扣库存）<br>
+3. 本地事务成功→发commit→消费者可见；失败→发rollback→消息删除<br>
+4. 如果生产者挂了没回传→MQ定期<strong>回查</strong>生产者本地事务状态<br><br>
+<strong>你的秒杀项目里：</strong>Redis扣库存成功后→发RocketMQ消息→订单服务消费消息落库。如果订单落库失败→利用MQ重试+死信队列兜底。<br><br>
+<strong>面试加分：</strong>提到<strong>消息表+定时对账</strong>双保险——MQ挂了也能最终一致。
+</div>
+</div>
+
+<div class="question">
+<h3>Q7：最大努力通知方案是什么？和可靠消息有什么区别？</h3>
+<div class="answer">
+<strong>最大努力通知：</strong>发起方执行完本地事务→异步通知下游→通知失败就<strong>反复重试</strong>(指数退避)→超过最大重试次数还失败→记录到<strong>失败表</strong>→人工介入。<br><br>
+<strong>vs 可靠消息：</strong><br>
+| | 可靠消息 | 最大努力通知 |<br>
+| 一致性保证 | 消息不丢(MQ持久化) | 尽力而为 |<br>
+| 适用场景 | 核心交易链路 | 非关键通知(短信/邮件) |<br>
+| 成本 | 需要MQ | 简单HTTP+重试即可 |<br><br>
+<strong>一句话：</strong>订单状态变更通知用户——用最大努力通知。扣款——用可靠消息。
+</div>
+</div>
+
+<div class="question">
+<h3>Q8：SAGA模式是什么？什么场景用SAGA而不是TCC？</h3>
+<div class="answer">
+<strong>SAGA = 长事务拆成一串本地事务，每个有对应的补偿操作</strong><br>
+<pre>
+正向: 创建订单 → 扣库存 → 扣余额 → 发货
+补偿: 取消订单 ← 补库存 ← 退款   ← (不可逆)
+</pre>
+<strong>SAGA vs TCC：</strong><br>
+- TCC：资源预留→执行。适合<strong>资金/库存</strong>等可冻结的场景<br>
+- SAGA：直接执行→如果后面失败逐级补偿。适合<strong>长流程、不可逆操作</strong>（如已发货无法取消）<br><br>
+<strong>两种实现：</strong><br>
+- <strong>编排式(Choreography)：</strong>每个参与者收到事件自己决定干什么——松耦合但流程不可见<br>
+- <strong>协调式(Orchestration)：</strong>一个协调者统一指挥——流程清晰但协调者成瓶颈
+</div>
+</div>
+
+<div class="question">
+<h3>Q9：Seata的AT模式和TCC模式各适合什么场景？</h3>
+<div class="answer">
+<strong>选型决策表：</strong><br>
+| 场景 | 推荐 | 原因 |<br>
+| 单体拆微服务初期 | AT | 零侵入，改配置就搞定 |<br>
+| 高并发资金类 | TCC | 无锁，性能好 |<br>
+| 简单CRUD + 一个全局事务 | AT | 够用 |<br>
+| 复杂业务逻辑 + 跨多个服务 | TCC | 补偿逻辑自定义 |<br>
+| 已有代码不想改 | AT | @GlobalTransactional一个注解 |<br><br>
+<strong>你的项目：</strong>秒杀系统用的是<strong>可靠消息最终一致性</strong>(RocketMQ)——比Seata更轻量。因为秒杀追求的是吞吐量，不是强一致。
+</div>
+</div>
+
+<div class="question">
+<h3>Q10：面试官问"分布式事务你们项目怎么做的"——满分回答模板</h3>
+<div class="answer">
+<strong>模板（3层递进）：</strong><br>
+1. <strong>先定场景：</strong>"我们秒杀系统下单需要跨库存服务和订单服务，存在分布式事务问题"<br>
+2. <strong>说方案+原因：</strong>"我们用RocketMQ事务消息实现最终一致性——Redis扣库存成功后发半消息，订单服务消费落库。选这个而不是Seata是因为秒杀追求吞吐量，强一致会拖慢整个链路"<br>
+3. <strong>兜底方案：</strong>"MQ重试+死信队列处理临时故障，定时对账任务跑历史数据修复极端异常"<br><br>
+<strong>这样答面试官就知道你：</strong><br>
+✅ 理解分布式事务的几种方案<br>
+✅ 能根据场景做技术选型<br>
+✅ 考虑了兜底方案<br>
+✅ 不是说"我们用了XX"而是"我们为什么选XX"
+</div>
+</div>
+
+<div class="donate">
+<p>☕ 这篇文章帮到你了？</p>
+<p style="color:#94a3b8;font-size:0.9em">请作者喝杯咖啡，支持持续更新更多面试干货</p>
+<img src="../mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏码">
+<p style="font-size:0.8em;color:#64748b;margin-top:8em">微信扫码赞赏</p>
+</div>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部68篇文章</a>
+<a href="../arsenal/">🎯 Java面试弹药库</a>
+<a href="../java-skill-radar/">📊 技能雷达</a>
+<a href="../interview-quiz/">☕ 真题题库</a>
+</div>
+
+<div class="tip" style="text-align:center;margin-top:40px">
+<p style="color:#94a3b8">覆盖率：Java后端面试95%+考点 | 68篇 · 33工具 · 全部免费</p>
+<p style="color:#64748b;font-size:0.8em">© 2026 Abyte-zym · GitHub Pages</p>
+</div>
+</div>
+</body>
+</html>
