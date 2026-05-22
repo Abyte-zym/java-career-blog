@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Java集合框架面试10题——HashMap底层源码·ConcurrentHashMap演进·ArrayList vs LinkedList·红黑树·扩容机制。2026 Java实习面试必备。">
+<title>Java集合框架面试10题 · 2026 Java实习面试</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f9fa;color:#1a1a2e;line-height:1.8}
+.container{max-width:800px;margin:0 auto;padding:20px}
+h1{font-size:2em;text-align:center;margin:30px 0 10px;color:#0f3460}
+.subtitle{text-align:center;color:#666;margin-bottom:30px;font-size:.95em}
+.card{background:#fff;border-radius:12px;padding:28px;margin:20px 0;box-shadow:0 2px 12px rgba(0,0,0,.06);border-left:4px solid #4e73df}
+.card h3{color:#4e73df;margin-bottom:10px;font-size:1.15em}
+.card p{margin-bottom:8px}
+.card pre{background:#1a1a2e;color:#00ff88;padding:15px;border-radius:8px;overflow-x:auto;font-size:.85em;margin:10px 0;line-height:1.6}
+.tag{display:inline-block;background:#eef2ff;color:#4e73df;padding:3px 12px;border-radius:20px;font-size:.82em;margin:4px 4px 4px 0}
+.donate{text-align:center;margin:40px 0 20px;padding:30px;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.donate img{width:200px;border-radius:8px;margin-top:15px}
+.donate p{color:#888;font-size:.9em}
+.nav{text-align:center;margin:40px 0;padding:20px;background:#fff;border-radius:12px}
+.nav a{display:inline-block;margin:5px 10px;color:#4e73df;text-decoration:none;font-size:.9em;padding:6px 16px;border:1px solid #4e73df;border-radius:20px;transition:all .2s}
+.nav a:hover{background:#4e73df;color:#fff}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>☕ Java集合框架面试10题</h1>
+<p class="subtitle">2026 Java实习面试 · 覆盖90%集合考点 · 含源码级答案</p>
+
+<div class="card">
+<h3>1. HashMap底层数据结构是什么？JDK 1.8做了什么优化？</h3>
+<p><b>标准答案：</b>数组+链表+红黑树。1.8核心优化——<b>链表长度≥8且数组长度≥64时转红黑树</b>，查询从O(n)→O(logn)。退化条件是节点数≤6时转回链表。</p>
+<pre>// put流程简析
+1. 计算hash： (key==null)?0 : (h=key.hashCode())^(h>>>16)
+2. 数组为空则resize()初始化
+3. (n-1)&hash 定位桶位置
+4. 桶为空→直接放；桶有值→判断key相等覆盖/否则链表尾插/红黑树插入
+5. size超过threshold则resize()扩容</pre>
+<p><b>面试加分：</b>"扰动函数——高16位异或低16位，让hash分布更均匀，减少碰撞。"</p>
+</div>
+
+<div class="card">
+<h3>2. HashMap扩容机制是怎样的？</h3>
+<p><b>标准答案：</b>容量翻倍（oldCap×2），阈值也翻倍。1.8扩容优化——<b>不需要重新hash</b>，原位置要么保持不变，要么移动到<b>原位置+oldCap</b>。resize()通过高位bit判断：新增bit=0则位置不变，=1则位置+oldCap。</p>
+<pre>// 扩容核心逻辑（简化）
+for (Node<K,V> e : oldTab) {
+    if (e.next == null) 
+        newTab[e.hash & (newCap-1)] = e;  // 单节点直接重定位
+    // 链表/红黑树：根据 hash & oldCap 是否为0分流
+    // =0 → 留在原位  =1 → 移到 j + oldCap
+}</pre>
+</div>
+
+<div class="card">
+<h3>3. ConcurrentHashMap如何保证线程安全？1.7 vs 1.8区别？</h3>
+<p><b>标准答案：</b></p>
+<p>• <b>JDK 1.7：</b>分段锁Segment（可配16段），继承ReentrantLock，每段独立加锁，并发度=段数</p>
+<p>• <b>JDK 1.8：</b>CAS+synchronized，锁粒度为<b>桶的头节点</b>。put时：桶为空→CAS插入；桶有值→synchronized锁头节点后插入。扩容支持<b>多线程并发迁移</b>，效率大幅提升</p>
+<p><b>面试必杀：</b>"1.8去掉了分段锁，采用了更细粒度的桶级别锁+CAS，并发度更高。扩容时多个线程可以同时帮忙迁移数据，这是1.8最大的性能突破。"</p>
+</div>
+
+<div class="card">
+<h3>4. ArrayList和LinkedList有什么区别？什么时候用哪个？</h3>
+<p><b>标准答案：</b></p>
+<p>• <b>ArrayList：</b>基于动态数组，随机访问O(1)，尾部插入O(1)，中间插入O(n)。适合<b>频繁查询</b></p>
+<p>• <b>LinkedList：</b>基于双向链表，随机访问O(n)，头尾插入O(1)。适合<b>频繁增删</b>（但实际ArrayList在大部分场景下更快，因为LinkedList需要先遍历定位）</p>
+<p>• <b>扩容：</b>ArrayList默认扩容1.5倍（oldCapacity + oldCapacity>>1），LinkedList不需要扩容</p>
+<p><b>面试陷阱：</b>"都说不适合频繁增删用LinkedList，但LinkedList需要先遍历到目标位置，所以随机插入时ArrayList未必慢。"</p>
+</div>
+
+<div class="card">
+<h3>5. HashSet如何保证元素不重复？</h3>
+<p><b>标准答案：</b>HashSet底层就是HashMap——<b>元素存为HashMap的key，value是一个固定的Object常量PRESENT</b>。add()调HashMap.put()，重复key直接覆盖value，所以不报错也不重复。</p>
+<pre>// HashSet源码本质
+public boolean add(E e) {
+    return map.put(e, PRESENT) == null;  // HashMap的key不重复
+}</pre>
+</div>
+
+<div class="card">
+<h3>6. TreeMap和HashMap的区别？TreeMap底层是什么？</h3>
+<p><b>标准答案：</b>TreeMap底层是<b>红黑树</b>，key按自然顺序或Comparator排序，put/get/remove都是O(logn)。HashMap无序O(1)。需要排序遍历时用TreeMap。</p>
+<p><b>关键点：</b>TreeMap的key必须实现Comparable或传入Comparator，否则put时报ClassCastException。</p>
+</div>
+
+<div class="card">
+<h3>7. HashMap为什么线程不安全？什么情况会死循环？</h3>
+<p><b>标准答案：</b></p>
+<p>• JDK 1.7扩容时头插法，多线程并发resize可能形成<b>环形链表</b>，get时死循环——CPU直接100%</p>
+<p>• JDK 1.8改为尾插法解决了死循环，但仍存在<b>数据覆盖</b>问题：两个线程同时put，可能一个被覆盖。</p>
+<p><b>结论：</b>"多线程用ConcurrentHashMap，不要用HashMap+外部同步。"</p>
+</div>
+
+<div class="card">
+<h3>8. Collections.synchronizedMap和ConcurrentHashMap区别？</h3>
+<p><b>标准答案：</b></p>
+<p>• synchronizedMap：所有方法加<b>synchronized对象锁</b>，读写全互斥，并发低</p>
+<p>• ConcurrentHashMap：JDK 1.8用<b>CAS+synchronized桶级锁</b>，读不阻塞，写锁粒度细，并发高</p>
+<p><b>一句话：</b>"除了JDK 1.5以下版本兼容，都直接用ConcurrentHashMap。"</p>
+</div>
+
+<div class="card">
+<h3>9. Iterator遍历时删除元素，怎么做才对？</h3>
+<p><b>标准答案：</b>用<b>Iterator.remove()</b>，不要用集合自身的remove()。增强for循环本质也是Iterator，但直接调list.remove()会触发ConcurrentModificationException（modCount != expectedModCount）。</p>
+<pre>// ✅ 正确
+Iterator<String> it = list.iterator();
+while (it.hasNext()) {
+    if (it.next().equals("target")) it.remove();
+}
+
+// ❌ 错误——ConcurrentModificationException
+for (String s : list) { if (s.equals("target")) list.remove(s); }</pre>
+</div>
+
+<div class="card">
+<h3>10. Comparable和Comparator有什么区别？</h3>
+<p><b>标准答案：</b></p>
+<p>• <b>Comparable：</b>内部比较，类实现compareTo()，<b>自然排序</b>，侵入式修改</p>
+<p>• <b>Comparator：</b>外部比较，独立写compare()，<b>定制排序</b>，非侵入，更灵活</p>
+<p><b>场景：</b>"Collections.sort(list)用Comparable；Collections.sort(list, new MyComparator())用Comparator。Stream.sorted(Comparator.comparing())是Comparator的现代用法。"</p>
+</div>
+
+<div class="card" style="background:#fffbe6;border-left-color:#ffc107">
+<h3>🔥 面试高频速记表</h3>
+<table style="width:100%;border-collapse:collapse;margin-top:10px">
+<tr style="background:#f0f0f0"><th style="padding:8px;text-align:left">问</th><th style="padding:8px;text-align:left">答</th></tr>
+<tr><td style="padding:8px;border-bottom:1px solid #eee">HashMap 1.7 vs 1.8</td><td style="padding:8px;border-bottom:1px solid #eee">头插→尾插，无红黑树→有红黑树，resize重hash→高低位分流</td></tr>
+<tr><td style="padding:8px;border-bottom:1px solid #eee">ConcurrentHashMap 1.7 vs 1.8</td><td style="padding:8px;border-bottom:1px solid #eee">分段锁Segment→CAS+synchronized桶锁，扩容单线程→多线程并发迁移</td></tr>
+<tr><td style="padding:8px;border-bottom:1px solid #eee">HashSet去重原理</td><td style="padding:8px;border-bottom:1px solid #eee">底层HashMap，元素当key，PRESENT当value</td></tr>
+<tr><td style="padding:8px;border-bottom:1px solid #eee">链表转红黑树条件</td><td style="padding:8px;border-bottom:1px solid #eee">链表长度≥8 且 数组长度≥64；退化为≤6</td></tr>
+<tr><td style="padding:8px;border-bottom:1px solid #eee">HashMap扩容倍数</td><td style="padding:8px;border-bottom:1px solid #eee">容量×2，阈值×2</td></tr>
+<tr><td style="padding:8px;border-bottom:1px solid #eee">ArrayList扩容倍数</td><td style="padding:8px;border-bottom:1px solid #eee">1.5倍（oldCapacity + oldCapacity>>1）</td></tr>
+</table>
+</div>
+
+<div class="donate">
+<h3>☕ 有帮助？请杯咖啡</h3>
+<p>这个页面帮到了你？扫码打赏，支持更多Java面试干货~</p>
+<img src="../mm_facetoface_collect_qrcode_1779427130944.png" alt="赞赏码" loading="lazy">
+</div>
+
+<div class="nav">
+<p style="color:#888;margin-bottom:10px">🧭 更多免费Java工具</p>
+<a href="https://Abyte-zym.github.io/java-career-blog/">📚 面试博客</a>
+<a href="https://Abyte-zym.github.io/java-resume-builder/">📝 简历生成</a>
+<a href="https://Abyte-zym.github.io/java-interview-quiz/">☕ 面试题库</a>
+<a href="https://Abyte-zym.github.io/java-interview-simulator/">🎯 模拟器</a>
+<a href="https://Abyte-zym.github.io/resume-diagnosis/">🔍 简历诊断</a>
+<a href="https://Abyte-zym.github.io/java-skill-radar/">📊 技能雷达(新)</a>
+</div>
+
+</div>
+</body>
+</html>
