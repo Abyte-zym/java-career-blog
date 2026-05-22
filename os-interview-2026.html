@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>操作系统面试10题 | 2026 Java实习面试</title>
+<meta name="description" content="2026年Java实习生操作系统面试必备10题：进程线程协程、死锁、内存管理、文件系统、IO多路复用、零拷贝。全部带答案和代码示例。">
+<meta name="keywords" content="操作系统面试题,进程线程区别,死锁条件,IO多路复用,零拷贝,Java实习面试">
+<link rel="canonical" href="https://Abyte-zym.github.io/java-career-blog/os-interview-2026.html">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.8;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:28px;color:#fbbf24;margin:20px 0 10px;text-align:center}
+h2{font-size:20px;color:#60a5fa;margin:30px 0 12px;border-left:4px solid #fbbf24;padding-left:12px}
+h3{font-size:17px;color:#fbbf24;margin:20px 0 8px}
+.q{margin:24px 0;padding:20px;background:#1e293b;border-radius:12px;border:1px solid #334155}
+.q-num{display:inline-block;background:#fbbf24;color:#0f172a;padding:3px 10px;border-radius:6px;font-weight:bold;font-size:14px;margin-bottom:10px}
+.question{font-size:17px;font-weight:bold;color:#fff;margin-bottom:12px}
+.answer{color:#cbd5e1;font-size:15px}
+.answer strong{color:#60a5fa}
+.answer code{background:#334155;padding:2px 6px;border-radius:4px;font-size:13px;color:#fbbf24}
+.nav{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:20px 0;padding:16px;background:#1e293b;border-radius:12px}
+.nav a{color:#60a5fa;text-decoration:none;padding:6px 14px;border-radius:6px;font-size:14px;background:#334155;transition:all .2s}
+.nav a:hover{background:#fbbf24;color:#0f172a}
+.donate{text-align:center;margin:40px 0 20px;padding:30px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;border:2px solid #fbbf24}
+.donate h3{color:#fbbf24;font-size:20px;margin-bottom:8px}
+.donate p{color:#94a3b8;margin:6px 0}
+.donate img{width:200px;border-radius:12px;margin:12px 0}
+.footer{text-align:center;color:#64748b;font-size:13px;margin:30px 0}
+pre{background:#0f172a;padding:16px;border-radius:8px;overflow-x:auto;font-size:13px;margin:10px 0;border:1px solid #334155}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🖥️ 操作系统面试10题</h1>
+<p style="text-align:center;color:#94a3b8;margin-bottom:24px">2026 Java实习面试必考 · 全部带标准答案</p>
+
+<div class="nav">
+<a href="index.html">📚 全部文章</a>
+<a href="jvm-gc-interview-2026.html">JVM GC</a>
+<a href="concurrency-interview-2026.html">并发编程</a>
+<a href="redis-interview-cheatsheet.html">Redis</a>
+<a href="mysql-mybatis-optimization.html">MySQL优化</a>
+<a href="springcloud-microservice-interview-2026.html">微服务</a>
+<a href="../interview-simulator/index.html">🎯 模拟面试</a>
+<a href="../java-interview-quiz/index.html">☕ 题库</a>
+</div>
+
+<div class="q">
+<div class="q-num">Q1</div>
+<div class="question">进程、线程、协程的区别是什么？</div>
+<div class="answer">
+<strong>一句话：</strong>进程是资源分配的最小单位，线程是CPU调度的最小单位，协程是用户态的轻量级线程。<br><br>
+<strong>进程：</strong>独立的内存空间（代码段+数据段+堆栈），切换开销大（需切换页表），IPC复杂。<br>
+<strong>线程：</strong>共享进程的内存空间（堆+全局变量），切换只需保存寄存器上下文，通信通过共享内存。<br>
+<strong>协程：</strong>完全在用户态调度，无需内核态切换；一个线程可运行多个协程；Java通过<code>Virtual Threads</code>（JDK21）实现类似效果。<br><br>
+<strong>面试亮点：</strong>说出"协程切换发生在用户态，比线程切换快100倍"直接加分。
+</div>
+</div>
+
+<div class="q">
+<div class="q-num">Q2</div>
+<div class="question">死锁的四个必要条件是什么？怎么排查和解决？</div>
+<div class="answer">
+<strong>四个必要条件（缺一不死锁）：</strong><br>
+① <strong>互斥</strong>：资源只能被一个进程使用<br>
+② <strong>持有并等待</strong>：已持有资源，还在等待其他资源<br>
+③ <strong>不可剥夺</strong>：已分配资源不能被强制拿走<br>
+④ <strong>循环等待</strong>：进程间形成环形等待链<br><br>
+<strong>排查：</strong><code>jstack PID | grep "deadlock"</code> 或 <code>jconsole</code> 图形化检测。<br>
+<strong>解决：</strong>破坏任一条件即可——（1）按固定顺序加锁破坏循环等待（2）用<code>tryLock(timeout)</code>破坏持有并等待（3）用<code>ReentrantLock</code>支持中断。
+</div>
+</div>
+
+<div class="q">
+<div class="q-num">Q3</div>
+<div class="question">虚拟内存是什么？分页和分段的区别？</div>
+<div class="answer">
+<strong>虚拟内存：</strong>让每个进程以为自己独占整个内存空间，实际通过MMU（内存管理单元）将虚拟地址映射到物理地址。<br>
+<strong>核心价值：</strong>① 进程隔离（A进程不能访问B进程内存）② 更大的地址空间（32位系统可访问4GB虚拟内存）③ 内存换入换出（不常用的页换到磁盘）。<br><br>
+<strong>分页 vs 分段：</strong><br>
+| 维度 | 分页 | 分段 |
+|------|------|------|
+| 大小 | 固定大小（通常4KB） | 可变大小 |
+| 划分依据 | 物理上等分 | 逻辑上划分（代码段/数据段/栈） |
+| 碎片 | 内部碎片 | 外部碎片 |
+| 程序员感知 | 透明 | 可感知 |
+
+<strong>Linux采用段页式：</strong>先分段再分页，兼顾逻辑性和管理效率。
+</div>
+</div>
+
+<div class="q">
+<div class="q-num">Q4</div>
+<div class="question">epoll和select/poll有什么区别？为什么Redis用epoll？</div>
+<div class="answer">
+<strong>select：</strong>每次调用都要把整个fd_set从用户态拷到内核态；有1024文件描述符上限；O(n)遍历所有fd。<br>
+<strong>poll：</strong>用链表替代fd_set，解除1024限制，但仍是O(n)遍历。<br>
+<strong>epoll：</strong><br>
+① <code>epoll_create</code>创建红黑树维护fd<br>
+② <code>epoll_ctl</code>注册事件（只拷一次）<br>
+③ <code>epoll_wait</code>只返回就绪fd，O(1)复杂度<br><br>
+<strong>Redis选epoll的原因：</strong>单线程模型下IO效率决定吞吐量。epoll的事件驱动+边缘触发模式让Redis轻松处理10万+并发连接。Netty底层也是epoll。
+</div>
+</div>
+
+<div class="q">
+<div class="q-num">Q5</div>
+<div class="question">零拷贝是什么？Java怎么实现的？</div>
+<div class="answer">
+<strong>传统IO数据路径（4次拷贝+4次上下文切换）：</strong><br>
+磁盘 → 内核缓冲区 → 用户缓冲区 → Socket缓冲区 → 网卡<br><br>
+<strong>零拷贝（sendfile系统调用）：</strong><br>
+磁盘 → 内核缓冲区 → Socket缓冲区 → 网卡（2次拷贝，不走用户态）<br><br>
+<strong>Java实现：</strong><br>
+<code>FileChannel.transferTo()</code> 底层调用 <code>sendfile()</code>（Linux 2.1+）。<br>
+<strong>Kafka/Netty大量使用：</strong>Kafka消费消息用零拷贝避免用户态拷贝，吞吐量提升3-5倍。<br><br>
+<strong>面试时要说的：</strong>"Kafka这么快的原因之一就是在PageCache和零拷贝上做了优化。"
+</div>
+</div>
+
+<div class="q">
+<div class="q-num">Q6</div>
+<div class="question">CPU上下文切换的完整流程？什么时候发生切换？</div>
+<div class="answer">
+<strong>完整流程：</strong><br>
+① 保存当前任务的状态（寄存器、程序计数器、栈指针）到PCB<br>
+② 操作系统调度器选择下一个任务<br>
+③ 恢复被选中任务的上下文<br>
+④ 跳转到被选中任务的指令地址继续执行<br><br>
+<strong>触发时机：</strong><br>
+- <strong>时间片耗尽</strong>：当前进程用完了分配的时间片<br>
+- <strong>IO阻塞</strong>：进程等待磁盘/网络IO，主动让出CPU<br>
+- <strong>抢占</strong>：更高优先级进程就绪，抢占当前进程<br>
+- <strong>硬件中断</strong>：中断处理程序执行完，可能触发调度<br><br>
+<strong>开销：</strong>一次上下文切换约1-10微秒，看起来小但高并发场景下累积极大。这也就是为什么线程池复用线程比每次new Thread快。
+</div>
+</div>
+
+<div class="q">
+<div class="q-num">Q7</div>
+<div class="question">Linux下怎么排查CPU飙高问题？</div>
+<div class="answer">
+<strong>三步定位法：</strong><br>
+① <code>top -H -p PID</code> → 找到CPU最高的线程TID<br>
+② <code>printf "%x\n" TID</code> → 转16进制（如 7a8b）<br>
+③ <code>jstack PID | grep "0x7a8b" -A 20</code> → 定位到具体代码行<br><br>
+<strong>实际场景：</strong>线上CPU突然100%，照上面的步骤30秒定位到"HashMap的put操作触发了死循环"（JDK7扩容bug）→ +扩容阈值或升级JDK8。<br><br>
+<strong>面试官追问"还有别的方法吗"：</strong><br>
+<code>arthas</code> 的 <code>thread -n 3</code> 直接打印最忙的3个线程栈；<code>perf top</code> 实时看热点函数。
+</div>
+</div>
+
+<div class="q">
+<div class="q-num">Q8</div>
+<div class="question">用户态和内核态的区别？系统调用的过程？</div>
+<div class="answer">
+<strong>核心区别：</strong><br>
+| 维度 | 用户态 | 内核态 |
+|------|--------|--------|
+| 权限 | 不能直接访问硬件/管理内存 | 最高权限，可访问一切 |
+| 地址空间 | 只能访问用户空间 | 可访问整个地址空间 |
+| CPU指令 | 不能执行特权指令 | 可执行所有指令 |
+| 切换触发 | 系统调用/中断/异常 | 调度返回 |
+
+<strong>一次系统调用的完整过程（以<code>read()</code>为例）：</strong><br>
+① <code>read()</code> → glibc封装 → <code>int 0x80</code>（或sysenter）触发软中断<br>
+② CPU从用户态切换到内核态，保存用户态上下文<br>
+③ 内核根据系统调用号查<code>sys_call_table</code>找到<code>sys_read()</code><br>
+④ 内核执行IO操作（可能阻塞，触发调度）<br>
+⑤ 返回结果，恢复用户态上下文，切换回用户态
+</div>
+</div>
+
+<div class="q">
+<div class="q-num">Q9</div>
+<div class="question">内存泄漏怎么排查？JVM和操作系统层面各用哪些工具？</div>
+<div class="answer">
+<strong>JVM层面：</strong><br>
+① <code>jmap -histo:live PID | head -20</code> → 看哪些对象实例数异常多<br>
+② <code>jmap -dump:file=heap.hprof PID</code> → 导出堆dump<br>
+③ 用MAT/JProfiler分析，找"泄漏嫌疑"（Dominator Tree里看谁持有大量内存）<br>
+④ <code>jstat -gc PID 1000</code> → 实时看GC频率（Full GC频繁=内存泄漏信号）<br><br>
+<strong>操作系统层面：</strong><br>
+<code>pmap -x PID</code> → 看进程的内存映射<br>
+<code>/proc/PID/smaps</code> → 详细内存统计<br>
+<code>vmstat 1</code> → 看系统级别内存使用趋势<br><br>
+<strong>常见原因：</strong>ThreadLocal没remove、静态集合持续添加、未关闭的流/连接、内部类持有外部类引用。
+</div>
+</div>
+
+<div class="q">
+<div class="q-num">Q10</div>
+<div class="question">一个HTTP请求到达服务器后，操作系统层面发生了什么？</div>
+<div class="answer">
+<strong>完整链路（从网卡到应用层）：</strong><br>
+① <strong>网卡接收</strong>：DMA将数据包直接写入内核环形缓冲区，不经过CPU<br>
+② <strong>硬中断</strong>：网卡发中断通知CPU有数据到达<br>
+③ <strong>软中断（ksoftirqd）</strong>：内核从Ring Buffer取出数据，解析MAC/IP/TCP头<br>
+④ <strong>TCP协议栈</strong>：校验、重组、ACK确认、滑动窗口控制<br>
+⑤ <strong>Socket层</strong>：数据放入Socket接收缓冲区，唤醒阻塞在<code>accept()</code>上的进程<br>
+⑥ <strong>epoll通知</strong>：如果用了epoll，触发<code>EPOLLIN</code>事件<br>
+⑦ <strong>应用层read</strong>：Java的<code>InputStream.read()</code>把数据从内核缓冲区拷贝到JVM堆内存<br>
+⑧ <strong>Tomcat处理</strong>：NIO线程读取→解析HTTP→线程池Worker处理→响应走反向路径写到Socket<br><br>
+<strong>追问"DMA是什么"：</strong>Direct Memory Access，硬件直接访问内存传输数据，不经过CPU。一次DMA传输期间CPU可以干别的事——这就是IO密集型应用能高并发的底层原因。
+</div>
+</div>
+
+<!-- 赞赏 -->
+<div class="donate">
+<h3>☕ 觉得有用？请作者喝杯咖啡</h3>
+<p>这些工具和文章都是一个人深夜肝出来的 🫡</p>
+<img src="../wechat-qr.png" alt="微信赞赏码" onerror="this.style.display='none'">
+<p style="font-size:12px;color:#64748b">微信扫码赞赏</p>
+</div>
+
+<div class="nav" style="margin-top:30px">
+<a href="index.html">📚 全部28篇文章</a>
+<a href="jvm-tuning-interview-2026.html">JVM调优</a>
+<a href="concurrency-interview-2026.html">并发编程</a>
+<a href="../interview-simulator/index.html">🎯 模拟面试</a>
+<a href="../java-resume-builder/index.html">📝 简历生成</a>
+<a href="../arsenal/index.html">🎯 弹药库</a>
+</div>
+
+<div class="footer">
+<p>© 2026 Abyte-zym · 全部免费开源 · 如果对你有帮助，欢迎赞赏支持</p>
+</div>
+</div>
+</body>
+</html>
