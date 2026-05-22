@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JUnit5+Mockito测试面试10题 | Java实习面试通关</title>
+<meta name="description" content="JUnit5核心注解、Mockito mock vs spy、@MockBean vs @Mock、单元测试覆盖率、TDD红绿重构——Java后端面试必问10题。">
+<meta name="keywords" content="JUnit5面试题,Mockito面试,@Mock vs @MockBean,单元测试覆盖率,TDD面试,Java测试面试,2026面试">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.8;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:1.8em;color:#38bdf8;margin:20px 0 10px;text-align:center}
+.meta{text-align:center;color:#94a3b8;margin-bottom:30px}
+.question{background:#1e293b;border-radius:12px;padding:24px;margin:20px 0;border-left:4px solid #38bdf8}
+.question h3{color:#facc15;margin-bottom:12px}
+.answer{background:#0f172a;border-radius:8px;padding:16px;margin-top:12px;border:1px solid #334155}
+.answer strong{color:#4ade80}
+code{background:#1e293b;padding:2px 6px;border-radius:4px;color:#f472b6}
+pre{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:16px;overflow-x:auto;margin:10px 0}
+.tip{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:12px;margin:10px 0;font-size:0.9em}
+.donate{text-align:center;margin:40px 0;padding:24px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;border:2px solid #facc15}
+.donate p{color:#facc15;font-size:1.2em;margin-bottom:12px}
+.donate img{width:200px;border-radius:12px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:30px 0}
+.nav a{background:#1e293b;color:#94a3b8;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:0.85em}
+.nav a:hover{background:#38bdf8;color:#0f172a}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🧪 JUnit5+Mockito测试面试10题</h1>
+<p class="meta">Java后端实习生面试 · 2026年5月 · 每题含标准答案</p>
+
+<div class="question"><h3>Q1：JUnit5和JUnit4有什么区别？</h3>
+<div class="answer">
+<strong>核心变化：</strong>JUnit5 = JUnit Platform + Jupiter + Vintage。注解从<code>org.junit.Test</code>变成<code>org.junit.jupiter.api.Test</code>。<br>
+<strong>新增特性：</strong><code>@DisplayName</code>（可读测试名）、<code>@ParameterizedTest</code>（参数化）、<code>@Nested</code>（嵌套测试）、扩展模型替代Runner。<br>
+<strong>面试提示：</strong>提到JUnit5的<code>@ExtendWith(MockitoExtension.class)</code>替代了JUnit4的<code>@RunWith(MockitoJUnitRunner.class)</code>。
+</div></div>
+
+<div class="question"><h3>Q2：Mockito中 @Mock 和 @Spy 有什么区别？</h3>
+<div class="answer">
+<strong>@Mock：</strong>完全虚拟对象，所有方法默认返回null/0/false，白纸一张。<br>
+<strong>@Spy：</strong>部分模拟，包裹真实对象。不stub的方法走真实逻辑。<br><br>
+<pre>@Spy
+List<String> spyList = new ArrayList<>();
+spyList.add("hello");  // 真实add
+Mockito.when(spyList.size()).thenReturn(100); // 只mock size()
+// spyList.size() → 100
+// spyList.get(0) → "hello"（真实逻辑）</pre>
+<strong>一句话：</strong>@Mock全假，@Spy半假半真。@Spy危险在于忘了stub会走真实逻辑。
+</div></div>
+
+<div class="question"><h3>Q3：Spring Boot测试中 @MockBean 和 @Mock 有什么区别？</h3>
+<div class="answer">
+<strong>@Mock：</strong>纯Mockito注解，创建mock但不注入Spring容器。<br>
+<strong>@MockBean：</strong>Spring Boot提供，创建mock并替换Spring容器中的同名Bean。<br><br>
+<strong>使用场景：</strong>集成测试（@SpringBootTest）中用@MockBean替换外部依赖（如第三方API），单元测试中用@Mock。<br>
+<strong>注意：</strong>@MockBean会导致Spring重新加载ApplicationContext，影响测试性能。
+</div></div>
+
+<div class="question"><h3>Q4：怎么测试Controller层？</h3>
+<div class="answer">
+<strong>两种方式：</strong><br>
+1. <strong>纯Mockito（快）：</strong>
+<pre>@InjectMocks SeckillController controller;
+@Mock SeckillService service;
+// 直接调方法，验证返回值</pre>
+2. <strong>MockMvc（真）：</strong>
+<pre>@WebMvcTest(SeckillController.class)
+@AutoConfigureMockMvc
+class SeckillControllerTest {
+    @Autowired MockMvc mockMvc;
+    @MockBean SeckillService service;
+    
+    @Test void doSeckill_Success() throws Exception {
+        when(service.doSeckill(1L,1L))
+            .thenReturn(R.ok("秒杀成功"));
+        mockMvc.perform(post("/seckill/order")
+                .param("stockId","1").param("userId","1"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(200));
+    }
+}</pre>
+</div></div>
+
+<div class="question"><h3>Q5：单元测试覆盖率多少算合格？</h3>
+<div class="answer">
+<strong>行业标准：</strong>行覆盖率≥80%、分支覆盖率≥70%。核心业务逻辑（秒杀下单）必须100%覆盖。<br>
+<strong>工具：</strong>JaCoCo插件（Maven/Gradle），<code>mvn test jacoco:report</code>生成HTML报告。<br>
+<strong>一句话：</strong>覆盖率不是目的——发现不了的bug才是。高覆盖率≠高质量测试。
+</div></div>
+
+<div class="question"><h3>Q6：TDD红-绿-重构是什么？</h3>
+<div class="answer">
+<strong>三步循环：</strong>红（写失败测试）→绿（写最少代码让测试通过）→重构（优化代码不破坏测试）。<br>
+<strong>面试能说的：</strong>秒杀项目的Lua脚本就用了TDD——先写测试验证"库存100→扣减1→剩99"，再写Lua脚本，最后重构去重。
+</div></div>
+
+<div class="question"><h3>Q7：怎么验证方法被调用了？</h3>
+<div class="answer">
+<pre>// 验证service.doSeckill(1L, 1L) 被调用了1次
+verify(seckillService, times(1)).doSeckill(1L, 1L);
+// 验证从未调用
+verify(seckillService, never()).doSeckill(anyLong(), anyLong());
+// 至少一次
+verify(seckillService, atLeastOnce()).doSeckill(anyLong(), anyLong());</pre>
+<strong>常用验证：</strong><code>times(n)</code> <code>atLeastOnce()</code> <code>never()</code> <code>atMost(n)</code>
+</div></div>
+
+<div class="donate">
+<p>☕ 这篇文章帮到你了？</p>
+<p style="color:#94a3b8;font-size:0.9em">请作者喝杯咖啡，支持持续更新更多面试干货</p>
+<img src="../mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏码">
+<p style="font-size:0.8em;color:#64748b;margin-top:8px">微信扫码赞赏</p>
+</div>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部53篇文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../shop/">🛒 装备商店</a>
+</div>
+</div>
+</body>
+</html>
