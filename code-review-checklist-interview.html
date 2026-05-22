@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java代码审查面试10题 | Code Review最佳实践 | Java实习面试通关</title>
+<meta name="description" content="Java代码审查面试必问10题：Code Review Checklist、SonarQube规则、NPE防御、资源泄露、并发安全审查、性能优化审查——面试官最爱问的工程实践题，标准答案直接背。">
+<meta name="keywords" content="代码审查面试题,Code Review面试,Java代码审查清单,SonarQube规则,代码规范面试,空指针防御,资源泄露,代码审查流程">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.8;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:1.8em;color:#38bdf8;margin:20px 0 10px;text-align:center}
+.meta{text-align:center;color:#94a3b8;margin-bottom:30px;font-size:0.9em}
+.question{background:#1e293b;border-radius:12px;padding:24px;margin:20px 0;border-left:4px solid #38bdf8}
+.question h3{color:#facc15;margin-bottom:12px;font-size:1.1em}
+.answer{background:#0f172a;border-radius:8px;padding:16px;margin-top:12px;border:1px solid #334155}
+.answer strong{color:#4ade80}
+code{background:#1e293b;padding:2px 6px;border-radius:4px;font-size:0.9em;color:#f472b6}
+pre{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:16px;overflow-x:auto;margin:10px 0}
+.tip{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:12px;margin:10px 0;font-size:0.9em}
+.donate{text-align:center;margin:40px 0;padding:24px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;border:2px solid #facc15}
+.donate p{color:#facc15;font-size:1.2em;margin-bottom:12px}
+.donate img{width:200px;border-radius:12px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:30px 0}
+.nav a{background:#1e293b;color:#94a3b8;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:0.85em;transition:all .2s}
+.nav a:hover{background:#38bdf8;color:#0f172a}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>📋 Java代码审查面试10题</h1>
+<p class="meta">Code Review最佳实践 · 2026年5月 · 面试官最爱问的工程实践题</p>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../java-interview-quiz/">☕ 题库</a>
+<a href="../shop.html">🛒 装备商店</a>
+</div>
+
+<div class="tip">
+<strong>面试官考察点：</strong>代码审查(CodReview)是区分"只会写代码"和"有工程素养"的关键。答好这10题，实习生面试直接上分。
+</div>
+
+<div class="question">
+<h3>Q1：代码审查(Code Review)的核心目标是什么？不是找茬！</h3>
+<div class="answer">
+<strong>三大核心目标：</strong><br>
+1. <strong>知识共享：</strong>让团队成员了解彼此的代码，避免"只有一个人懂"的单点风险<br>
+2. <strong>代码质量：</strong>发现逻辑错误、性能问题、安全隐患，在合并前拦截<br>
+3. <strong>规范统一：</strong>保持代码风格和架构一致性，降低维护成本<br><br>
+<strong>面试加分：</strong>提一句"Code Review不是找bug——测试应该找bug，Review是找更优解"。
+</div>
+</div>
+
+<div class="question">
+<h3>Q2：一份Java代码审查Checklist包含哪些要点？</h3>
+<div class="answer">
+<strong>10项必查清单：</strong><br>
+1. ✅ <strong>空指针防御：</strong>方法入参是否判空？Optional是否滥用？<br>
+2. ✅ <strong>异常处理：</strong>是否吞异常？是否用了e.printStackTrace()？<br>
+3. ✅ <strong>资源关闭：</strong>IO流/数据库连接是否在finally或try-with-resources中关闭？<br>
+4. ✅ <strong>并发安全：</strong>共享变量是否线程安全？synchronized范围是否过大？<br>
+5. ✅ <strong>SQL注入：</strong>是否用了#{}而非${}？动态SQL是否有白名单？<br>
+6. ✅ <strong>性能：</strong>循环里是否有DB查询？是否该用批量操作？<br>
+7. ✅ <strong>日志规范：</strong>是否有关键操作日志？异常日志是否带堆栈？<br>
+8. ✅ <strong>命名规范：</strong>变量名是否表达意图？方法名是否符合团队规范？<br>
+9. ✅ <strong>单元测试：</strong>是否有测试覆盖边界条件？覆盖率是否达标？<br>
+10. ✅ <strong>文档注释：</strong>复杂逻辑是否有注释说明为什么这么做？
+</div>
+</div>
+
+<div class="question">
+<h3>Q3：代码审查中如何发现空指针问题？</h3>
+<div class="answer">
+<strong>审查时重点看：</strong><br>
+<pre>// ❌ 危险：返回null
+public User findById(Long id) {
+    return userMap.get(id);  // 可能返回null，调用方不知道
+}
+
+// ✅ 安全：用Optional明确表达
+public Optional&lt;User&gt; findById(Long id) {
+    return Optional.ofNullable(userMap.get(id));
+}
+
+// ✅ 安全：方法内部防御
+public void process(User user) {
+    Objects.requireNonNull(user, "user不能为null");
+    // 业务逻辑
+}</pre>
+<strong>三项必查：</strong><br>
+- 集合操作是否判空（Map.get()、List.stream()）<br>
+- 链式调用是否有null风险（A.getB().getC()）<br>
+- equals()是否把常量放前面（"abc".equals(str)而非str.equals("abc")）
+</div>
+</div>
+
+<div class="question">
+<h3>Q4：代码审查中常见的资源泄露场景有哪些？</h3>
+<div class="answer">
+<strong>五种常见泄露：</strong><br>
+<pre>// ❌ 传统IO可能泄露
+InputStream is = new FileInputStream("file.txt");
+// 如果中间抛异常，is永远不会关闭
+
+// ✅ try-with-resources自动关闭
+try (InputStream is = new FileInputStream("file.txt")) {
+    // 自动关闭，无需finally
+}
+
+// ❌ 数据库连接泄露
+Connection conn = dataSource.getConnection();
+// 忘记归还连接池
+
+// ❌ Redis连接泄露
+Jedis jedis = pool.getResource();
+// 忘记 jedis.close()
+
+// ❌ 线程池未关闭
+ExecutorService executor = Executors.newFixedThreadPool(10);
+// 忘记 executor.shutdown()</pre>
+<strong>审查要点：</strong>所有实现了AutoCloseable的对象，是否在try-with-resources中或者在finally中关闭。
+</div>
+</div>
+
+<div class="question">
+<h3>Q5：代码审查中如何发现并发安全问题？</h3>
+<div class="answer">
+<strong>四类并发问题审查：</strong><br>
+1. <strong>共享变量：</strong>Service层的成员变量是否线程安全？是否该用ThreadLocal？<br>
+2. <strong>集合选型：</strong>ArrayList是否被多线程访问？该换CopyOnWriteArrayList还是Collections.synchronizedList？<br>
+3. <strong>锁范围：</strong>synchronized块是否锁了不该锁的对象？是否可能死锁？<br>
+4. <strong>原子操作：</strong>i++、check-then-act是否该用AtomicInteger或ConcurrentHashMap<br><br>
+<pre>// ❌ 危险：i++不是原子操作
+private int counter = 0;
+public void increment() { counter++; }
+
+// ✅ 改用AtomicInteger
+private AtomicInteger counter = new AtomicInteger(0);
+public void increment() { counter.incrementAndGet(); }</pre>
+</div>
+</div>
+
+<div class="question">
+<h3>Q6：代码审查时如何评估异常处理是否合理？</h3>
+<div class="answer">
+<strong>四个评判标准：</strong><br>
+<pre>// ❌ 吞异常——最严重的错误
+try { doSomething(); } catch (Exception e) {}
+
+// ❌ 只打日志不处理
+try { doSomething(); } catch (Exception e) {
+    e.printStackTrace();  // 生产环境丢失
+}
+
+// ✅ 正确的分级处理
+try {
+    doSomething();
+} catch (BusinessException e) {
+    log.warn("业务异常: {}", e.getMessage());
+    return R.error(e.getCode(), e.getMessage());
+} catch (Exception e) {
+    log.error("系统异常", e);
+    return R.error(500, "系统繁忙");
+}</pre>
+<strong>审查清单：</strong>是否分类处理异常？是否记录完整堆栈？是否在finally中清理资源？是否有兜底响应保证用户体验？
+</div>
+</div>
+
+<div class="question">
+<h3>Q7：代码审查中SQL相关问题的审查要点？</h3>
+<div class="answer">
+<strong>七大SQL审查要点：</strong><br>
+1. <strong>MyBatis #{} vs ${}：</strong>动态排序字段必须白名单校验，禁止直接${orderBy}<br>
+2. <strong>N+1查询：</strong>循环里是否有数据库操作？该用批量查询或JOIN<br>
+3. <strong>索引使用：</strong>WHERE条件是否符合最左前缀？是否该加EXPLAIN<br>
+4. <strong>SELECT *：</strong>是否只查需要的字段？大字段是否单独查询<br>
+5. <strong>大批量操作：</strong>是否用了分批处理而非一次性更新百万行<br>
+6. <strong>事务范围：</strong>@Transactional是否包了不该包的慢操作（RPC/发消息）<br>
+7. <strong>死锁风险：</strong>多表更新顺序是否一致？是否使用了索引避免间隙锁
+</div>
+</div>
+
+<div class="question">
+<h3>Q8：代码审查中发现重复代码怎么处理？</h3>
+<div class="answer">
+<strong>三原则：</strong><br>
+1. <strong>三次法则(Rule of Three)：</strong>相同逻辑出现第三次时，必须抽公共方法<br>
+2. <strong>抽象层次一致：</strong>抽出来的公共方法要在同一抽象层级，不要上帝方法<br>
+3. <strong>不要过度抽象：</strong>两处相似但语义不同的代码，不要为了消除重复而强行合并<br><br>
+<pre>// ❌ 重复代码
+public void createUser() {
+    log.info("操作开始");
+    // 业务逻辑...
+    log.info("操作结束");
+}
+public void updateUser() {
+    log.info("操作开始");
+    // 业务逻辑...
+    log.info("操作结束");
+}
+
+// ✅ 用AOP或模板方法消除重复——这正是你Seckill项目中@SentinelResource的思想</pre>
+</div>
+</div>
+
+<div class="question">
+<h3>Q9：SonarQube/阿里巴巴代码规约在代码审查中怎么用？</h3>
+<div class="answer">
+<strong>分级审查策略：</strong><br>
+- <strong>Blocker（阻断）：</strong>必须修。如SQL注入、空指针、资源泄露<br>
+- <strong>Critical（严重）：</strong>强烈建议修。如性能问题、潜在的并发问题<br>
+- <strong>Major（主要）：</strong>有条件的修。如复杂度过高、代码重复<br>
+- <strong>Minor（次要）：</strong>可延后。如命名规范、注释不完整<br><br>
+<strong>面试加分：</strong>"我们团队使用阿里的P3C插件+SonarQube做静态扫描，配合人工Code Review。静态工具扫语法，人工审逻辑。"
+</div>
+</div>
+
+<div class="question">
+<h3>Q10：作为实习生，你的代码被Review时应该怎么做？</h3>
+<div class="answer">
+<strong>正确的态度（面试官最看重这个）：</strong><br>
+1. <strong>不要玻璃心：</strong>Review是对事不对人，批评代码不是批评你<br>
+2. <strong>主动提问：</strong>不理解的意见及时问，不要自己猜<br>
+3. <strong>记录下来：</strong>同样的错误不犯第三次。做一个"我踩过的坑"笔记<br>
+4. <strong>下次先自查：</strong>提交前自己对着Checklist过一遍<br><br>
+<strong>黄金回答：</strong>"作为实习生，我把Code Review当成学习机会。每次被指出问题，我都记下来，下次提PR前先自查。三个月下来，Review评论从十几条降到一两条。"
+</div>
+</div>
+
+<div class="donate">
+<p>☕ 这10题帮到你了？</p>
+<p style="color:#94a3b8;font-size:0.9em">请作者喝杯咖啡，支持持续更新更多面试干货</p>
+<img src="../mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏码">
+<p style="font-size:0.8em;color:#64748b;margin-top:8px">微信扫码赞赏</p>
+</div>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部67篇文章</a>
+<a href="../arsenal/">🎯 Java面试弹药库</a>
+<a href="../java-skill-radar/">📊 技能雷达</a>
+<a href="../interview-quiz/">☕ 真题题库</a>
+</div>
+
+<div class="tip" style="text-align:center;margin-top:40px">
+<p style="color:#94a3b8">覆盖率：Java后端面试95%+考点覆盖 | 67篇 · 30+工具 · 全部免费</p>
+<p style="color:#64748b;font-size:0.8em">© 2026 Abyte-zym · GitHub Pages</p>
+</div>
+
+</div>
+</body>
+</html>
