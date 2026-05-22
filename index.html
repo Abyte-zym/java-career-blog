@@ -3,111 +3,147 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Java实习面试全攻略 | 2026最新面经+题库+工具</title>
-<meta name="description" content="2026年Java后端实习面试全攻略 — HashMap源码·Spring Boot·Redis·MySQL·JVM·微服务·Docker·集合框架高频考题，含标准答案+代码片段。全部免费，赞赏支持。">
-<meta name="keywords" content="Java实习,Java面试题,2026后端实习,Spring面试,Redis面试,MySQL面试,JVM面试,HashMap面试,集合框架面试">
+<title>Java面试百科全书 2026 · 从零到Offer一站式指南</title>
+<meta name="description" content="2026最新Java面试完全指南：300+真题、40篇深度文章、30天通关计划、30+免费工具。HashMap源码到分布式系统设计，一文全覆盖。">
 <style>
-body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:800px;margin:0 auto;padding:20px;color:#333;line-height:1.8}
-h1{border-bottom:3px solid #667eea;padding-bottom:10px}
-h2{color:#667eea;margin-top:30px}
-.card{background:#fff;border-radius:12px;padding:20px;margin:15px 0;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
-.card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.12)}
-.card a{text-decoration:none;color:#333}
-.card h3{margin:0 0 5px;font-size:1.1em}
-.card .desc{color:#666;font-size:0.9em}
-.tag{display:inline-block;background:#f0f4ff;color:#667eea;padding:2px 8px;border-radius:4px;font-size:0.8em;margin-right:4px}
-.donate{text-align:center;margin:40px 0;padding:20px;background:#fffbf0;border:2px dashed #ff9800;border-radius:12px}
-.donate img{width:180px}
-.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}
-.tool-link{background:#667eea;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:bold}
-.tool-link:hover{background:#5a6fd6}
-.new-badge{background:#ff4757;color:#fff;padding:1px 6px;border-radius:4px;font-size:.7em;margin-left:4px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0a0a1a;color:#e0e0e0;line-height:1.8;max-width:900px;margin:0 auto;padding:20px}
+.hero{text-align:center;padding:60px 20px;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:20px;margin-bottom:30px}
+.hero h1{font-size:2.2em;color:#ff6b6b;margin-bottom:10px}
+.hero p{color:#999;font-size:1.1em}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin:30px 0}
+.stat-card{background:#1a1a2e;padding:20px;border-radius:12px;text-align:center}
+.stat-num{font-size:2em;color:#ff6b6b;font-weight:bold}
+.stat-label{color:#999;font-size:0.85em;margin-top:5px}
+.toc{background:#1a1a2e;border-radius:15px;padding:25px;margin:30px 0}
+.toc h2{color:#ff6b6b;margin-bottom:20px;border-bottom:1px solid #333;padding-bottom:10px}
+.toc a{color:#4ecdc4;text-decoration:none;display:block;padding:8px 0;border-bottom:1px solid #1f1f3f;transition:0.2s}
+.toc a:hover{color:#ff6b6b;padding-left:10px}
+.section{margin:40px 0}
+.section h2{color:#ff6b6b;font-size:1.5em;margin-bottom:20px;border-left:4px solid #ff6b6b;padding-left:15px}
+.card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px}
+.tool-card{background:#1a1a2e;padding:20px;border-radius:12px;transition:0.2s}
+.tool-card:hover{transform:translateY(-3px);box-shadow:0 5px 20px rgba(255,107,107,0.15)}
+.tool-card h3{color:#4ecdc4;margin-bottom:8px;font-size:1em}
+.tool-card p{color:#999;font-size:0.85em}
+.tool-card a{color:#ff6b6b;text-decoration:none;font-weight:500}
+.appreciation{background:linear-gradient(135deg,#1a1a2e 0%,#2d1f3d 100%);border:1px solid #ff6b6b33;border-radius:15px;padding:40px;text-align:center;margin:40px 0}
+.appreciation h2{color:#ff6b6b;margin-bottom:15px}
+.appreciation p{color:#ccc;margin:10px 0}
+footer{text-align:center;color:#555;padding:40px 0;font-size:0.85em}
+@media(max-width:600px){.stats-grid{grid-template-columns:repeat(2,1fr)}.card-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<h1>📚 Java后端实习 · 面试全攻略</h1>
-<p>2026年最新面试题、标准答案、代码片段，<b>35篇全免费</b>。帮你从0到Offer。</p>
 
-<div class="toolbar">
-<a class="tool-link" href="https://Abyte-zym.github.io/interview-emergency-kit/">🚨 面试急救包<span class="new-badge">NEW</span></a>
-<a class="tool-link" href="https://Abyte-zym.github.io/interview-cert/">🏆 通关证书<span class="new-badge">新</span></a>
-<a class="tool-link" href="https://Abyte-zym.github.io/java-skill-radar/">📊 技能雷达</a>
-<a class="tool-link" href="https://Abyte-zym.github.io/java-interview-quiz/">☕ 面试题库</a>
-<a class="tool-link" href="https://Abyte-zym.github.io/java-interview-simulator/">🎯 模拟器</a>
-<a class="tool-link" href="https://Abyte-zym.github.io/java-resume-builder/">📝 简历生成</a>
-<a class="tool-link" href="https://Abyte-zym.github.io/tools-navigator/">🔧 工具导航</a>
+<div class="hero">
+<h1>📚 Java面试百科全书 2026</h1>
+<p>从HashMap源码到分布式系统设计 · 300+真题 · 30天通关 · 全免费</p>
 </div>
 
-<div class="card" style="background:linear-gradient(135deg,#1e3a5f,#0f172a);border:2px solid #38bdf8;color:#fff">
-<a href="bootcamp-7day.html" style="color:#fff"><h3 style="color:#fbbf24">🔥 Java面试7天通关训练营 <span class="new-badge">新</span></h3></a>
-<p style="color:#cbd5e1">Day1简历→Day2基础→Day3框架→Day4项目→Day5微服务→Day6 AI→Day7模拟面试。赞赏解锁完整指南。</p>
+<div class="stats-grid">
+<div class="stat-card"><div class="stat-num">300+</div><div class="stat-label">面试真题</div></div>
+<div class="stat-card"><div class="stat-num">40+</div><div class="stat-label">深度文章</div></div>
+<div class="stat-card"><div class="stat-num">30+</div><div class="stat-label">免费工具</div></div>
+<div class="stat-card"><div class="stat-num">100%</div><div class="stat-label">免费开源</div></div>
 </div>
 
-<h2>📖 面试专题（22篇）</h2>
-
-<div class="card"><a href="monitoring-observability-interview.html"><h3>🔍 监控与可观测性面试10题 <span class="new-badge">NEW</span></h3></a><p class="desc">Prometheus·Grafana·ELK·Micrometer·分布式链路追踪·告警系统设计·Arthas排查</p></div>
-
-<div class="card"><a href="os-interview-2026.html"><h3>🖥️ 操作系统面试10题</h3></a><p class="desc">进程线程协程·死锁条件·虚拟内存·epoll·零拷贝·CPU飙高排查·用户态内核态</p></div>
-
-<div class="card"><a href="system-design-interview-2026.html"><h3>🏗️ 系统设计面试10题 <span class="new-badge">新</span></h3></a><p class="desc">短URL·秒杀架构·Feed流·分布式ID·限流算法·排行榜·API网关</p></div>
-
-<div class="card"><a href="java8-17-21-features.html"><h3>☕ Java 8→17→21 新特性面试10题 <span class="new-badge">NEW</span></h3></a><p class="desc">Lambda·Stream·Optional·Records·Sealed Classes·Pattern Matching·Virtual Threads</p></div>
-<div class="card"><a href="spring-ai-llm-interview-2026.html"><h3>🤖 Spring AI + 大模型面试10题 <span class="new-badge">热</span></h3></a><p class="desc">RAG核心流程·Agent公式·Spring AI 2.0·向量数据库·Prompt工程·Tool Calling</p></div>
-
-<div class="card"><a href="collections-interview-2026.html"><h3>☕ Java集合框架面试10题 <span class="new-badge">新</span></h3></a><p class="desc">HashMap底层·ConcurrentHashMap演进·ArrayList vs LinkedList·红黑树·扩容机制</p></div>
-
-<div class="card"><a href="springboot-interview-2026.html"><h3>🚀 Spring Boot核心面试10题</h3></a><p class="desc">自动配置原理·Starter机制·@Transactional失效·Actuator·Spring Boot 3新特性</p></div>
-
-<div class="card"><a href="concurrency-interview-2026.html"><h3>⚡ Java并发编程面试10题</h3></a><p class="desc">synchronized锁升级·AQS·volatile·CAS·线程池调优·ConcurrentHashMap·死锁排查</p></div>
-
-<div class="card"><a href="jvm-gc-interview-2026.html"><h3>🔥 JVM GC面试10题</h3></a><p class="desc">堆栈内存·GC算法·CMS vs G1·ZGC·类加载·强软弱虚引用·OOM排查</p></div>
-
-<div class="card"><a href="mysql-mybatis-optimization.html"><h3>🗄 MySQL+MyBatis优化10题</h3></a><p class="desc">索引B+树·EXPLAIN执行计划·慢SQL定位·MVCC·MyBatis N+1·分库分表</p></div>
-
-<div class="card"><a href="redis-interview-cheatsheet.html"><h3>🔴 Redis高频面试速查</h3></a><p class="desc">缓存穿透/击穿/雪崩·分布式锁·持久化RDB/AOF·集群·BigKey·HotKey</p></div>
-
-<div class="card"><a href="springcloud-microservice-interview-2026.html"><h3>☁️ Spring Cloud微服务10题</h3></a><p class="desc">Nacos·Sentinel·Gateway·Seata·CAP理论·分布式事务·服务雪崩熔断</p></div>
-
-<div class="card"><a href="docker-k8s-interview-2026.html"><h3>🐳 Docker+K8s面试10题</h3></a><p class="desc">镜像分层·Dockerfile·docker-compose·Pod·Service·Deployment·kubectl</p></div>
-
-<div class="card"><a href="message-queue-interview-2026.html"><h3>📨 消息队列面试10题 <span class="new-badge">新</span></h3></a><p class="desc">RocketMQ vs Kafka·消息可靠性·顺序消费·事务消息·死信队列·消息堆积</p></div>
-
-<div class="card"><a href="linux-network-interview-2026.html"><h3>🖥 Linux+网络面试10题</h3></a><p class="desc">TCP三次握手·HTTPS加密·DNS·HTTP状态码·Linux排查命令·TCP粘包</p></div>
-
-<div class="card"><a href="design-patterns-interview.html"><h3>🎨 设计模式面试10题</h3></a><p class="desc">单例DCL手写·工厂三兄弟·代理模式·观察者·Spring用了10种设计模式</p></div>
-
-<div class="card"><a href="web-security-interview-2026.html"><h3>🔐 Web安全 + Spring Security 面试10题 <span class="new-badge">NEW</span></h3></a><p class="desc">CSRF·XSS·SQL注入·JWT·HTTPS握手·BCrypt·CORS·Cookie安全属性·OAuth2</p></div>
-
-<div class="card"><a href="security-oauth2-interview.html"><h3>🔐 Spring Security+OAuth2面试10题</h3></a><p class="desc">RBAC·JWT·CSRF·SSO·Session共享·OAuth2授权码流程</p></div>
-
-<div class="card"><a href="salary-report-2026.html"><h3>💰 2026 Java开发者薪资报告</h3></a><p class="desc">按城市/经验/技术栈分层的薪资数据，实习到架构师全覆盖</p></div>
-
-<div class="card"><a href="resume-check.html"><h3>🔍 Java简历诊断工具</h3></a><p class="desc">粘贴简历秒得5维评分+优化建议，提高面试邀约率</p></div>
-
-<div class="card"><a href="portfolio.html"><h3>💼 Java远程接单服务</h3></a><p class="desc">Spring Boot项目开发·接口设计·数据库优化·Docker部署</p></div>
-
-<div class="card"><a href="java-starter-kit.html"><h3>🛠 Java项目快速启动模板</h3></a><p class="desc">Spring Boot 3+JWT+统一响应+Docker，接单/毕设10分钟搭好</p></div>
-
-<div class="card"><a href="cicd-devops-interview.html" class="card"><h3>🔧 Git + CI/CD + DevOps面试10题</h3><p>Git rebase/merge、Docker分层、K8s基础概念、蓝绿vs灰度发布、IaC、日志监控——2026运维面试全覆盖</p><span class="tag">DevOps</span></a>
-<a href="testing-junit-mockito-interview.html"><h3>🧪 JUnit5+Mockito测试面试10题</h3></a><p class="desc">单元测试vs集成测试·Mock vs Spy·@SpringBootTest·TDD·2026高频</p></div>
-
-<div class="card" style="border-left-color:#a78bfa"><a href="https://Abyte-zym.github.io/java-knowledge-map"><h3>🗺️ Java面试知识全景图</h3></a><p class="desc">🔥 15大知识域·100+考点·交互式思维导图·一键收藏全部资源</p></div>
-
-<div class="card"><a href="hr-behavioral-interview-2026.html"><h3>🎤 HR面&软技能面试10题</h3></a><p class="desc">自我介绍模板·优缺点·职业规划·薪资谈判·反问面试官·面试前自检清单</p></div>
-
-<div class="card"><a href="https://Abyte-zym.github.io/java-daily-challenge"><h3>☕ Java每日挑战</h3></a><p class="desc">🔥 每天一道面试级编程题·LRU·快排·链表·滑动窗口·连续打卡解锁成就</p></div>
-
-<div class="donate">
-<p>☕ 33篇面试资料+28个免费工具，对你有帮助？</p>
-<img src="mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏码">
-<p>← 微信扫码赞赏，支持更多干货</p>
+<div class="toc">
+<h2>📖 全部内容目录</h2>
+<a href="#java-core">🔵 一、Java核心基础（7篇）</a>
+<a href="#framework">🟢 二、框架与中间件（10篇）</a>
+<a href="#distributed">🟡 三、分布式与微服务（8篇）</a>
+<a href="#ai">🔴 四、AI与大模型（3篇）</a>
+<a href="#tools">🧰 五、免费工具矩阵（30+个）</a>
+<a href="#checklist">📋 六、30天通关计划</a>
 </div>
 
-<p style="text-align:center;color:#999;font-size:0.8em">
-<a href="https://Abyte-zym.github.io/java-skill-radar/">技能雷达</a> ·
-<a href="https://Abyte-zym.github.io/java-resume-builder/">简历</a> ·
-<a href="https://Abyte-zym.github.io/java-interview-simulator/">模拟</a> ·
-<a href="https://Abyte-zym.github.io/java-starter-kit/">脚手架</a>
-</p>
+<!-- Java Core -->
+<div class="section" id="java-core">
+<h2>🔵 Java核心基础</h2>
+<div class="card-grid">
+<div class="tool-card"><h3>HashMap源码解析</h3><p>数组+链表+红黑树·put流程·扩容·1.7vs1.8</p></div>
+<div class="tool-card"><h3>JVM内存与GC</h3><p>堆/栈/方法区·CMS/G1/ZGC·GC日志</p></div>
+<div class="tool-card"><h3>Java并发编程</h3><p>synchronized锁升级·AQS·线程池·volatile</p></div>
+<div class="tool-card"><h3>Java集合框架</h3><p>ArrayList vs LinkedList·TreeMap·HashSet</p></div>
+<div class="tool-card"><h3>设计模式面试</h3><p>单例DCL·工厂三兄弟·代理·Spring用了10种</p></div>
+<div class="tool-card"><h3>Java 8→17→21新特性</h3><p>Lambda·Stream·Records·Virtual Threads</p></div>
+<div class="tool-card"><h3>JVM调优实战</h3><p>Arthas诊断·CPU飙升·OOM排查·GC调优</p></div>
+</div>
+</div>
+
+<!-- Framework -->
+<div class="section" id="framework">
+<h2>🟢 框架与中间件</h2>
+<div class="card-grid">
+<div class="tool-card"><h3>Spring Boot核心</h3><p>自动配置·Starter·@Transactional失效5场景</p></div>
+<div class="tool-card"><h3>Spring IoC/AOP</h3><p>Bean生命周期·循环依赖三级缓存·动态代理</p></div>
+<div class="tool-card"><h3>MySQL索引与优化</h3><p>B+树·最左前缀·EXPLAIN·索引失效10场景</p></div>
+<div class="tool-card"><h3>Redis核心</h3><p>5类型·穿透/击穿/雪崩·分布式锁·持久化</p></div>
+<div class="tool-card"><h3>MyBatis面试</h3><p>缓存·#{}vs${}·分页·延迟加载·MyBatis-Plus</p></div>
+<div class="tool-card"><h3>消息队列</h3><p>RocketMQ·Kafka·事务消息·顺序消费·幂等</p></div>
+<div class="tool-card"><h3>Elasticsearch</h3><p>倒排索引·脑裂·分片·深度分页</p></div>
+<div class="tool-card"><h3>SQL高级</h3><p>窗口函数·CTE递归·分库分表</p></div>
+<div class="tool-card"><h3>Maven+Gradle</h3><p>依赖冲突·BOM·多模块·Gradle vs Maven</p></div>
+<div class="tool-card"><h3>JUnit5+Mockito</h3><p>@Mock vs @MockBean·TDD·集成测试</p></div>
+</div>
+</div>
+
+<!-- Distributed -->
+<div class="section" id="distributed">
+<h2>🟡 分布式与微服务</h2>
+<div class="card-grid">
+<div class="tool-card"><h3>Spring Cloud Alibaba</h3><p>Nacos+Sentinel+Gateway+Seata全家桶</p></div>
+<div class="tool-card"><h3>分布式事务</h3><p>2PC/TCC/消息表/Seata AT·CAP+BASE</p></div>
+<div class="tool-card"><h3>系统设计场景题</h3><p>短URL/秒杀/Feed流/附近的人</p></div>
+<div class="tool-card"><h3>Docker+K8s+Linux</h3><p>Docker分层·kubectl·Linux排查命令</p></div>
+<div class="tool-card"><h3>计算机网络</h3><p>TCP三次握手·HTTPS·HTTP/2·DNS</p></div>
+<div class="tool-card"><h3>操作系统</h3><p>进程线程·虚拟内存·epoll·零拷贝</p></div>
+<div class="tool-card"><h3>监控可观测性</h3><p>Prometheus·Grafana·ELK·链路追踪</p></div>
+<div class="tool-card"><h3>RESTful API设计</h3><p>幂等性·状态码·版本管理·HATEOAS</p></div>
+</div>
+</div>
+
+<!-- AI -->
+<div class="section" id="ai">
+<h2>🔴 AI与大模型（2026重点）</h2>
+<div class="card-grid">
+<div class="tool-card"><h3>Spring AI + RAG</h3><p>Agent公式·向量检索·Prompt工程·Spring AI 2.0</p></div>
+<div class="tool-card"><h3>AI Agent面试题</h3><p>万字长文·规划/记忆/工具调用·伪代码核心loop</p></div>
+<div class="tool-card"><h3>Web安全+CSRF</h3><p>XSS/SQL注入/CSRF/JWT·Spring Security</p></div>
+</div>
+</div>
+
+<!-- Tools -->
+<div class="section" id="tools">
+<h2>🧰 30+免费工具矩阵</h2>
+<div class="card-grid">
+<div class="tool-card"><h3>📝 简历生成器</h3><p>一键生成Java实习简历 → <a href="https://Abyte-zym.github.io/java-resume-builder">打开</a></p></div>
+<div class="tool-card"><h3>☕ 面试题库</h3><p>300+真题随机抽 → <a href="https://Abyte-zym.github.io/java-interview-quiz">打开</a></p></div>
+<div class="tool-card"><h3>🎯 面试模拟器</h3><p>真实面试环境计时答题 → <a href="https://Abyte-zym.github.io/interview-simulator">打开</a></p></div>
+<div class="tool-card"><h3>🔍 简历诊断</h3><p>AI评分+优化建议 → <a href="https://Abyte-zym.github.io/resume-diagnosis">打开</a></p></div>
+<div class="tool-card"><h3>🎤 自我介绍生成器</h3><p>秒出1分钟稿 → <a href="https://Abyte-zym.github.io/java-intro-generator">打开</a></p></div>
+<div class="tool-card"><h3>💰 薪资查询</h3><p>2026各城市Java实习薪资 → <a href="https://Abyte-zym.github.io/salary-report-2026">打开</a></p></div>
+<div class="tool-card"><h3>⚔️ 段位测试</h3><p>青铜→王者，测你的面试段位 → <a href="https://Abyte-zym.github.io/java-rank-test">打开</a></p></div>
+<div class="tool-card"><h3>🗺️ 知识全景图</h3><p>15大域·100+考点头脑风暴 → <a href="https://Abyte-zym.github.io/java-knowledge-map">打开</a></p></div>
+<div class="tool-card"><h3>📋 30天通关清单</h3><p>每天一考点·可打印 → <a href="https://Abyte-zym.github.io/java-career-blog/interview-checklist-30days.html">打开</a></p></div>
+<div class="tool-card"><h3>🚨 面试急救包</h3><p>面试前1小时紧急准备 → <a href="https://Abyte-zym.github.io/interview-emergency-kit">打开</a></p></div>
+<div class="tool-card"><h3>🎯 JD押题器</h3><p>粘贴JD秒出面试预测 → <a href="https://Abyte-zym.github.io/jd-predictor">打开</a></p></div>
+<div class="tool-card"><h3>💻 手撕代码练习</h3><p>LRU/单例/快排在线写 → <a href="https://Abyte-zym.github.io/java-handwriting-practice">打开</a></p></div>
+</div>
+</div>
+
+<div class="appreciation">
+<h2>🙏 觉得有用？</h2>
+<p>300+面试题 · 40篇深度文章 · 30+免费工具 · 全部我一个人业余时间维护</p>
+<p style="font-size:1.2em;color:#ff6b6b;margin:20px 0">如果帮到了你，请我喝杯咖啡 ☕</p>
+<p style="color:#999">微信赞赏码 · 任何金额都是继续更新的动力</p>
+</div>
+
+<footer>
+<p>© 2026 Java面试百科全书 · 全站免费开源 · 持续更新 · github.com/Abyte-zym</p>
+<p style="margin-top:10px">🎯 目标：帮助1000个Java求职者拿到Offer</p>
+</footer>
+
 </body>
 </html>
