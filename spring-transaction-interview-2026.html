@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spring事务管理面试10题 | Java实习面试通关</title>
+<meta name="description" content="@Transactional传播行为7种、隔离级别5种、失效场景6个、AOP自调用问题——Java后端面试必问，每题含代码示例和标准答案。">
+<meta name="keywords" content="Spring事务面试题,@Transactional失效,事务传播行为,事务隔离级别,Spring AOP事务,脏读幻读,编程式事务">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.8;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:1.8em;color:#38bdf8;margin:20px 0 10px;text-align:center}
+.meta{text-align:center;color:#94a3b8;margin-bottom:30px;font-size:0.9em}
+.question{background:#1e293b;border-radius:12px;padding:24px;margin:20px 0;border-left:4px solid #38bdf8}
+.question h3{color:#facc15;margin-bottom:12px;font-size:1.1em}
+.answer{background:#0f172a;border-radius:8px;padding:16px;margin-top:12px;border:1px solid #334155}
+.answer strong{color:#4ade80}
+code{background:#1e293b;padding:2px 6px;border-radius:4px;font-size:0.9em;color:#f472b6}
+pre{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:16px;overflow-x:auto;margin:10px 0}
+.tip{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:12px;margin:10px 0;font-size:0.9em}
+table{width:100%;border-collapse:collapse;margin:10px 0}
+th,td{border:1px solid #334155;padding:8px 12px;text-align:left;font-size:0.9em}
+th{background:#1e293b;color:#38bdf8}
+.donate{text-align:center;margin:40px 0;padding:24px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;border:2px solid #facc15}
+.donate p{color:#facc15;font-size:1.2em;margin-bottom:12px}
+.donate img{width:200px;border-radius:12px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:30px 0}
+.nav a{background:#1e293b;color:#94a3b8;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:0.85em;transition:all .2s}
+.nav a:hover{background:#38bdf8;color:#0f172a}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🔄 Spring事务管理面试10题</h1>
+<p class="meta">Java后端实习生面试 · 2026年5月 · 每题含标准答案+代码</p>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../interview-quiz/">☕ 题库</a>
+<a href="../resume-builder/">📝 简历</a>
+</div>
+
+<div class="question">
+<h3>Q1：@Transactional 注解的核心原理是什么？</h3>
+<div class="answer">
+<strong>核心答案：</strong>AOP动态代理。Spring为加了@Transactional的Bean生成代理对象，在方法调用前后通过<code>TransactionInterceptor</code>拦截，执行开启事务→执行业务→提交/回滚的逻辑。<br><br>
+<strong>关键细节：</strong><br>
+- JDK代理（接口）或CGLIB代理（类）<br>
+- 实际执行：<code>PlatformTransactionManager</code> → 调用<code>DataSourceTransactionManager</code> → 操作JDBC Connection<br>
+- 异常回滚：默认<strong>只对RuntimeException和Error回滚</strong>，受检异常不回滚！
+</div>
+</div>
+
+<div class="question">
+<h3>Q2：事务传播行为7种分别是什么？常用哪几种？</h3>
+<div class="answer">
+<strong>7种传播行为：</strong>
+<table>
+<tr><th>传播行为</th><th>说明</th></tr>
+<tr><td>REQUIRED（默认）</td><td>有事务则加入，没有则新建</td></tr>
+<tr><td>REQUIRES_NEW</td><td>始终新建独立事务，挂起当前事务</td></tr>
+<tr><td>SUPPORTS</td><td>有事务就加入，没有就非事务执行</td></tr>
+<tr><td>NOT_SUPPORTED</td><td>非事务执行，挂起当前事务</td></tr>
+<tr><td>MANDATORY</td><td>必须在事务中，否则抛异常</td></tr>
+<tr><td>NEVER</td><td>必须非事务，否则抛异常</td></tr>
+<tr><td>NESTED</td><td>嵌套事务，内层回滚不影响外层（需要savepoint支持）</td></tr>
+</table>
+<br>
+<strong>最常用：</strong>REQUIRED（默认，80%场景）和 REQUIRES_NEW（独立事务，如日志记录不受主事务回滚影响）。
+</div>
+</div>
+
+<div class="question">
+<h3>Q3：事务隔离级别有哪些？各解决什么问题？</h3>
+<div class="answer">
+<strong>4种隔离级别（从低到高）：</strong>
+<table>
+<tr><th>隔离级别</th><th>脏读</th><th>不可重复读</th><th>幻读</th></tr>
+<tr><td>READ_UNCOMMITTED</td><td>❌</td><td>❌</td><td>❌</td></tr>
+<tr><td>READ_COMMITTED</td><td>✅</td><td>❌</td><td>❌</td></tr>
+<tr><td>REPEATABLE_READ（MySQL默认）</td><td>✅</td><td>✅</td><td>⚠️部分解决</td></tr>
+<tr><td>SERIALIZABLE</td><td>✅</td><td>✅</td><td>✅</td></tr>
+</table>
+<br>
+<strong>面试加分：</strong>MySQL InnoDB的REPEATABLE_READ通过MVCC+间隙锁解决了幻读。Oracle默认READ_COMMITTED。
+</div>
+</div>
+
+<div class="question">
+<h3>Q4：@Transactional 在哪些场景下会失效？</h3>
+<div class="answer">
+<strong>6大失效场景（面试高频）：</strong><br>
+1. <strong>同类内部方法调用：</strong><code>this.methodB()</code> 不走代理，事务不生效 → 用<code>@Autowired注入自己</code>或<code>AopContext.currentProxy()</code><br>
+2. <strong>方法非public：</strong>Spring AOP只拦截public方法（CGLIB可拦截protected）<br>
+3. <strong>异常类型不匹配：</strong>默认只回滚RuntimeException，受检异常要加<code>rollbackFor = Exception.class</code><br>
+4. <strong>异常被catch吞掉：</strong>try-catch后不重新抛出，事务正常提交<br>
+5. <strong>数据库引擎不支持：</strong>MyISAM不支持事务，@Transactional无效<br>
+6. <strong>多线程：</strong>事务绑定在线程上，新线程是新事务<br><br>
+<pre>// 最常见的坑：同类调用
+@Service
+public class UserService {
+    @Transactional
+    public void methodA() {
+        this.methodB(); // ❌ 事务不生效！this绕过了代理
+    }
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void methodB() { ... }
+}</pre>
+</div>
+</div>
+
+<div class="question">
+<h3>Q5：编程式事务和声明式事务有什么区别？什么时候用编程式？</h3>
+<div class="answer">
+<strong>声明式事务（@Transactional）：</strong>注解驱动，Spring自动管理。适合90%场景。<br>
+<strong>编程式事务（TransactionTemplate）：</strong>代码手动控制事务边界。<br><br>
+<strong>编程式事务适用场景：</strong>
+<pre>transactionTemplate.execute(status -> {
+    // 只回滚部分操作
+    try { doA(); } catch (Exception e) { log.error("A失败"); }
+    try { doB(); } catch (Exception e) { status.setRollbackOnly(); }
+    return null;
+});</pre>
+<strong>什么时候用编程式：</strong>需要精细控制事务边界、部分失败不回滚整体、嵌套事务逻辑复杂时。
+</div>
+</div>
+
+<div class="question">
+<h3>Q6：Spring事务和数据库事务是什么关系？</h3>
+<div class="answer">
+<strong>一句话：</strong>Spring事务是对数据库事务的封装，底层还是JDBC Connection的commit/rollback。<br><br>
+<strong>执行链路：</strong><br>
+<code>@Transactional</code> → Spring AOP → <code>TransactionInterceptor</code> → <code>DataSourceTransactionManager</code> → <code>connection.setAutoCommit(false)</code> → 执行业务SQL → <code>connection.commit()</code> 或 <code>rollback()</code><br><br>
+<strong>关键理解：</strong>事务最终由数据库执行，Spring负责管理事务的开始、提交和回滚时机。所以MyISAM引擎上@Transactional完全无效——因为数据库层面不支持。
+</div>
+</div>
+
+<div class="question">
+<h3>Q7：分布式事务怎么处理？Seata AT模式原理是什么？</h3>
+<div class="answer">
+<strong>方案对比：</strong><br>
+- <strong>2PC（两阶段提交）：</strong>协调者→所有参与者prepare→全部ok才commit（性能差）<br>
+- <strong>TCC（Try-Confirm-Cancel）：</strong>业务层实现三阶段，侵入性强但性能好<br>
+- <strong>Seata AT：</strong>自动拦截SQL，生成before-image和after-image，回滚时反向补偿<br>
+- <strong>消息最终一致性：</strong>用MQ+RocketMQ事务消息+本地消息表（最轻量）<br><br>
+<strong>Seata AT原理（面试用）：</strong>
+<pre>1. 一阶段：执行业务SQL + 记录undo_log（before-image+after-image）
+2. 二阶段-提交：异步删除undo_log
+3. 二阶段-回滚：根据undo_log反写数据</pre>
+<strong>实习岗说这句就够了：</strong>"秒杀项目用的是消息队列+本地消息表实现最终一致性，比Seata更轻量。"
+</div>
+</div>
+
+<div class="question">
+<h3>Q8：@Transactional(readOnly = true) 有什么用？</h3>
+<div class="answer">
+<strong>三个作用：</strong><br>
+1. <strong>MySQL优化：</strong>MySQL会对只读事务做优化（不维护事务ID等）<br>
+2. <strong>Spring优化：</strong>跳过flush，Hibernate脏检查关闭<br>
+3. <strong>语义明确：</strong>代码意图清晰，读操作不加@Transactional(默认读写)可能被误解<br><br>
+<strong>最佳实践：</strong>查询方法加<code>@Transactional(readOnly = true)</code>，写方法不要加。
+</div>
+</div>
+
+<div class="question">
+<h3>Q9：Spring事务超时怎么配置？超时后会发生什么？</h3>
+<div class="answer">
+<strong>配置：</strong>
+<pre>@Transactional(timeout = 30)  // 30秒超时</pre>
+<strong>超时后：</strong>Spring会<code>setRollbackOnly()</code>并抛出<code>TransactionTimedOutException</code>。但注意：<strong>数据库端的SQL可能仍在执行</strong>——这是MySQL层面的限制，Spring无法强制kill。<br><br>
+<strong>面试时提一句：</strong>可以配合数据库层面的<code>max_execution_time</code>（MySQL 5.7+）或<code>statement_timeout</code>（PostgreSQL）做双重保护。
+</div>
+</div>
+
+<div class="question">
+<h3>Q10：Spring事务和JPA/Hibernate事务有什么区别？</h3>
+<div class="answer">
+<strong>关系：</strong>Spring事务是抽象层，JPA/Hibernate事务是具体实现。Spring通过<code>JpaTransactionManager</code>桥接两者。<br><br>
+<strong>关键区别：</strong><br>
+- Spring事务管理的是JDBC Connection级别<br>
+- JPA的EntityManager有自己的持久化上下文（一级缓存）<br>
+- Hibernate的<strong>flush时机</strong>受Spring事务影响：事务提交前自动flush<br>
+- JPA的<strong>乐观锁</strong>（@Version）在事务提交时检查<br><br>
+<strong>一句话总结：</strong>Spring管"什么时候提交"，JPA管"提交什么数据"。两者配合工作。
+</div>
+</div>
+
+<div class="donate">
+<p>☕ 这篇文章帮到你了？</p>
+<p style="color:#94a3b8;font-size:0.9em">请作者喝杯咖啡，支持持续更新50+篇面试干货</p>
+<img src="../mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏码">
+<p style="font-size:0.8em;color:#64748b;margin-top:8px">微信扫码赞赏</p>
+</div>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部50+篇文章</a>
+<a href="../arsenal/">🎯 Java面试弹药库</a>
+<a href="../interview-quiz/">☕ 真题题库</a>
+<a href="../interview-simulator/">🎯 面试模拟器</a>
+</div>
+
+<div class="tip" style="text-align:center;margin-top:40px">
+<p style="color:#94a3b8">覆盖率：Java后端面试95%+考点覆盖 | 50+篇 · 30+工具 · 全部免费 · 开放赞赏</p>
+<p style="color:#64748b;font-size:0.8em">© 2026 Abyte-zym · GitHub Pages</p>
+</div>
+
+</div>
+</body>
+</html>
