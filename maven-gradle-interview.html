@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maven+Gradle 构建工具面试10题 | Java实习面试通关</title>
+<meta name="description" content="2026 Java实习面试必考：Maven依赖冲突解决、Gradle vs Maven、多模块构建、插件机制。每道题附标准答案+面试话术。">
+<meta name="keywords" content="Maven面试题,Gradle面试题,构建工具面试,Java实习面试,依赖冲突,Maven多模块,2026面试">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;color:#333;line-height:1.8}
+.container{max-width:800px;margin:0 auto;padding:20px}
+h1{font-size:28px;color:#1a1a1a;border-bottom:3px solid #ff6b35;padding-bottom:15px;margin-bottom:25px}
+h2{font-size:20px;color:#ff6b35;margin:30px 0 15px;padding-left:10px;border-left:4px solid #ff6b35}
+.question{background:#fff;padding:20px 25px;margin:15px 0;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.question h3{color:#1a1a1a;font-size:16px;margin-bottom:10px}
+.answer{background:#f8f9fa;padding:15px;border-radius:6px;margin-top:10px;font-size:14px}
+.highlight{background:#fff3cd;padding:2px 6px;border-radius:3px;font-weight:bold}
+code{background:#2d2d2d;color:#e6db74;padding:2px 8px;border-radius:4px;font-size:13px}
+pre{background:#2d2d2d;color:#f8f8f2;padding:15px;border-radius:6px;overflow-x:auto;font-size:13px;margin:10px 0}
+.donate{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;text-align:center;padding:25px;border-radius:12px;margin:30px 0}
+.donate h3{margin-bottom:10px}
+.donate p{font-size:13px;opacity:.9;margin:5px 0}
+.nav{display:flex;flex-wrap:wrap;gap:8px;margin:30px 0;padding:15px;background:#fff;border-radius:8px}
+.nav a{color:#667eea;text-decoration:none;font-size:13px;padding:4px 10px;border-radius:4px;background:#f0f2ff}
+.nav a:hover{background:#667eea;color:#fff}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🛠 Maven + Gradle 构建工具面试10题</h1>
+<p style="color:#666;margin-bottom:20px">2026年Java实习面试中构建工具问题出现率<strong>稳定在30%</strong>，尤其大厂看重工程化能力。每道题附带面试话术和避坑指南。</p>
+
+<div class="question">
+<h3>1. Maven的生命周期有哪些？常用命令分别对应哪个阶段？</h3>
+<div class="answer">
+<strong>标准答案：</strong>Maven有3套生命周期——<span class="highlight">clean</span>（清理target）、<span class="highlight">default</span>（核心构建）、<span class="highlight">site</span>（文档生成）。面试只考default：
+<pre>validate → compile → test → package → verify → install → deploy</pre>
+<strong>面试话术：</strong>"最常用的是clean、compile、test、package、install。mvn clean install = 先清理再打包安装到本地仓库。mvn clean package -DskipTests = 跳过测试打包。"
+</div>
+</div>
+
+<div class="question">
+<h3>2. 如何解决Maven依赖冲突？有哪些常见策略？</h3>
+<div class="answer">
+<strong>标准答案：</strong>Maven依赖冲突遵循<span class="highlight">最短路径优先</span>和<span class="highlight">先声明优先</span>原则。解决策略：
+<ol style="margin-left:20px;margin-top:8px">
+<li>用 <code>mvn dependency:tree</code> 查看依赖树，定位冲突</li>
+<li>在 <code>&lt;dependencyManagement&gt;</code> 统一声明版本</li>
+<li>用 <code>&lt;exclusions&gt;</code> 排除不需要的传递依赖</li>
+<li>用 <code>&lt;optional&gt;true&lt;/optional&gt;</code> 声明可选依赖</li>
+</ol>
+<strong>面试话术：</strong>"遇到NoClassDefFoundError或ClassNotFoundException就是依赖冲突。先用dependency:tree定位，再看是排除还是统一版本。最坑的是同一个jar两个版本共存——JVM只会加载其中一个。"
+</div>
+</div>
+
+<div class="question">
+<h3>3. Maven和Gradle有什么区别？实际项目怎么选？</h3>
+<div class="answer">
+<strong>标准答案：</strong>
+<table style="width:100%;border-collapse:collapse;margin-top:8px">
+<tr style="background:#f0f2ff"><th style="padding:8px;text-align:left">维度</th><th style="padding:8px;text-align:left">Maven</th><th style="padding:8px;text-align:left">Gradle</th></tr>
+<tr><td style="padding:8px">配置语法</td><td style="padding:8px">XML（pom.xml）</td><td style="padding:8px">Groovy/DSL（build.gradle）</td></tr>
+<tr><td style="padding:8px">构建速度</td><td style="padding:8px">较慢（全量编译）</td><td style="padding:8px">快（增量编译+缓存）</td></tr>
+<tr><td style="padding:8px">灵活性</td><td style="padding:8px">低（约定优于配置）</td><td style="padding:8px">高（脚本化构建）</td></tr>
+<tr><td style="padding:8px">依赖管理</td><td style="padding:8px">传递依赖+scope</td><td style="padding:8px">传递依赖+bom+版本锁定</td></tr>
+<tr><td style="padding:8px">流行度</td><td style="padding:8px">企业主流（70%+）</td><td style="padding:8px">新项目增长快（Android标配）</td></tr>
+</table>
+<strong>面试话术：</strong>"简单项目Maven够用，Spring Boot标准也是Maven。Gradle适合Android和多模块大型项目——构建快、脚本灵活。我们课程项目用Maven，个人项目换Gradle尝过鲜。"
+</div>
+</div>
+
+<div class="question">
+<h3>4. Maven多模块项目怎么配置？父子模块之间怎么引用？</h3>
+<div class="answer">
+<strong>标准答案：</strong>父POM声明 <code>&lt;packaging&gt;pom&lt;/packaging&gt;</code>，用 <code>&lt;modules&gt;</code> 列出所有子模块。子模块通过 <code>&lt;parent&gt;</code> 继承父POM，子模块之间通过 <code>&lt;dependency&gt;</code> 互相引用。
+<strong>面试话术：</strong>"微服务项目通常按功能分模块——common模块写公共类、api模块放接口定义、service模块写业务。父POM统一管理依赖版本号，子模块只声明不写版本。"
+</div>
+</div>
+
+<div class="question">
+<h3>5. Maven的scope有哪些？各自什么场景用？</h3>
+<div class="answer">
+<strong>标准答案：</strong>
+<pre>compile   — 默认，所有阶段可用（如spring-boot-starter-web）
+provided  — 编译+测试需要，运行时由容器提供（如servlet-api）
+runtime    — 运行时需要，编译不需要（如mysql-connector-j）
+test       — 仅测试阶段可用（如junit、mockito）
+system     — 类似provided但jar必须手动指定路径（极少用）
+import     — 用在dependencyManagement，导入BOM</pre>
+<strong>面试话术：</strong>"最常见的坑是把servlet-api写成compile——部署到Tomcat会冲突。Spring Boot内嵌Tomcat不怕，但传统项目Tomcat已提供该jar。"
+</div>
+</div>
+
+<div class="question">
+<h3>6. Gradle中的Task是什么？怎么自定义Task？</h3>
+<div class="answer">
+<strong>标准答案：</strong>Task是Gradle的最小执行单元。每个构建操作（编译/打包/测试）都是一个Task。Task有依赖关系，Gradle通过<span class="highlight">DAG（有向无环图）</span>管理执行顺序。
+<pre>// 自定义Task示例
+task helloWorld {
+    dependsOn 'compileJava'
+    doLast {
+        println '构建完成！'
+    }
+}</pre>
+<strong>面试话术：</strong>"Gradle的灵活性体现在Task可以随意自定义。比如在Spring Boot打包后自动推送Docker镜像，写一个Custom DockerTask依赖bootJar就行。"
+</div>
+</div>
+
+<div class="question">
+<h3>7. Maven插件机制原理是什么？Spring Boot的Maven插件做了什么？</h3>
+<div class="answer">
+<strong>标准答案：</strong>Maven插件绑定到生命周期的某个阶段（phase），到了该阶段自动执行。Spring Boot Maven插件（<code>spring-boot-maven-plugin</code>）做的事：
+<ol style="margin-left:20px;margin-top:8px">
+<li><strong>打包</strong>：把项目打成Fat Jar（包含依赖+内嵌Tomcat）</li>
+<li><strong>启动</strong>：mvn spring-boot:run 直接运行</li>
+<li><strong>构建信息</strong>：生成build-info.properties</li>
+</ol>
+<strong>面试话术：</strong>"Spring Boot打包后的Fat Jar可以直接java -jar运行，不用部署Tomcat——就是spring-boot-maven-plugin的功劳。它把所有依赖和项目代码打包成一个可执行jar。"
+</div>
+</div>
+
+<div class="question">
+<h3>8. 什么是BOM（Bill of Materials）？在Maven和Gradle里怎么用？</h3>
+<div class="answer">
+<strong>标准答案：</strong>BOM统一管理一组依赖的版本号，避免多个模块各自声明相同版本导致冲突。
+<pre>&lt;!-- Maven中导入Spring Cloud BOM --&gt;
+&lt;dependencyManagement&gt;
+  &lt;dependencies&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+      &lt;artifactId&gt;spring-cloud-dependencies&lt;/artifactId&gt;
+      &lt;version&gt;2024.0.0&lt;/version&gt;
+      &lt;type&gt;pom&lt;/type&gt;
+      &lt;scope&gt;import&lt;/scope&gt;
+    &lt;/dependency&gt;
+  &lt;/dependencies&gt;
+&lt;/dependencyManagement&gt;</pre>
+<strong>面试话术：</strong>"Spring Cloud全系列依赖版本由BOM统一管理——我只需要在dependencyManagement引入spring-cloud-dependencies，后面声明具体依赖时不用写版本号。升级时只改BOM一行。"
+</div>
+</div>
+
+<div class="question">
+<h3>9. Maven的仓库体系是什么？中央仓库、私服、本地仓库的关系？</h3>
+<div class="answer">
+<strong>标准答案：</strong>查找顺序：<span class="highlight">本地仓库(~/.m2/repository) → 私服(Nexus) → 中央仓库(Maven Central) → 远程仓库</span>。企业内网通常搭建Nexus私服，统一管理内部包+代理外部包。
+<strong>面试话术：</strong>"私服的好处：①内网速度快 ②内部发布私有jar ③统一管控第三方依赖安全。配置文件在settings.xml里配mirror指向私服。"
+</div>
+</div>
+
+<div class="question">
+<h3>10. Gradle的增量构建是什么？怎么利用它加速CI/CD？</h3>
+<div class="answer">
+<strong>标准答案：</strong>Gradle的<span class="highlight">增量构建</span>：只编译修改过的文件+依赖这些文件的类。核心机制：
+<ol style="margin-left:20px;margin-top:8px">
+<li><strong>输入/输出快照</strong>：记录每个Task的上次输入输出</li>
+<li><strong>缓存对比</strong>：如果输入没变，直接跳过该Task</li>
+<li><strong>跨构建缓存</strong>：多个项目共享编译缓存（Build Cache）</li>
+</ol>
+<strong>面试话术：</strong>"Gradle增量构建比Maven快的原因：它追踪文件变更→只编译受影响的部分→跳过没变的。CI/CD里build cache持久化到远程缓存服务，二次构建秒级完成。"
+</div>
+</div>
+
+<div class="donate">
+<h3>☕ 如果这篇文章帮到了你</h3>
+<p>免费的工具背后是无数的深夜调试。觉得有用，请我喝杯咖啡☕</p>
+<p style="font-size:16px;font-weight:bold;margin:10px 0">👇 微信扫码赞赏</p>
+<p>你的支持让我写出更好的内容 💪</p>
+</div>
+
+<div class="nav">
+<strong>📦 更多免费工具：</strong>
+<a href="https://Abyte-zym.github.io/java-career-blog">📚 博客(31篇)</a>
+<a href="https://Abyte-zym.github.io/java-resume-builder">📝 简历生成</a>
+<a href="https://Abyte-zym.github.io/java-interview-quiz">☕ 题库</a>
+<a href="https://Abyte-zym.github.io/java-interview-simulator">🎯 模拟器</a>
+<a href="https://Abyte-zym.github.io/resume-diagnosis">🔍 诊断</a>
+<a href="https://Abyte-zym.github.io/arsenal">🎯 弹药库</a>
+<a href="https://Abyte-zym.github.io/java-interview-countdown">⏳ 倒计时</a>
+<a href="https://Abyte-zym.github.io/java-skill-radar">📊 雷达</a>
+<a href="https://Abyte-zym.github.io/java-daily-challenge">☕ 每日挑战</a>
+</div>
+
+</div>
+</body>
+</html>
