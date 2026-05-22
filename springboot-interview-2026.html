@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="2026 Spring Boot面试10题 - 自动配置原理·Starter机制·Actuator监控·@Transactional失效场景·Spring Boot 3新特性">
+<meta name="keywords" content="Spring Boot面试,自动配置源码,Starter机制,Actuator监控,Spring Boot 3,Java实习面试">
+<title>Spring Boot 核心面试10题 | 2026 Java实习</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.8;color:#333;max-width:800px;margin:0 auto;padding:20px;background:#f8f9fa}
+h1{font-size:2em;color:#1a1a2e;border-bottom:3px solid #e94560;padding-bottom:10px;margin:20px 0}
+h2{color:#16213e;margin:30px 0 15px;font-size:1.4em}
+h3{color:#0f3460;margin:20px 0 10px}
+.qa{background:#fff;border-radius:8px;padding:20px;margin:15px 0;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.q{color:#e94560;font-weight:700;font-size:1.1em}
+.a{margin-top:10px;line-height:1.9}
+pre{background:#1a1a2e;color:#a8d8a8;padding:15px;border-radius:6px;overflow-x:auto;margin:10px 0;font-size:.9em}
+code{background:#f0f0f0;padding:2px 6px;border-radius:3px;font-size:.9em}
+.donate{text-align:center;margin:40px 0;padding:30px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:12px;color:#fff}
+.donate h2{color:#fff;margin-bottom:15px}
+.donate img{max-width:200px;border-radius:8px;border:3px solid #fff}
+.donate p{font-size:.9em;opacity:.8;margin-top:10px}
+.tools{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:30px 0}
+.tools a{display:block;padding:12px;background:#fff;border-radius:8px;text-decoration:none;color:#16213e;box-shadow:0 1px 4px rgba(0,0,0,.06);text-align:center;transition:all .2s}
+.tools a:hover{background:#e94560;color:#fff;transform:translateY(-2px)}
+.tip{background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:15px;margin:20px 0}
+</style>
+</head>
+<body>
+
+<h1>🔧 Spring Boot 核心面试10题</h1>
+<p style="color:#666;margin:5px 0 30px">2026年5月更新 · 涵盖自动配置源码·Starter机制·Spring Boot 3新特性 · 面试出现率85%+</p>
+
+<div class="tip">💡 这10道题覆盖Spring Boot面试最核心考点。Spring Boot 4.0已发布但3.x仍是主流——面试官更关注你对"自动配置"和"约定优于配置"的理解深度。</div>
+
+<div class="qa">
+<div class="q">1. @SpringBootApplication 注解背后做了什么？</div>
+<div class="a">
+<strong>一行注解 = 三个注解的组合：</strong><br><br>
+<strong>@SpringBootConfiguration</strong>：本质就是 @Configuration，标记这是一个配置类。<br>
+<strong>@EnableAutoConfiguration</strong>：🔥 核心！通过 AutoConfigurationImportSelector 读取 classpath 下 <code>META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</code>（3.x 新位置，2.x 在 spring.factories），自动加载 100+ 配置类。<br>
+<strong>@ComponentScan</strong>：扫描当前包及子包下的 @Component/@Service/@Controller。<br><br>
+<strong>面试加分：</strong>提一下条件注解——@ConditionalOnClass/@ConditionalOnBean/@ConditionalOnProperty 按需生效。比如有 spring-boot-starter-web 才配 Tomcat，没有就不配。
+</div>
+</div>
+
+<div class="qa">
+<div class="q">2. Spring Boot 自动配置原理——能讲清楚 AutoConfigurationImportSelector 吗？</div>
+<div class="a">
+<strong>三步走：</strong><br>
+1. @EnableAutoConfiguration 导入 AutoConfigurationImportSelector<br>
+2. selectImports() → SpringFactoriesLoader 读取 <code>AutoConfiguration.imports</code> 文件<br>
+3. 加载到的配置类逐个通过 @Conditional 条件注解过滤——满足条件的才实例化 Bean<br><br>
+<strong>面试官追问"你怎么知道加载了哪些自动配置？"</strong><br>
+→ 答：启动时加 <code>--debug</code> 参数，控制台会打印 "Positive matches" 和 "Negative matches"。或者看 Actuator 的 /conditions 端点。
+</div>
+</div>
+
+<div class="qa">
+<div class="q">3. Starter 是什么？怎么自定义一个 Starter？</div>
+<div class="a">
+<strong>Starter = 依赖打包器。</strong>比如你引入 spring-boot-starter-web，它帮你把 Spring MVC、Tomcat、Jackson 全拉进来——你不需要一个个加依赖。<br><br>
+<strong>自定义 Starter 核心两步：</strong><br>
+1. 写一个 <code>xxx-spring-boot-autoconfigure</code> 模块——含自动配置类 + AutoConfiguration.imports 文件<br>
+2. 写一个 <code>xxx-spring-boot-starter</code> 模块——pom里只引入上面的 autoconfigure 包<br><br>
+<pre>// 自动配置类示例
+@Configuration
+@ConditionalOnClass(SomeService.class)
+@EnableConfigurationProperties(SomeProperties.class)
+public class SomeAutoConfiguration {
+    @Bean
+    @ConditionalOnMissingBean
+    public SomeService someService() { return new SomeServiceImpl(); }
+}</pre>
+</div>
+</div>
+
+<div class="qa">
+<div class="q">4. @Transactional 失效的5个场景？</div>
+<div class="a">
+<strong>记住这5个——面试必问：</strong><br>
+① <strong>同类方法调用</strong>：this.method() 不经过代理对象，AOP不拦截<br>
+② <strong>非 public 方法</strong>：Spring AOP 默认只代理 public 方法<br>
+③ <strong>异常被 catch 吞掉</strong>：`try{...}catch(Exception e){//啥也不做}`，事务感知不到异常<br>
+④ <strong>rollbackFor 不匹配</strong>：默认只回滚 RuntimeException，受检异常要显式指定 `rollbackFor=Exception.class`<br>
+⑤ <strong>数据库引擎不支持</strong>：比如用了 MyISAM（不支持事务）
+</div>
+</div>
+
+<div class="qa">
+<div class="q">5. Spring Boot 的配置文件加载顺序？</div>
+<div class="a">
+<strong>优先级从高到低（高覆盖低）：</strong><br>
+1. 命令行参数 <code>--server.port=9090</code><br>
+2. 操作系统环境变量<br>
+3. jar包外部的 application-{profile}.yml<br>
+4. jar包内部的 application-{profile}.yml<br>
+5. jar包外部的 application.yml<br>
+6. jar包内部的 application.yml<br><br>
+<strong>多环境切换：</strong><code>spring.profiles.active=dev</code> 激活 dev 配置。
+</div>
+</div>
+
+<div class="qa">
+<div class="q">6. Spring Boot Actuator 有哪些常用端点？怎么保护敏感端点？</div>
+<div class="a">
+<strong>6个最常用端点：</strong><br>
+• <code>/actuator/health</code> — 健康检查（K8s探针用）<br>
+• <code>/actuator/info</code> — 应用信息<br>
+• <code>/actuator/metrics</code> — JVM内存/GC/CPU指标<br>
+• <code>/actuator/loggers</code> — 动态调日志级别<br>
+• <code>/actuator/env</code> — 环境变量（含密码，注意脱敏）<br>
+• <code>/actuator/beans</code> — 所有Spring Bean<br><br>
+<strong>安全保护：</strong>引入 spring-boot-starter-security → 配置 Actuator 单独端口或路径 → 加认证。
+</div>
+</div>
+
+<div class="qa">
+<div class="q">7. 拦截器（Interceptor）和过滤器（Filter）的区别？</div>
+<div class="a">
+<strong>4个核心区别：</strong><br>
+① <strong>容器不同</strong>：Filter 属于 Servlet 容器（Tomcat），Interceptor 属于 Spring MVC<br>
+② <strong>触发时机</strong>：Filter 在请求进入 DispatcherServlet 之前执行；Interceptor 在进入 Controller 之前执行<br>
+③ <strong>访问范围</strong>：Filter 可拦截所有请求（含静态资源）；Interceptor 只能拦截 Controller 请求<br>
+④ <strong>依赖注入</strong>：Interceptor 可以注入 Spring Bean（它是Spring管理的），Filter 默认不行<br><br>
+<strong>执行顺序：</strong>Filter → Interceptor → AOP → Controller
+</div>
+</div>
+
+<div class="qa">
+<div class="q">8. Spring Boot 3.x 相比 2.x 有哪些重要变化？</div>
+<div class="a">
+<strong>4个必知变化：</strong><br>
+① <strong>JDK 17 基线</strong>：不再支持 Java 8/11<br>
+② <strong>Jakarta EE 替代 Java EE</strong>：所有 javax.* 改为 jakarta.*（比如 javax.servlet → jakarta.servlet）<br>
+③ <strong>GraalVM 原生镜像</strong>：spring-boot:build-image 直接编译成原生可执行文件<br>
+④ <strong>自动配置注册</strong>：从 spring.factories 改为 AutoConfiguration.imports 文件<br><br>
+<strong>面试亮点：</strong>如果你简历写 Spring Boot 3.x，面试官很可能问"你们为什么选3.x"——答：虚拟线程支持（Project Loom）、原生编译、安全更新。
+</div>
+</div>
+
+<div class="qa">
+<div class="q">9. Spring Boot 怎么处理跨域（CORS）？</div>
+<div class="a">
+<pre>// 方式一：全局配置
+@Configuration
+public class CorsConfig implements WebMvcConfigurer {
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/api/**")
+            .allowedOrigins("https://你的前端域名.com")
+            .allowedMethods("GET","POST","PUT","DELETE")
+            .allowCredentials(true)
+            .maxAge(3600);
+    }
+}
+
+// 方式二：单接口
+@CrossOrigin(origins = "https://你的前端域名.com")
+@GetMapping("/data")
+public R<?> getData() { return R.ok(data); }</pre>
+</div>
+</div>
+
+<div class="qa">
+<div class="q">10. Spring Boot 项目启动慢怎么排查？</div>
+<div class="a">
+<strong>3步定位：</strong><br>
+① 加 <code>--debug</code> 看哪些自动配置加载了但你不需要<br>
+② Actuator 的 <code>/actuator/startup</code> 端点（需配置）——列出每个Bean初始化耗时<br>
+③ 用 <code>@ComponentScan</code> 缩小扫描范围，排除不需要的包<br><br>
+<strong>常见原因：</strong>扫描范围过大、数据库连接池初始化慢（Hikari默认30秒超时）、过多的@PostConstruct初始化逻辑。
+</div>
+</div>
+
+<!-- 赞赏码 -->
+<div class="donate">
+<h2>☕ 觉得有用？请我杯咖啡</h2>
+<img src="../mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏码" onerror="this.style.display='none'">
+<p>这些文章和工具会持续更新，你的支持是我熬夜写的动力 🔥</p>
+</div>
+
+<!-- 全站工具导航 -->
+<h2>🛠 更多免费工具</h2>
+<div class="tools">
+<a href="https://Abyte-zym.github.io/java-resume-builder/">📝 简历生成器</a>
+<a href="https://Abyte-zym.github.io/java-interview-quiz/">☕ 面试题库</a>
+<a href="https://Abyte-zym.github.io/interview-simulator/">🎯 模拟面试</a>
+<a href="https://Abyte-zym.github.io/resume-diagnosis/">🔍 AI简历诊断</a>
+<a href="https://Abyte-zym.github.io/java-intro-generator/">🎤 自我介绍</a>
+<a href="https://Abyte-zym.github.io/java-career-blog/">📚 技术博客</a>
+<a href="https://Abyte-zym.github.io/java-cheatsheet/">📋 速查卡片</a>
+<a href="https://Abyte-zym.github.io/salary-report-2026/">💰 薪资查询</a>
+<a href="https://Abyte-zym.github.io/jd-predictor/">🎯 JD押题器</a>
+</div>
+
+<p style="text-align:center;margin:40px 0;color:#999;font-size:.85em">
+© 2026 Java实习指南 · 
+<a href="https://github.com/Abyte-zym">Abyte-zym</a> · 
+<a href="https://Abyte-zym.github.io/java-career-blog/">更多文章</a>
+</p>
+
+</body>
+</html>
