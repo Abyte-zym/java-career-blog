@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JUnit+Mockito测试面试10题 | Java实习面试必备 | 2026</title>
+<meta name="description" content="JUnit5+Mockito测试面试高频10题，含标准答案。覆盖单元测试vs集成测试、Mock vs Spy、@SpringBootTest、TDD、代码覆盖率。2026 Java实习面试通关。">
+<meta name="keywords" content="JUnit5面试题,Mockito面试题,单元测试面试,Java测试面试,Spring Boot测试,@Mock vs @MockBean,2026 Java实习">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.8;color:#2d3748;background:#f7fafc;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:2em;color:#1a202c;margin-bottom:10px;text-align:center}
+.subtitle{text-align:center;color:#718096;margin-bottom:30px;font-size:.95em}
+.card{background:#fff;border-radius:12px;padding:28px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:4px solid #4299e1}
+.card h2{font-size:1.15em;color:#2b6cb0;margin-bottom:8px}
+.card .q{font-weight:600;color:#1a202c;font-size:1.05em;margin-bottom:6px}
+.card .a{color:#4a5568;font-size:.95em;background:#edf2f7;padding:12px 16px;border-radius:8px;margin-top:8px}
+.card .a code{background:#e2e8f0;padding:2px 6px;border-radius:4px;font-size:.9em;color:#2d3748}
+.highlight{background:#fefcbf;padding:2px 6px;border-radius:4px}
+.tip{background:#ebf8ff;border:1px solid #bee3f8;border-radius:8px;padding:14px 18px;margin:20px 0;font-size:.9em;color:#2c5282}
+.donate{text-align:center;margin:30px 0;padding:24px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.donate h3{color:#2d3748;margin-bottom:8px}
+.donate p{color:#718096;font-size:.9em;margin-bottom:12px}
+.donate img{width:200px;border-radius:8px}
+footer{text-align:center;margin-top:40px;padding:20px;color:#a0aec0;font-size:.85em}
+footer a{color:#4299e1;text-decoration:none;margin:0 8px}
+footer a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🧪 JUnit5 + Mockito 测试面试10题</h1>
+<p class="subtitle">2026 Java实习面试 · 单元测试必考题 · 含标准答案</p>
+
+<div class="tip">
+🔥 <strong>面试官为什么考测试？</strong> 2026年企业要求实习生"能写单元测试"——体现工程素养和代码质量意识。这10题覆盖90%测试面试场景。
+</div>
+
+<div class="card">
+<h2>第1题</h2>
+<div class="q">什么是单元测试？和集成测试有什么区别？</div>
+<div class="a">
+<strong>标准回答：</strong><br>
+• <strong>单元测试</strong>：测试单个类或方法，隔离所有外部依赖（数据库/网络/文件），用Mock替代。快速（毫秒级）、可重复。<br>
+• <strong>集成测试</strong>：测试多个组件协作，需要真实Spring容器、数据库连接。慢（秒级）、依赖环境。<br>
+• <strong>一句话区分</strong>：单元测试测"这个类对不对"，集成测试测"这些类能不能一起干活"。<br>
+• <strong>JUnit5</strong> 通过 <code>@SpringBootTest</code> 启动完整容器做集成测试，普通 <code>@Test</code> 做单元测试。
+</div>
+</div>
+
+<div class="card">
+<h2>第2题</h2>
+<div class="q">@Mock 和 @MockBean 有什么区别？什么时候用哪个？</div>
+<div class="a">
+<strong>标准回答：</strong><br>
+• <code>@Mock</code>（Mockito原生）：纯单元测试用，替换普通Java对象。不依赖Spring容器。<br>
+• <code>@MockBean</code>（Spring Boot Test）：集成测试用，替换Spring容器中的Bean。<strong>会替换同一类型的所有Bean</strong>。<br>
+• <strong>选型原则</strong>：单元测试用 <code>@Mock</code>（快），集成测试用 <code>@MockBean</code>（需要Spring上下文）。<br>
+• <strong>注意</strong>：<code>@MockBean</code> 会导致Spring容器重启（影响测试速度），一次测试类用一次就好。
+</div>
+</div>
+
+<div class="card">
+<h2>第3题</h2>
+<div class="q">Mock和Spy的区别？什么场景用Spy？</div>
+<div class="a">
+<strong>标准回答：</strong><br>
+• <code>@Mock</code>：完全虚拟对象，所有方法默认返回null/0/false（除非 <code>when().thenReturn()</code> 指定）。<br>
+• <code>@Spy</code>：包装真实对象，<strong>不stub的方法走真实逻辑</strong>，stub的方法走Mock逻辑。<br>
+• <strong>场景</strong>：只想Mock部分方法（如"Mock网络调用但保留真实业务逻辑"）时用 <code>@Spy</code>。<br>
+• <strong>关键代码</strong>：<code>List spyList = spy(new ArrayList()); when(spyList.size()).thenReturn(100);</code> — 只有size()返回100，add()正常执行。
+</div>
+</div>
+
+<div class="card">
+<h2>第4题</h2>
+<div class="q">怎么用Mockito验证某个方法是否被调用？verify怎么用？</div>
+<div class="a">
+<strong>标准回答：</strong><br>
+• <code>verify(mockObject).methodName()</code> — 验证方法被调用了1次。<br>
+• <code>verify(mockObject, <span class="highlight">times(3)</span>).methodName()</code> — 验证被调用3次。<br>
+• <code>verify(mockObject, <span class="highlight">never()</span>).methodName()</code> — 验证从未被调用。<br>
+• <code>verify(mockObject, <span class="highlight">atLeastOnce()</span>).methodName()</code> — 至少1次。<br>
+• <strong>面试亮点</strong>：verify+ArgumentCaptor可以捕获实际传入的参数，验证"方法被调用时传了什么值"。
+</div>
+</div>
+
+<div class="card">
+<h2>第5题</h2>
+<div class="q">@SpringBootTest 和 @WebMvcTest 有什么区别？</div>
+<div class="a">
+<strong>标准回答：</strong><br>
+• <code>@SpringBootTest</code>：启动<strong>完整</strong>Spring上下文（所有Bean），适合端到端集成测试。<br>
+• <code>@WebMvcTest</code>：<strong>只加载Controller层</strong>，Service/Repository需要MockBean。轻量、快速，专注Web层。<br>
+• <code>@DataJpaTest</code>：只加载JPA相关Bean，用于Repository层测试。<br>
+• <strong>原则</strong>：越窄的测试范围越快。Controller测试用 <code>@WebMvcTest</code>，Service测试用纯Mockito不需要Spring。
+</div>
+</div>
+
+<div class="card">
+<h2>第6题</h2>
+<div class="q">单元测试的覆盖率一般要求多少？你项目里覆盖率是多少？</div>
+<div class="a">
+<strong>标准回答：</strong><br>
+• 行业标准：<strong>行覆盖率70-80%</strong>，分支覆盖率60-70%。<br>
+• 但覆盖率≠质量——<strong>关键逻辑100%覆盖，简单getter/setter可以不测</strong>。<br>
+• 我的项目：核心业务（SeckillService的库存扣减、AIService的RAG调用）写了单元测试覆盖核心路径。<br>
+• <strong>面试亮点</strong>：JaCoCo插件生成HTML覆盖率报告，集成到CI流水线中。
+</div>
+</div>
+
+<div class="card">
+<h2>第7题</h2>
+<div class="q">测试方法命名规范是怎样的？</div>
+<div class="a">
+<strong>标准回答：</strong><br>
+• 业界主流：<code>methodName_StateUnderTest_ExpectedBehavior</code><br>
+• 例如：<code>doSeckill_StockZero_ReturnsFailure()</code><br>
+• JUnit5推荐 <code>@DisplayName("库存为0时秒杀失败")</code> — 中文更直观。<br>
+• 也可用 BDD风格：<code>givenStockIsEmpty_whenSeckill_thenReturnError()</code><br>
+• <strong>核心</strong>：命名要能一眼看出"测什么 + 什么条件 + 期望结果"。
+</div>
+</div>
+
+<div class="card">
+<h2>第8题</h2>
+<div class="q">什么是TDD（测试驱动开发）？你怎么理解？</div>
+<div class="a">
+<strong>标准回答：</strong><br>
+• TDD三步循环：<strong>红 → 绿 → 重构</strong>。<br>
+  1. <span style="color:#e53e3e">红</span>：先写失败的测试（因为还没实现）。<br>
+  2. <span style="color:#38a169">绿</span>：写最少代码让测试通过。<br>
+  3. <strong>重构</strong>：优化代码结构，保持测试通过。<br>
+• <strong>好处</strong>：倒逼API设计、自然产生高覆盖率、重构有安全网。<br>
+• <strong>坦诚补充</strong>：实际项目中我更多是"实现后补测试"，但理解TDD理念。遇到复杂逻辑（如秒杀Lua脚本）会先想清楚输入输出再写代码——本质是TDD思维。
+</div>
+</div>
+
+<div class="card">
+<h2>第9题</h2>
+<div class="q">怎么测试异步方法？比如RocketMQ消费者？</div>
+<div class="a">
+<strong>标准回答：</strong><br>
+• <strong>方案1</strong>：Mock MQ Template，用 <code>verify()</code> 验证消息被正确发送。不测试MQ本身。<br>
+• <strong>方案2</strong>：用 <code>@SpringBootTest</code> + 嵌入式MQ（如EmbeddedKafka），端到端测消费逻辑。<br>
+• <strong>方案3</strong>：用 <code>Awaitility</code> 库等待异步结果：<br>
+  <code>await().atMost(5, SECONDS).until(() -> orderRepo.findByXxx() != null);</code><br>
+• <strong>最佳实践</strong>：单元测试Mock MQ，集成测试用Awaitility验证异步行为。<br>
+• <strong>我的做法</strong>：秒杀项目的RocketMQ消费者，Mock了Template用verify验证消息内容，核心消费逻辑单独提取成纯函数测试。
+</div>
+</div>
+
+<div class="card">
+<h2>第10题</h2>
+<div class="q">Spring Boot测试中怎么隔离数据库？H2和TestContainers怎么选？</div>
+<div class="a">
+<strong>标准回答：</strong><br>
+• <strong>H2内存数据库</strong>：Spring Boot自动配置，<code>application-test.yml</code> 指定 <code>jdbc:h2:mem:testdb</code>。优点：零依赖、极快。缺点：和MySQL语法有差异。<br>
+• <strong>TestContainers</strong>：Docker启动真实MySQL容器。优点：和生产环境一致。缺点：需要Docker、启动慢。<br>
+• <strong>选型</strong>：简单CRUD用H2，涉及MySQL特有语法（如全文索引、特定函数）用TestContainers。<br>
+• <strong>面试加分</strong>：<code>@DynamicPropertySource</code> 动态注入TestContainers的连接信息到Spring上下文。
+</div>
+</div>
+
+<div class="donate">
+<h3>💛 这份面试题帮到你了？</h3>
+<p>全部工具免费开源，请杯咖啡支持持续更新 ☕</p>
+<img src="https://raw.githubusercontent.com/Abyte-zym/jarvis-backup/main/wechat-reward.jpg" alt="微信赞赏码" onerror="this.style.display='none'">
+<p style="font-size:.8em;color:#a0aec0;margin-top:8px">扫码赞赏 · 或者分享给也在找Java实习的朋友</p>
+</div>
+
+<div class="tip" style="background:#f0fff4;border:1px solid #c6f6d5">
+📋 <strong>全部面试资源一键导航：</strong><br>
+<a href="https://Abyte-zym.github.io/arsenal" style="color:#2f855a;font-weight:600">Abyte-zym.github.io/arsenal</a> ← 24篇文章 + 21个工具 · 永久免费
+</div>
+
+<footer>
+<a href="./index.html">📚 博客首页</a> |
+<a href="https://Abyte-zym.github.io/arsenal">🎯 弹药库</a> |
+<a href="https://Abyte-zym.github.io/java-interview-quiz">☕ 面试题库</a> |
+<a href="https://Abyte-zym.github.io/java-resume-builder">📝 简历生成</a>
+<p style="margin-top:8px">© 2026 Abyte-zym · 用爱发电 · 赞赏支持</p>
+</footer>
+
+</div>
+</body>
+</html>
