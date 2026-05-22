@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL高级面试10题 | Java实习面试速通（2026版）</title>
+<meta name="description" content="2026 Java实习SQL高级面试题：窗口函数、CTE递归、索引优化、慢查询分析、分库分表、EXPLAIN实战。附标准答案+代码。">
+<meta name="keywords" content="SQL面试题,窗口函数,CTE,索引优化,慢查询,分库分表,Java实习2026">
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:800px;margin:0 auto;padding:20px;line-height:1.8;color:#333}
+h1{color:#2c3e50;border-bottom:3px solid #3498db;padding-bottom:10px}
+.q{margin:25px 0;background:#f8f9fa;border-radius:8px;padding:20px;border-left:4px solid #3498db}
+.q h3{margin:0 0 10px;color:#2c3e50}
+code{background:#ecf0f1;padding:2px 6px;border-radius:3px;font-size:14px}
+pre{background:#2c3e50;color:#ecf0f1;padding:15px;border-radius:6px;overflow-x:auto}
+.donate{text-align:center;margin:40px 0;padding:20px;background:#fff3cd;border-radius:8px}
+.donate img{max-width:200px}
+nav{margin:20px 0;padding:10px;background:#e8f4f8;border-radius:8px;font-size:14px}
+nav a{margin:0 10px;color:#3498db}
+</style>
+</head>
+<body>
+<h1>🧠 SQL高级面试10题（2026 Java实习）</h1>
+<nav><strong>📚 Java面试全站导航：</strong>
+<a href="https://Abyte-zym.github.io/arsenal">弹药库总入口</a> |
+<a href="https://Abyte-zym.github.io/java-career-blog">博客首页</a> |
+<a href="https://Abyte-zym.github.io/java-interview-quiz">面试题库</a>
+</nav>
+
+<div class="q">
+<h3>1. 什么是窗口函数？ROW_NUMBER/RANK/DENSE_RANK 区别？</h3>
+<p><strong>答案：</strong>窗口函数在不改变行数的情况下进行聚合计算。ROW_NUMBER不处理并列，RANK并列跳号，DENSE_RANK并列不跳号。</p>
+<pre>SELECT name, score,
+  ROW_NUMBER() OVER(ORDER BY score DESC) as rn,
+  RANK() OVER(ORDER BY score DESC) as rk,
+  DENSE_RANK() OVER(ORDER BY score DESC) as dr
+FROM student;</pre>
+<p><strong>追问：</strong>PARTITION BY和ORDER BY同时用时，窗口函数怎么执行？先PARTITION分组，再在每个组内按ORDER BY排序计算。</p>
+</div>
+
+<div class="q">
+<h3>2. CTE（公用表表达式）是什么？递归CTE怎么用？</h3>
+<p><strong>答案：</strong>CTE是临时命名的结果集，可被后续查询引用。递归CTE用于处理树形结构（组织架构、评论回复）。</p>
+<pre>WITH RECURSIVE org_tree AS (
+  SELECT id, name, parent_id, 1 as level FROM org WHERE parent_id IS NULL
+  UNION ALL
+  SELECT o.id, o.name, o.parent_id, t.level+1
+  FROM org o JOIN org_tree t ON o.parent_id = t.id
+) SELECT * FROM org_tree;</pre>
+</div>
+
+<div class="q">
+<h3>3. 慢查询怎么定位和优化？</h3>
+<p><strong>答案：</strong>三步走——①开启<code>slow_query_log</code>抓慢SQL ②<code>EXPLAIN</code>分析执行计划 ③按type≥range、key有值、rows尽可能小优化。重点关注type=ALL（全表扫描）和Extra含Using filesort。</p>
+</div>
+
+<div class="q">
+<h3>4. EXPLAIN 各字段含义？重点看什么？</h3>
+<p><strong>答案：</strong>type（访问类型，ALL<index<range<ref<eq_ref<const最差到最优）、key（实际使用的索引）、rows（扫描行数）、Extra（Using index覆盖索引、Using filesort需排序、Using temporary需临时表）。</p>
+</div>
+
+<div class="q">
+<h3>5. 索引失效的10种场景？</h3>
+<p>①LIKE '%xxx'左模糊 ②联合索引不满足最左前缀 ③索引列用函数/计算 ④隐式类型转换 ⑤OR连接非索引字段 ⑥!=或<> ⑦IS NULL/IS NOT NULL（部分场景） ⑧范围查询右侧列失效 ⑨NOT IN子查询 ⑩数据量太小优化器选择全表扫描</p>
+</div>
+
+<div class="q">
+<h3>6. 分库分表怎么设计？水平拆分 vs 垂直拆分？</h3>
+<p><strong>答案：</strong>垂直拆分按业务模块（用户库、订单库），水平拆分按数据行（单表过大时按user_id取模分片）。常用中间件：ShardingSphere。核心问题是跨库JOIN和分布式事务——解法是冗余字段+最终一致性。</p>
+</div>
+
+<div class="q">
+<h3>7. MySQL事务隔离级别及各自解决的问题？</h3>
+<p>READ UNCOMMITTED：无锁，有脏读。READ COMMITTED：解决脏读，有不可重复读。REPEATABLE READ（MySQL默认）：解决不可重复读，有幻读（InnoDB用间隙锁解决）。SERIALIZABLE：全部解决，性能最差。</p>
+</div>
+
+<div class="q">
+<h3>8. InnoDB的MVCC怎么实现的？</h3>
+<p><strong>答案：</strong>基于undo log版本链+ReadView。每行有隐藏列trx_id和roll_pointer。事务开始时生成ReadView，通过判断trx_id是否在活跃事务列表中决定可见性。READ COMMITTED每次查询都生成新ReadView，REPEATABLE READ第一次查询生成。</p>
+</div>
+
+<div class="q">
+<h3>9. SQL联合查询：INNER JOIN/LEFT JOIN/RIGHT JOIN/FULL JOIN 区别及应用场景？</h3>
+<p>INNER JOIN取交集，LEFT JOIN以左表为准右表补NULL，RIGHT JOIN相反，FULL JOIN（MySQL不支持，可用UNION实现）取并集。实战中LEFT JOIN最常见——查用户及其订单"SELECT u.*, o.amount FROM user u LEFT JOIN orders o ON u.id=o.uid"。</p>
+</div>
+
+<div class="q">
+<h3>10. 如何设计一个高并发的数据库架构？</h3>
+<p><strong>答案：</strong>读写分离（主写从读）、分库分表（降低单库压力）、缓存层（Redis挡热点数据）、连接池调优（HikariCP）、SQL预编译（防注入+提升性能）、监控告警（慢查询+P99延迟）。</p>
+</div>
+
+<div class="donate">
+<h3>☕ 这篇文章帮到你了？</h3>
+<p>整理不易，请我喝杯咖啡吧 🙏</p>
+<img src="mm_facetoface_collect_qrcode_1779427130944.png" alt="赞赏码">
+<p style="font-size:12px;color:#999">微信扫一扫，支持创作者</p>
+</div>
+
+<nav style="margin-top:30px">
+<strong>🔗 更多免费工具：</strong>
+<a href="https://Abyte-zym.github.io/java-resume-builder">简历生成器</a> |
+<a href="https://Abyte-zym.github.io/java-interview-quiz">面试题库</a> |
+<a href="https://Abyte-zym.github.io/interview-simulator">模拟面试</a> |
+<a href="https://Abyte-zym.github.io/java-knowledge-map">知识全景图</a> |
+<a href="https://Abyte-zym.github.io/java-cheatsheet">速查卡片</a> |
+<a href="https://Abyte-zym.github.io/arsenal">全部工具 →</a>
+</nav>
+</body>
+</html>
