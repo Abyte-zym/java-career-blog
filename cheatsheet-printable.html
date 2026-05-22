@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java面试一页纸速查表 · 打印版PDF | 2026</title>
+<meta name="description" content="Java面试全部考点浓缩一页纸。打印出来面试前5分钟扫一眼，覆盖HashMap/JVM/并发/Spring/MySQL/Redis/微服务/AI。免费下载+赞赏支持。">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+@media print{
+  body{font-size:7pt;line-height:1.3;color:#000;background:#fff}
+  .no-print{display:none!important}
+  .cheatsheet{max-width:100%;padding:5mm;box-shadow:none}
+}
+body{font-family:'Courier New',monospace;background:#1a1a2e;color:#e0e0e0;padding:10px}
+.cheatsheet{max-width:210mm;margin:0 auto;background:#fff;color:#111;padding:10px;font-size:7pt;line-height:1.35;box-shadow:0 0 30px rgba(0,0,0,0.5);border-radius:5px}
+.cheatsheet h1{font-size:11pt;text-align:center;margin:5px 0;border-bottom:2px solid #333;padding-bottom:3px;color:#111}
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.col{border-right:1px solid #ddd;padding:0 5px}
+.col:last-child{border-right:none}
+.section{margin-bottom:8px}
+.section h2{font-size:7.5pt;background:#333;color:#fff;padding:2px 5px;margin:3px 0;border-radius:2px}
+.item{margin:2px 0;font-size:6.5pt}
+.keyword{color:#d63031;font-weight:bold}
+.code{background:#f0f0f0;padding:1px 3px;border-radius:2px;font-size:6pt}
+.no-print{text-align:center;margin:15px;color:#999}
+.no-print button{background:#ff6b6b;color:#fff;border:none;padding:10px 25px;border-radius:20px;font-size:1em;cursor:pointer;margin:5px}
+.no-print a{color:#4ecdc4}
+</style>
+</head>
+<body>
+
+<div class="no-print">
+<h2 style="color:#ff6b6b">📄 Java面试一页纸速查表</h2>
+<p style="color:#999">Ctrl+P 直接打印 | 面试前5分钟扫一眼 | 持续更新</p>
+<button onclick="window.print()">🖨️ 打印成PDF</button>
+<p style="margin-top:15px;font-size:0.85em;color:#999">免费下载 · 如果帮到你了请<a href="#appreciate" style="color:#ff6b6b">赞赏支持</a> ☕</p>
+</div>
+
+<div class="cheatsheet">
+<h1>☕ Java面试一页纸速查表 2026.05</h1>
+
+<div class="cols">
+<!-- COL 1: Core -->
+<div class="col">
+<div class="section">
+<h2>HashMap</h2>
+<div class="item"><span class="keyword">结构：</span>数组+链表+红黑树(>8转树,<6退链)</div>
+<div class="item"><span class="keyword">put：</span>hash→index→空则放/有则链/树则putTreeVal</div>
+<div class="item"><span class="keyword">扩容：</span>size>threshold(容量×0.75)→2倍→rehash</div>
+<div class="item"><span class="keyword">1.7vs1.8：</span>头插→尾插(防死循环)</div>
+</div>
+<div class="section">
+<h2>ConcurrentHashMap</h2>
+<div class="item"><span class="keyword">1.7：</span>Segment分段锁(ReentrantLock)</div>
+<div class="item"><span class="keyword">1.8：</span>CAS+synchronized锁头节点</div>
+<div class="item"><span class="keyword">扩容：</span>多线程并发迁移(sizeCtl)</div>
+</div>
+<div class="section">
+<h2>JVM</h2>
+<div class="item"><span class="keyword">内存：</span>堆/栈/方法区(元空间)/程序计数器/本地方法栈</div>
+<div class="item"><span class="keyword">GC算法：</span>标记清除/复制/标记整理/分代</div>
+<div class="item"><span class="keyword">CMS：</span>初始标记→并发标记→重新标记→并发清除</div>
+<div class="item"><span class="keyword">G1：</span>Region分区·可预测停顿·Mixed GC</div>
+<div class="item"><span class="keyword">类加载：</span>双亲委派·Bootstrap→Extension→App→Custom</div>
+</div>
+<div class="section">
+<h2>并发</h2>
+<div class="item"><span class="keyword">synchronized：</span>偏向→轻量(自旋)→重量(OS互斥量)</div>
+<div class="item"><span class="keyword">volatile：</span>可见性+禁重排·不保证原子性</div>
+<div class="item"><span class="keyword">AQS：</span>CLH队列+state+CAS·ReentrantLock/Semaphore基类</div>
+<div class="item"><span class="keyword">线程池：</span>corePool→queue→maxPool→reject</div>
+</div>
+<div class="section">
+<h2>设计模式</h2>
+<div class="item"><span class="keyword">单例DCL：</span>volatile+双重检查+synchronized</div>
+<div class="item"><span class="keyword">Spring用了：</span>工厂/代理/模板方法/观察者/策略/适配器/装饰器/单例/原型/责任链</div>
+</div>
+</div>
+
+<!-- COL 2: Framework -->
+<div class="col">
+<div class="section">
+<h2>Spring Boot</h2>
+<div class="item"><span class="keyword">@SpringBootApplication=</span>@Configuration+@EnableAutoConfiguration+@ComponentScan</div>
+<div class="item"><span class="keyword">自动配置：</span>META-INF/spring.factories→条件装配</div>
+<div class="item"><span class="keyword">IoC容器：</span>BeanFactory(基础)·ApplicationContext(高级)</div>
+<div class="item"><span class="keyword">Bean生命周期：</span>实例化→属性注入→Aware→BPP前置→init→BPP后置→使用→destroy</div>
+</div>
+<div class="section">
+<h2>AOP & 事务</h2>
+<div class="item"><span class="keyword">动态代理：</span>JDK(接口)·CGLIB(继承)</div>
+<div class="item"><span class="keyword">@Transactional失效：</span>①非public ②自调用 ③异常被catch ④rollbackFor不对 ⑤final类</div>
+</div>
+<div class="section">
+<h2>MySQL</h2>
+<div class="item"><span class="keyword">B+树：</span>数据存叶子·叶子双向链表·非叶子只存key</div>
+<div class="item"><span class="keyword">最左前缀：</span>(a,b,c)→a可用，a+b可用，只有b不可用</div>
+<div class="item"><span class="keyword">索引失效：</span>①LIKE '%x' ②OR非索引 ③函数操作 ④隐式转换 ⑤!=/<> ⑥IS NULL</div>
+<div class="item"><span class="keyword">EXPLAIN重点：</span>type(ALL<index<range<ref<const)·key·rows·Extra</div>
+</div>
+<div class="section">
+<h2>Redis</h2>
+<div class="item"><span class="keyword">5类型：</span>String·Hash·List·Set·ZSet</div>
+<div class="item"><span class="keyword">穿透：</span>布隆过滤器+缓存空值</div>
+<div class="item"><span class="keyword">击穿：</span>互斥锁+逻辑过期+热点永不过期</div>
+<div class="item"><span class="keyword">雪崩：</span>随机TTL+多级缓存+限流</div>
+<div class="item"><span class="keyword">持久化：</span>RDB(快照)+AOF(追加命令)</div>
+</div>
+<div class="section">
+<h2>消息队列</h2>
+<div class="item"><span class="keyword">RocketMQ：</span>NameServer+Broker·事务消息(半消息+回查)</div>
+<div class="item"><span class="keyword">Kafka：</span>高吞吐·分区有序·ISR机制</div>
+<div class="item"><span class="keyword">不丢：</span>同步刷盘+手动ACK+重试</div>
+</div>
+</div>
+
+<!-- COL 3: Distributed + AI -->
+<div class="col">
+<div class="section">
+<h2>分布式</h2>
+<div class="item"><span class="keyword">CAP：</span>一致性·可用性·分区容忍→只能同时满足两个</div>
+<div class="item"><span class="keyword">分布式事务：</span>2PC·TCC·消息表·Seata AT</div>
+<div class="item"><span class="keyword">分布式锁：</span>Redis SETNX+过期+WatchDog自动续期</div>
+<div class="item"><span class="keyword">雪花算法：</span>1位+41位时间+10位机器+12位序列</div>
+</div>
+<div class="section">
+<h2>Spring Cloud Alibaba</h2>
+<div class="item"><span class="keyword">Nacos：</span>服务注册+配置中心(AP模式)</div>
+<div class="item"><span class="keyword">Sentinel：</span>流量控制·熔断降级·系统保护</div>
+<div class="item"><span class="keyword">Gateway：</span>路由·鉴权·限流·跨域</div>
+<div class="item"><span class="keyword">Seata：</span>AT模式(自动回滚)·TCC模式</div>
+</div>
+<div class="section">
+<h2>系统设计</h2>
+<div class="item"><span class="keyword">短URL：</span>发号器(Base62)+缓存+302重定向</div>
+<div class="item"><span class="keyword">秒杀：</span>Redis Lua扣库存+RocketMQ削峰+Sentinel限流</div>
+</div>
+<div class="section">
+<h2>AI（2026必问）</h2>
+<div class="item"><span class="keyword">Agent=</span>LLM+Planning+Memory+Tools</div>
+<div class="item"><span class="keyword">RAG：</span>文档分块→向量检索→Prompt增强→生成回答</div>
+<div class="item"><span class="keyword">Spring AI：</span>ChatClient+EmbeddingModel+VectorStore</div>
+</div>
+<div class="section">
+<h2>计算机网络</h2>
+<div class="item"><span class="keyword">TCP三次握手：</span>SYN→SYN+ACK→ACK</div>
+<div class="item"><span class="keyword">HTTPS：</span>非对称加密交换对称密钥→对称加密通信</div>
+</div>
+<div class="section">
+<h2>Docker</h2>
+<div class="item"><span class="keyword">镜像分层：</span>每层只读·Copy-on-Write</div>
+<div class="item"><span class="keyword">Dockerfile：</span>FROM→RUN→COPY→EXPOSE→CMD</div>
+</div>
+</div>
+</div>
+
+</div>
+
+<div class="no-print" id="appreciate">
+<p style="margin-top:20px;font-size:0.9em;color:#999">📄 打印出来贴在墙上！面试前5分钟扫一眼</p>
+<p style="color:#ff6b6b;margin:10px 0">如果这页纸帮到你了 ☕ → 微信赞赏码</p>
+<p style="font-size:0.8em;color:#666">更多工具 → <a href="https://Abyte-zym.github.io/java-career-blog">Java面试百科全书</a></p>
+</div>
+
+</body>
+</html>
