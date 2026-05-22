@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>gRPC+Protobuf面试10题 | Java实习面试通关</title>
+<meta name="description" content="gRPC vs REST、Protobuf编码原理、gRPC四种模式(一元/服务端流/客户端流/双向流)、HTTP/2多路复用、拦截器链——2026必问10题，标准答案直接背。">
+<meta name="keywords" content="gRPC面试题,Protobuf,gRPC四种模式,Protobuf vs JSON,gRPC vs REST,HTTP/2,gRPC拦截器,Java后端面试,2026">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.8;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:1.8em;color:#38bdf8;margin:20px 0 10px;text-align:center}
+.meta{text-align:center;color:#94a3b8;margin-bottom:30px;font-size:0.9em}
+.question{background:#1e293b;border-radius:12px;padding:24px;margin:20px 0;border-left:4px solid #10b981}
+.question h3{color:#facc15;margin-bottom:12px;font-size:1.1em}
+.answer{background:#0f172a;border-radius:8px;padding:16px;margin-top:12px;border:1px solid #334155}
+.answer strong{color:#4ade80}
+code{background:#1e293b;padding:2px 6px;border-radius:4px;font-size:0.9em;color:#f472b6}
+pre{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:16px;overflow-x:auto;margin:10px 0}
+.donate{text-align:center;margin:40px 0;padding:24px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;border:2px solid #facc15}
+.donate p{color:#facc15;font-size:1.2em;margin-bottom:12px}
+.donate img{width:200px;border-radius:12px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:30px 0}
+.nav a{background:#1e293b;color:#94a3b8;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:0.85em;transition:all .2s}
+.nav a:hover{background:#38bdf8;color:#0f172a}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>⚡ gRPC+Protobuf面试10题</h1>
+<p class="meta">第57篇 · Java后端实习生面试 · 2026年5月 · 标准答案直接背</p>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部57篇</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../interview-quiz/">☕ 题库</a>
+<a href="../resume-builder/">📝 简历</a>
+</div>
+
+<div class="question">
+<h3>Q1：gRPC和REST有什么区别？什么时候选gRPC？</h3>
+<div class="answer">
+<strong>核心区别：</strong><br>
+| | gRPC | REST |
+|--|------|------|
+| 协议 | HTTP/2 | HTTP/1.1 |
+| 数据格式 | Protobuf(二进制) | JSON(文本) |
+| 接口定义 | .proto文件 | OpenAPI/Swagger |
+| 性能 | 高(二进制+多路复用) | 相对低 |
+| 浏览器支持 | 需grpc-web | 原生支持 |
+| 代码生成 | 自动生成客户端 | 手动/OpenAPI生成 |
+
+<strong>选gRPC的场景：</strong>微服务间通信、低延迟要求、需要流式传输、多语言环境。<br>
+<strong>选REST的场景：</strong>对外开放API、需要浏览器直接调用、团队对Protobuf不熟。
+</div>
+</div>
+
+<div class="question">
+<h3>Q2：Protobuf为什么比JSON快？编码原理简单说</h3>
+<div class="answer">
+<strong>3个原因：</strong><br>
+1. <strong>二进制编码：</strong>字段用数字标签(1,2,3)而非字符串key，数据体积小很多<br>
+2. <strong>Varint压缩：</strong>整数用变长编码，小数字只占1-2字节<br>
+3. <strong>无Schema开销：</strong>发送方和接收方都有.proto定义，只传值不传结构<br><br>
+
+<strong>面试加分：</strong>提到Protobuf向后兼容——加了新字段，旧版能忽略，新版能读到默认值。因为用数字标签而非字段名。
+</div>
+</div>
+
+<div class="question">
+<h3>Q3：gRPC四种服务模式是什么？各用在什么场景？</h3>
+<div class="answer">
+<pre>// 1. 一元RPC（Unary）—— 一问一答
+rpc GetOrder(OrderRequest) returns (OrderResponse);
+
+// 2. 服务端流式 —— 客户端发一次，服务端持续推送
+rpc ListOrders(OrderFilter) returns (stream Order);
+
+// 3. 客户端流式 —— 客户端持续发送，服务端汇总回复
+rpc UploadLogs(stream LogEntry) returns (UploadResult);
+
+// 4. 双向流式 —— 双方独立读写
+rpc Chat(stream Message) returns (stream Message);</pre>
+<strong>场景：</strong><br>
+- 一元：普通API调用<br>
+- 服务端流：订阅推送、大文件下载<br>
+- 客户端流：批量上传、日志收集<br>
+- 双向流：聊天、实时协作
+</div>
+</div>
+
+<div class="question">
+<h3>Q4：gRPC拦截器（Interceptor）怎么用？和Spring AOP什么关系？</h3>
+<div class="answer">
+<strong>两种拦截器：</strong><br>
+<strong>客户端拦截器：</strong>发请求前自动加token/日志/超时<br>
+<strong>服务端拦截器：</strong>收请求时做鉴权/限流/监控<br><br>
+
+<pre>// 客户端拦截器示例
+public class AuthInterceptor implements ClientInterceptor {
+    public <ReqT,RespT> ClientCall<ReqT,RespT> interceptCall(
+        MethodDescriptor<ReqT,RespT> method, CallOptions callOptions, Channel next) {
+        return new ForwardingClientCall.Simple<ReqT,RespT>(next.newCall(method,callOptions)) {
+            public void start(Listener<RespT> responseListener, Metadata headers) {
+                headers.put(Metadata.Key.of("Authorization",
+                    Metadata.ASCII_STRING_MARSHALLER), "Bearer xxx");
+                super.start(responseListener, headers);
+            }
+        };
+    }
+}</pre>
+<strong>和Spring AOP的对比：</strong>思想一致——不侵入业务代码做增强。gRPC拦截器绑定RPC生命周期，AOP绑定Bean生命周期。
+</div>
+</div>
+
+<div class="question">
+<h3>Q5：HTTP/2的哪些特性支撑了gRPC的性能？</h3>
+<div class="answer">
+<strong>3个关键特性：</strong><br>
+1. <strong>多路复用（Multiplexing）：</strong>一个TCP连接承载多个并发请求，解决HTTP/1.1的队头阻塞<br>
+2. <strong>头部压缩（HPACK）：</strong>请求头用静态表+动态表压缩，Protobuf元数据体积更小<br>
+3. <strong>服务端推送（Server Push）：</strong>服务端可主动推数据（gRPC流式基于此）<br><br>
+
+<strong>面试时画个对比：</strong>HTTP/1.1是单车道一条龙排队，HTTP/2是多车道同时跑。
+</div>
+</div>
+
+<div class="question">
+<h3>Q6：Protobuf的向后兼容性怎么保证？</h3>
+<div class="answer">
+<strong>核心规则：</strong><br>
+- <strong>不能改已有字段的编号</strong>（数字标签是身份的标识）<br>
+- <strong>新增字段用新编号</strong>，旧客户端会自动忽略<br>
+- <strong>删除字段时标记 <code>reserved</code></strong>，防止编号被重用<br>
+- <strong>不要改字段类型</strong>（int32改成string=灾难）<br><br>
+
+<pre>message User {
+  reserved 2, 15, 9 to 11;  // 已废弃的字段号
+  reserved "old_email", "nickname";  // 已废弃的字段名
+  int64 id = 1;
+  string name = 3;  // 原来email在2，已废弃；新字段用3
+}</pre>
+</div>
+</div>
+
+<div class="question">
+<h3>Q7：gRPC的Deadline/Timeout怎么设置？超时后行为？</h3>
+<div class="answer">
+<strong>设置方式：</strong>
+<pre>// 客户端设置1秒超时
+stub.withDeadlineAfter(1, TimeUnit.SECONDS).getOrder(request);</pre>
+
+<strong>超时后：</strong><br>
+- 客户端收到 <code>Status.DEADLINE_EXCEEDED</code><br>
+- 服务端可以通过 <code>Context.current().getDeadline()</code> 检查是否已超时，避免做无用功<br>
+- gRPC会自动取消正在进行的RPC<br><br>
+
+<strong>面试加分：</strong>提到 <code>Deadline</code> 是绝对时间，<code>Timeout</code> 是相对时长。Deadline会在调用链上传递——A调B时，B的Deadline=min(A的Deadline, B自己的Deadline)。
+</div>
+</div>
+
+<div class="question">
+<h3>Q8：gRPC的负载均衡怎么实现？</h3>
+<div class="answer">
+<strong>两种模式：</strong><br>
+1. <strong>服务端LB（推荐）：</strong>Nginx/Envoy在前面做代理层负载均衡<br>
+2. <strong>客户端LB：</strong>客户端通过NameResolver从注册中心拿全部实例，自己轮询<br><br>
+
+<strong>客户端LB示例（配合Nacos）：</strong>
+<pre>channel = ManagedChannelBuilder.forTarget("nacos://my-service")
+    .defaultLoadBalancingPolicy("round_robin")
+    .usePlaintext()
+    .build();</pre>
+
+<strong>面试时对比：</strong>微服务里gRPC通常配客户端LB+长连接——和Dubbo一样，省去一层网络跳转。
+</div>
+</div>
+
+<div class="question">
+<h3>Q9：gRPC中如何处理错误？和HTTP状态码的对应关系？</h3>
+<div class="answer">
+<strong>gRPC用 Status 而非HTTP状态码：</strong><br>
+| gRPC Status | HTTP Code | 含义 |
+|-------------|-----------|------|
+| OK | 200 | 成功 |
+| INVALID_ARGUMENT | 400 | 参数错误 |
+| UNAUTHENTICATED | 401 | 未认证 |
+| PERMISSION_DENIED | 403 | 无权限 |
+| NOT_FOUND | 404 | 资源不存在 |
+| INTERNAL | 500 | 内部错误 |
+| UNAVAILABLE | 503 | 服务不可用 |
+| DEADLINE_EXCEEDED | 504 | 超时 |
+
+<pre>// 服务端返回错误
+responseObserver.onError(
+    Status.NOT_FOUND.withDescription("订单不存在").asRuntimeException()
+);
+// 客户端处理
+catch (StatusRuntimeException e) {
+    if (e.getStatus().getCode() == Status.Code.NOT_FOUND) { ... }
+}</pre>
+</div>
+</div>
+
+<div class="question">
+<h3>Q10：.proto文件怎么定义？Service注解编译后生成什么？</h3>
+<div class="answer">
+<strong>完整.proto示例：</strong>
+<pre>syntax = "proto3";
+package com.example.order;
+
+service OrderService {
+  rpc CreateOrder(CreateOrderReq) returns (CreateOrderResp);
+  rpc GetOrder(GetOrderReq) returns (Order);
+}
+
+message CreateOrderReq {
+  int64 user_id = 1;
+  repeated OrderItem items = 2;  // repeated=数组
+}
+message OrderItem {
+  int64 product_id = 1;
+  int32 quantity = 2;
+}</pre>
+
+<strong>编译后生成：</strong><br>
+- <code>OrderServiceGrpc.java</code>：包含 <code>OrderServiceImplBase</code>（服务端继承）、<code>OrderServiceStub</code>（客户端异步）、<code>OrderServiceBlockingStub</code>（客户端同步）<br>
+- <code>CreateOrderReq.java</code>：每个message生成一个类，含builder模式
+</div>
+</div>
+
+<div class="donate">
+<p>☕ 这篇文章帮到你了？</p>
+<p style="color:#94a3b8;font-size:0.9em">请作者喝杯咖啡，支持持续更新56篇面试干货</p>
+<img src="../mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏码">
+<p style="font-size:0.8em;color:#64748b;margin-top:8px">微信扫码赞赏</p>
+</div>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部57篇文章</a>
+<a href="../arsenal/">🎯 Java面试弹药库</a>
+<a href="../java-skill-radar/">📊 技能雷达</a>
+<a href="../interview-quiz/">☕ 真题题库</a>
+</div>
+
+</div>
+</body>
+</html>
