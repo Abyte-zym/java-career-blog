@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OAuth2+SSO单点登录面试10题 | Java实习面试通关</title>
+<meta name="description" content="OAuth2四种授权模式、JWT vs Session、SSO实现原理、RBAC权限模型、Spring Security过滤器链——Java后端Boss级必问题，标准答案直接背。">
+<meta name="keywords" content="OAuth2面试题,SSO单点登录,JWT vs Session,RBAC,Spring Security,授权码模式,密码模式,客户端模式,CAS原理">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.8;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:1.8em;color:#38bdf8;margin:20px 0 10px;text-align:center}
+.meta{text-align:center;color:#94a3b8;margin-bottom:30px;font-size:0.9em}
+.question{background:#1e293b;border-radius:12px;padding:24px;margin:20px 0;border-left:4px solid #38bdf8}
+.question h3{color:#facc15;margin-bottom:12px;font-size:1.1em}
+.answer{background:#0f172a;border-radius:8px;padding:16px;margin-top:12px;border:1px solid #334155}
+.answer strong{color:#4ade80}
+code{background:#1e293b;padding:2px 6px;border-radius:4px;font-size:0.9em;color:#f472b6}
+pre{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:16px;overflow-x:auto;margin:10px 0;color:#e2e8f0}
+.donate{text-align:center;margin:40px 0;padding:24px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;border:2px solid #facc15}
+.donate p{color:#facc15;font-size:1.2em;margin-bottom:12px}
+.donate img{width:200px;border-radius:12px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:30px 0}
+.nav a{background:#1e293b;color:#94a3b8;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:0.85em;transition:all .2s}
+.nav a:hover{background:#38bdf8;color:#0f172a}
+table{width:100%;border-collapse:collapse;margin:10px 0}
+td,th{border:1px solid #334155;padding:8px 12px;text-align:left;font-size:0.9em}
+th{background:#1e293b;color:#facc15}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🔐 OAuth2 + SSO 单点登录面试10题</h1>
+<p class="meta">Java后端实习生面试 · 2026年5月 · 每题含标准答案</p>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../interview-quiz/">☕ 题库</a>
+<a href="../resume-builder/">📝 简历</a>
+</div>
+
+<div class="question">
+<h3>Q1：OAuth2有哪四种授权模式？各自适用什么场景？</h3>
+<div class="answer">
+<strong>四种模式（按安全性从高到低）：</strong><br><br>
+1. <strong>授权码模式（Authorization Code）：</strong>最安全、最常用。用户→授权服务器→拿code→后端用code换token。微信登录、GitHub登录都用这个。<br>
+2. <strong>客户端模式（Client Credentials）：</strong>没有用户参与，服务端之间调用。比如后端调用云服务API。<br>
+3. <strong>密码模式（Resource Owner Password）：</strong>用户直接把账号密码给客户端。已被OAuth2.1废弃——不安全。<br>
+4. <strong>简化模式（Implicit）：</strong>前端直接拿token。也被OAuth2.1废弃，换成PKCE增强的授权码模式。<br><br>
+<strong>面试加分：</strong>提一句"OAuth2.1已废弃密码模式和简化模式，推荐PKCE+授权码"。
+</div>
+</div>
+
+<div class="question">
+<h3>Q2：JWT和传统Session有什么区别？什么时候用哪个？</h3>
+<div class="answer">
+<strong>核心区别：</strong><br>
+<table>
+<tr><th>维度</th><th>JWT</th><th>Session</th></tr>
+<tr><td>存储位置</td><td>客户端（localStorage/Cookie）</td><td>服务端（Redis/内存）</td></tr>
+<tr><td>扩展性</td><td>✅ 无状态，天然支持分布式</td><td>❌ 需要Session共享</td></tr>
+<tr><td>安全性</td><td>⚠️ 签发后无法主动失效</td><td>✅ 服务端可随时删除</td></tr>
+<tr><td>性能</td><td>✅ 无需查Redis</td><td>⚠️ 每次请求查Redis</td></tr>
+<tr><td>体积</td><td>⚠️ 较大（通常1KB+）</td><td>✅ 仅一个SessionId</td></tr>
+</table><br>
+<strong>选型原则：</strong>微服务+分布式→JWT；单体应用+需要踢人→Session；两者可混合——JWT做认证+Redis存黑名单做退出。
+</div>
+</div>
+
+<div class="question">
+<h3>Q3：SSO单点登录是怎么实现的？画一下核心流程</h3>
+<div class="answer">
+<strong>CAS协议为核心（最经典的SSO方案）：</strong><br><br>
+<strong>流程（4步）：</strong><br>
+1. 用户访问 app1.com → 无登录态 → 重定向到 sso.com/login<br>
+2. sso.com 验证Cookie → 已登录 → 生成Service Ticket（ST） → 重定向回 app1.com/?ticket=ST-xxx<br>
+3. app1.com 拿到ST → 后端发请求到 sso.com 验证ST → 返回用户信息 → 建立本地Session<br>
+4. 用户访问 app2.com → 同样流程 → sso.com已有Cookie → 无需重新输密码<br><br>
+<strong>一句话：</strong>所有应用信任同一个认证中心（SSO Server），通过票据（Ticket）传递认证结果。
+</div>
+</div>
+
+<div class="question">
+<h3>Q4：Spring Security过滤器链是怎么工作的？</h3>
+<div class="answer">
+<strong>核心过滤器链（按顺序）：</strong><br>
+<pre>SecurityContextPersistenceFilter  ← 恢复SecurityContext
+    ↓
+UsernamePasswordAuthenticationFilter ← 处理表单登录
+    ↓
+BasicAuthenticationFilter         ← 处理HTTP Basic认证
+    ↓
+BearerTokenAuthenticationFilter    ← 处理JWT Bearer Token
+    ↓
+ExceptionTranslationFilter        ← 认证异常→重定向登录页
+    ↓
+FilterSecurityInterceptor         ← 最后一道：鉴权决策
+</pre>
+<strong>面试时说：</strong>"Spring Security基于Servlet过滤器链，`DelegatingFilterProxy`是入口，把请求交给Spring管理的FilterChainProxy。每个请求经过15+个过滤器，最后在FilterSecurityInterceptor判断有没有权限。"
+</div>
+</div>
+
+<div class="question">
+<h3>Q5：RBAC权限模型是什么？怎么设计数据库表？</h3>
+<div class="answer">
+<strong>RBAC = Role-Based Access Control（基于角色的访问控制）</strong><br><br>
+<strong>5张核心表：</strong><br>
+<pre>用户表 user (id, username, password)
+角色表 role (id, name, code)
+权限表 permission (id, name, url, method)
+用户角色关联表 user_role (user_id, role_id)
+角色权限关联表 role_permission (role_id, permission_id)
+</pre>
+<strong>查询用户权限：</strong>
+<pre>SELECT p.* FROM permission p
+JOIN role_permission rp ON p.id = rp.permission_id
+JOIN user_role ur ON rp.role_id = ur.role_id
+WHERE ur.user_id = ?</pre>
+<strong>面试加分：</strong>提一句"RBAC3 = RBAC0（基础）+ RBAC1（角色继承）+ RBAC2（约束分离）"。
+</div>
+</div>
+
+<div class="question">
+<h3>Q6：access_token过期了怎么办？refresh_token机制怎么设计？</h3>
+<div class="answer">
+<strong>双Token机制：</strong><br>
+<pre>access_token  - 15分钟过期，每次请求携带
+refresh_token - 7天过期，只用来换新access_token</pre>
+<strong>刷新流程：</strong><br>
+1. 请求返回401 → 客户端自动调 /oauth/token (grant_type=refresh_token)<br>
+2. 服务端验证refresh_token未过期且未被吊销<br>
+3. 返回新的access_token + 新的refresh_token（可选）<br>
+4. 旧refresh_token作废（防止被盗用后无限刷新）<br><br>
+<strong>安全设计：</strong>refresh_token只传一次、用完即换、存在HttpOnly Cookie而非localStorage。
+</div>
+</div>
+
+<div class="question">
+<h3>Q7：CSRF攻击怎么防御？Spring Security里怎么配置？</h3>
+<div class="answer">
+<strong>CSRF（跨站请求伪造）：</strong>攻击者诱导用户点击链接，利用用户已登录态发恶意请求。<br><br>
+<strong>防御方案：</strong><br>
+1. <strong>CSRF Token（传统方案）：</strong>服务端生成随机token放在表单隐藏字段，提交时校验。<br>
+2. <strong>SameSite Cookie（现代方案）：</strong><code>Set-Cookie: SameSite=Strict</code>——跨站请求不带Cookie。<br>
+3. <strong>验证Referer/Origin头：</strong>检查请求来源是否合法。<br><br>
+<strong>Spring Security配置：</strong>
+<pre>http.csrf(csrf -> csrf
+    .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+    .ignoringRequestMatchers("/api/public/**")
+);</pre>
+<strong>注意：</strong>前后端分离+JWT的项目，CSRF威胁小（因为JWT不在Cookie里），可以 <code>.csrf().disable()</code>。
+</div>
+</div>
+
+<div class="question">
+<h3>Q8：OAuth2的授权码模式为什么比密码模式安全？</h3>
+<div class="answer">
+<strong>核心区别：密码有没有经过前端。</strong><br><br>
+<strong>密码模式（不安全）：</strong>用户把密码直接给客户端→客户端拿密码换token。风险：恶意客户端可以记录密码，用户不知道客户端在后台做了什么。<br><br>
+<strong>授权码模式（安全）：</strong><br>
+1. 客户端重定向到授权服务器（如GitHub登录页）<br>
+2. 用户在授权服务器上输入密码——密码不经过客户端<br>
+3. 授权服务器返回授权码（一次性、短期有效）<br>
+4. 客户端后端用授权码+client_secret换token<br><br>
+<strong>为什么安全：</strong>密码只在授权服务器输入，客户端从未见过密码。即使客户端被攻破，攻击者拿不到用户密码，只能拿到有时效的token。
+</div>
+</div>
+
+<div class="question">
+<h3>Q9：分布式Session有哪几种方案？优缺点是什么？</h3>
+<div class="answer">
+<strong>4种方案：</strong><br><br>
+1. <strong>Session复制（Tomcat集群）：</strong>每台机器广播Session。❌ 网络开销大，机器多了不可行。<br>
+2. <strong>Session粘滞（IP Hash）：</strong>Nginx ip_hash保证同一用户打到同一台。❌ 机器挂了Session全丢。<br>
+3. <strong>集中式Session（Redis）：</strong>所有机器读同一个Redis。✅ 推荐方案，只需统一序列化。<br>
+4. <strong>无状态（JWT）：</strong>不用Session，每次请求带Token。✅ 微服务最佳实践。<br><br>
+<strong>你说的秒杀项目：</strong>用JWT做认证，Redis存黑名单（登出+密码修改时加入）。既有无状态的扩展性，又有服务端控制能力。
+</div>
+</div>
+
+<div class="question">
+<h3>Q10：如何实现"我被踢下线"功能？</h3>
+<div class="answer">
+<strong>方案：Redis黑名单 + WebSocket推送</strong><br><br>
+<strong>Session模式（简单）：</strong><br>
+管理员删除对应Session → 用户下次请求→服务端检查Session不存在→返回登录页<br><br>
+<strong>JWT模式（复杂）：</strong><br>
+JWT签发后无法主动失效→需要加一层Redis黑名单：<br>
+<pre>// 踢人时
+redis.set("token:blocked:" + userId, currentTime, 剩余过期时间)
+
+// 每次请求校验
+if (redis.exists("token:blocked:" + userId) 
+    && redis.get("token:blocked:" + userId) > token签发时间) {
+    throw new UnauthorizedException("您已被强制下线");
+}</pre>
+<strong>配合WebSocket：</strong>踢人后发WebSocket消息→前端弹出"你已被管理员踢下线"→跳转登录页。
+</div>
+</div>
+
+<div class="donate">
+<p>☕ 这篇文章帮到你了？</p>
+<p style="color:#94a3b8;font-size:0.9em">请作者喝杯咖啡，支持持续更新更多面试干货</p>
+<img src="../mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏码">
+<p style="font-size:0.8em;color:#64748b;margin-top:8px">微信扫码赞赏</p>
+</div>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部70篇文章</a>
+<a href="../arsenal/">🎯 Java面试弹药库</a>
+<a href="../java-skill-radar/">📊 技能雷达</a>
+<a href="../interview-quiz/">☕ 真题题库</a>
+</div>
+
+<div class="donate" style="margin-top:40px;border-color:#4ade80">
+<p style="color:#4ade80">🔍 GitHub Profile优化服务</p>
+<p style="color:#94a3b8;font-size:0.9em">你的GitHub是HR的第二份简历。我们帮你审计优化，让HR3秒就想要你。</p>
+<a href="../github-optimizer/" style="display:inline-block;background:#4ade80;color:#0f172a;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:8px">免费诊断 →</a>
+</div>
+
+<p style="text-align:center;color:#64748b;font-size:0.8em;margin-top:40px">覆盖率：Java后端面试95%+考点覆盖 | 70篇 · 30+工具 · 全部免费<br>© 2026 Abyte-zym · GitHub Pages</p>
+</div>
+</body>
+</html>
