@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据库分库分表面试题 | Java实习面试通关</title>
+<meta name="description" content="MySQL分库分表10道面试题：ShardingSphere、分片键选择、跨库JOIN、全局ID、数据迁移、读写分离、MyCat对比——2026年Java后端必问，标准答案直接背。">
+<meta name="keywords" content="分库分表面试题,ShardingSphere,分片键,跨库JOIN,全局ID,读写分离,MyCat,Java后端面试,2026面试">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.8;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:1.8em;color:#38bdf8;margin:20px 0 10px;text-align:center}
+.meta{text-align:center;color:#94a3b8;margin-bottom:30px}
+.q{background:#1e293b;border-radius:12px;padding:24px;margin:20px 0;border-left:4px solid #38bdf8}
+.q h3{color:#facc15;margin-bottom:12px}
+.a{background:#0f172a;border-radius:8px;padding:16px;margin-top:12px;border:1px solid #334155}
+.a strong{color:#4ade80}
+code{background:#1e293b;padding:2px 6px;border-radius:4px;color:#f472b6}
+pre{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:16px;overflow-x:auto;margin:10px 0}
+.donate{text-align:center;margin:40px 0;padding:24px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;border:2px solid #facc15}
+.donate p{color:#facc15;font-size:1.2em;margin-bottom:12px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:30px 0}
+.nav a{background:#1e293b;color:#94a3b8;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:.85em}
+.nav a:hover{background:#38bdf8;color:#0f172a}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🗄️ 数据库分库分表面试10题</h1>
+<p class="meta">Java后端实习生面试 · 2026年5月 · 第72篇</p>
+
+<div class="nav">
+<a href="./">📚 全部文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../interview-quiz/">☕ 题库</a>
+</div>
+
+<div class="q"><h3>Q1：什么时候需要分库分表？判断标准是什么？</h3>
+<div class="a">
+<strong>三个维度判断：</strong><br>
+1. <strong>数据量：</strong>单表超过<code>500万-1000万</code>行或超过<code>2GB</code>——查询开始变慢<br>
+2. <strong>并发量：</strong>单库连接数超过<code>1000</code>——数据库扛不住<br>
+3. <strong>磁盘：</strong>单机磁盘快满了<br><br>
+<strong>口诀：</strong>"数据量大了分表，并发高了分库，磁盘满了都分。"<br>
+<strong>面试加分：</strong>提到先做缓存→索引优化→读写分离→最后才分库分表。分库分表是最后手段。
+</div></div>
+
+<div class="q"><h3>Q2：水平分库和垂直分库有什么区别？</h3>
+<div class="a">
+<strong>垂直分库（按业务拆）：</strong>用户库、订单库、商品库各拆开。每个库的表结构不同。<br>
+<strong>水平分库（按数据行拆）：</strong>订单表太大→拆成order_0、order_1……每个表结构一样。<br><br>
+<strong>一句话：</strong>垂直拆业务（不同表放不同库），水平拆数据（同一表拆多份）。<br>
+<strong>实践：</strong>先垂直再水平——电商先拆用户/订单/商品三库，订单量大了再对订单表水平拆分。
+</div></div>
+
+<div class="q"><h3>Q3：分片键（Sharding Key）怎么选？</h3>
+<div class="a">
+<strong>选择原则：</strong><br>
+1. <strong>高频查询条件：</strong>选最常出现在WHERE里的字段<br>
+2. <strong>数据均匀分布：</strong>避免热点（如按userId比按sex均匀）<br>
+3. <strong>唯一性：</strong>最好能唯一标识一行<br><br>
+<strong>反面案例：</strong>订单表按<code>status</code>分片→80%查询都是"待支付"，全打到同一片=无效分片。<br>
+<strong>正面案例：</strong>按<code>user_id % 16</code>哈希分片，数据均匀，查询单用户订单只需路由到一片。
+</div></div>
+
+<div class="q"><h3>Q4：ShardingSphere怎么配置分库分表？</h3>
+<div class="a">
+<strong>Spring Boot配置示例：</strong>
+<pre>spring:
+  shardingsphere:
+    datasource:
+      names: ds0,ds1
+      ds0: ...
+      ds1: ...
+    rules:
+      sharding:
+        tables:
+          t_order:
+            actual-data-nodes: ds$->{0..1}.t_order_$->{0..1}
+            database-strategy:
+              standard:
+                sharding-column: user_id
+                algorithm: inline
+                algorithm-expression: ds$->{user_id % 2}
+            table-strategy:
+              standard:
+                sharding-column: order_id
+                algorithm: inline
+                algorithm-expression: t_order_$->{order_id % 2}</pre>
+<strong>解读：</strong>2库×2表=4个分片。user_id%2决定进哪个库，order_id%2决定进哪个表。
+</div></div>
+
+<div class="q"><h3>Q5：分库分表后跨库JOIN怎么处理？</h3>
+<div class="a">
+<strong>6种解决方案（按推荐度排序）：</strong><br>
+1. <strong>字段冗余：</strong>把常用关联字段存多份——如订单表存user_name，不用JOIN用户表<br>
+2. <strong>应用层组装：</strong>查两次——先查订单，拿到user_id列表，再批量查用户表，代码里拼<br>
+3. <strong>全局表：</strong>小表（如配置表）每个库都存一份<br>
+4. <strong>异构索引：</strong>ES同步宽表数据，用ES做关联查询<br>
+5. <strong>ShardingSphere绑定表：</strong>order和order_item用同一个分片键，保证在同一分片<br>
+6. <strong>禁止跨库JOIN：</strong>这是最诚实的答案——分库分表后别想JOIN，从设计上规避
+</div></div>
+
+<div class="q"><h3>Q6：分布式全局ID怎么生成？雪花算法详解</h3>
+<div class="a">
+<strong>雪花算法（Snowflake）结构：</strong><br>
+<code>1bit(不用) | 41bit时间戳 | 10bit机器ID | 12bit序列号</code><br><br>
+<strong>优势：</strong>趋势递增（索引友好）、全局唯一、不依赖数据库、每秒可生成<code>409.6万</code>个<br>
+<strong>时钟回拨问题：</strong>机器时间倒退→可能生成重复ID。解决方案：<br>
+- 记录上一次生成的时间戳，发现回拨抛异常或等待<br>
+- 美团Leaf用<code>号段模式</code>：每次从数据库取一段ID，用完再取，不依赖时钟<br>
+- <strong>面试时说：</strong>"我们项目用ShardingSphere内置的雪花算法，时钟回拨问题它已处理"
+</div></div>
+
+<div class="q"><h3>Q7：分库分表后怎么保证事务一致性？</h3>
+<div class="a">
+<strong>三个层级：</strong><br>
+1. <strong>同一分片内：</strong>MySQL原生事务直接保证（数据在同一库同一表）<br>
+2. <strong>跨分片：</strong>用<strong>Seata AT模式</strong>（自动回滚），或<strong>RocketMQ事务消息</strong>（最终一致）<br>
+3. <strong>跨服务：</strong>用<strong>TCC</strong>（Try-Confirm-Cancel）或<strong>SAGA</strong><br><br>
+<strong>面试这样说：</strong>"分库分表后我们尽量避免跨分片事务。必须跨的用Seata AT模式——它对业务代码侵入小，性能损失可接受。"
+</div></div>
+
+<div class="q"><h3>Q8：读写分离怎么实现？主从延迟怎么处理？</h3>
+<div class="a">
+<strong>实现方式：</strong>
+<pre>ShardingSphere 配置：
+readwrite-splitting:
+  data-sources:
+    ds_0:
+      write-data-source-name: ds0_master
+      read-data-source-names: ds0_slave0, ds0_slave1</pre>
+<strong>主从延迟处理：</strong><br>
+1. <strong>写后立即读：</strong>强制走主库（<code>HintManager</code>设置）<br>
+2. <strong>对延迟敏感的业务：</strong>全走主库<br>
+3. <strong>对延迟不敏感：</strong>走从库（如历史订单查询）<br>
+<strong>核心原则：</strong>能接受秒级延迟的走从库，不能接受的走主库。
+</div></div>
+
+<div class="q"><h3>Q9：数据迁移怎么搞？不停机迁移方案？</h3>
+<div class="a">
+<strong>停机迁移（小厂）：</strong><br>
+凌晨2点停服→导出SQL→分片工具预分片→导入新库→验证→上线<br>
+<strong>不停机迁移（大厂）：</strong><br>
+1. <strong>双写阶段：</strong>新老库同时写<br>
+2. <strong>历史数据迁移：</strong>后台任务慢慢搬<br>
+3. <strong>灰度切读：</strong>先切1%读流量到新库→监控→逐步放量<br>
+4. <strong>下线老库：</strong>确认新库稳定后停写老库<br>
+<strong>工具：</strong>ShardingSphere-Scaling、Canal+自研脚本
+</div></div>
+
+<div class="q"><h3>Q10：分库分表后怎么分页查询？</h3>
+<div class="a">
+<strong>问题：</strong>数据分散在4个库16个表里，<code>LIMIT 100,10</code>怎么办？<br><br>
+<strong>方案一（ShardingSphere已实现）：</strong>每个分片取<code>LIMIT 0,110</code>→合并排序→内存取第100-110条<br>
+⚠️ 越往后翻性能越差（每片都要取前面所有数据）<br><br>
+<strong>方案二（游标分页）：</strong>前端传<code>lastId</code>和<code>pageSize</code>，WHERE id > lastId LIMIT 10<br>
+✅ 性能稳定，但只能"下一页"，不能跳页<br><br>
+<strong>方案三（ES异构）：</strong>分页需求复杂→数据同步ES→ES做分页查询<br>
+<strong>面试技巧：</strong>"分库分表后不做深度分页。产品设计上引导用户用搜索而非翻页。"
+</div></div>
+
+<div class="donate">
+<p>☕ 这篇文章帮到你了？</p>
+<p style="color:#94a3b8">请作者喝杯咖啡，持续更新72篇面试干货</p>
+<p style="font-size:0.8em;color:#64748b">微信扫码赞赏</p>
+</div>
+
+<div class="nav">
+<a href="./">📚 全部72篇文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../interview-quiz/">☕ 题库</a>
+<a href="../shop.html">🛒 装备商店</a>
+</div>
+</div>
+</body>
+</html>
