@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="2026 Java面试 Web安全面试10题 - CSRF/XSS/SQL注入/JWT安全/OAuth2/Spring Security/CORS加密传输，每道题含标准答案和代码示例">
+<meta name="keywords" content="Web安全面试题,CSRF攻击,XSS防御,SQL注入,Spring Security面试,JWT安全,OWASP Top 10,HTTPS面试,2026 Java面试">
+<title>🔐 Web安全 & Spring Security 面试10题 | 2026 Java面试通关</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#c9d1d9;line-height:1.8;padding:20px}
+.container{max-width:900px;margin:0 auto}
+h1{color:#58a6ff;font-size:2em;margin:20px 0;text-align:center}
+h2{color:#f0883e;font-size:1.4em;margin:30px 0 15px;border-bottom:2px solid #21262d;padding-bottom:10px}
+.question{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:20px;margin:15px 0}
+.question h3{color:#79c0ff;font-size:1.1em;margin-bottom:12px}
+.answer{background:#0d1117;border-left:3px solid #238636;padding:12px 15px;margin:10px 0;border-radius:4px}
+code{background:#1a1a2e;color:#f78166;padding:2px 6px;border-radius:3px;font-size:0.9em}
+pre{background:#161b22;padding:15px;border-radius:6px;overflow-x:auto;border:1px solid #30363d;margin:10px 0}
+pre code{background:none;color:#c9d1d9;padding:0}
+.donate{text-align:center;background:#161b22;border:2px solid #30363d;border-radius:12px;padding:25px;margin:40px 0}
+.donate img{max-width:200px;border-radius:8px}
+.donate h3{color:#d2a8ff;margin-bottom:10px}
+.nav{text-align:center;margin:30px 0;padding:20px;background:#161b22;border-radius:8px}
+.nav a{color:#58a6ff;margin:0 10px;text-decoration:none}
+.nav a:hover{text-decoration:underline}
+.stats{display:flex;justify-content:center;gap:20px;margin:15px 0;flex-wrap:wrap}
+.stat{background:#21262d;padding:8px 15px;border-radius:20px;font-size:0.85em;color:#8b949e}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🔐 Web安全 & Spring Security 面试10题</h1>
+<p style="text-align:center;color:#8b949e">2026年最新版 · 每道题含标准答案 + 代码示例</p>
+
+<div class="question">
+<h3>Q1：CSRF攻击原理？Spring Security怎么防护？</h3>
+<div class="answer">
+<p><strong>原理：</strong>攻击者诱导已登录用户点击恶意链接，利用浏览器自动携带Cookie的机制，冒充用户发起请求（如转账、改密码）。发生在第三方站点，浏览器同源策略不阻止跨站请求的发送。</p>
+<p><strong>Spring Security防护：</strong></p>
+<pre><code>// Spring Security默认开启CSRF防护
+http.csrf().csrfTokenRepository(
+    CookieCsrfTokenRepository.withHttpOnlyFalse()
+);
+// Token机制：服务端生成随机Token → 前端每个请求携带 → 后端校验
+// SameSite Cookie：设置Cookie的SameSite=Strict/Lax
+</code></pre>
+<p><strong>面试口诀：</strong>"CSRF利用Cookie自动携带 → Spring Security默认Token防护 → SameSite双重保险"</p>
+</div>
+</div>
+
+<div class="question">
+<h3>Q2：XSS攻击类型有哪些？后端如何防御？</h3>
+<div class="answer">
+<p><strong>三种类型：</strong></p>
+<ul style="margin-left:20px;margin-bottom:10px">
+<li><strong>存储型</strong>：恶意脚本存入数据库，所有人访问页面时执行（危害最大）</li>
+<li><strong>反射型</strong>：脚本写在URL参数中，服务端反射回页面时执行</li>
+<li><strong>DOM型</strong>：纯前端漏洞，js从URL取参数直接写入DOM</li>
+</ul>
+<p><strong>后端防御方案：</strong></p>
+<pre><code>// 1. 输出编码（核心）
+String safe = HtmlUtils.htmlEscape(userInput);
+// 2. 输入校验白名单
+@Pattern(regexp = "^[a-zA-Z0-9]+$")
+private String username;
+// 3. CSP响应头
+response.setHeader("Content-Security-Policy", 
+    "default-src 'self'; script-src 'self'");
+// 4. HttpOnly Cookie（防XSS窃取Cookie）
+cookie.setHttpOnly(true);
+</code></pre>
+</div>
+</div>
+
+<div class="question">
+<h3>Q3：SQL注入原理及MyBatis如何防止？</h3>
+<div class="answer">
+<p><strong>原理：</strong>攻击者在输入字段拼接SQL片段（如 <code>' OR '1'='1</code>），改变原始SQL语义，获取未授权数据或执行破坏性操作。</p>
+<pre><code>// ❌ 危险：${} 直接拼接，存在注入风险
+@Select("SELECT * FROM users WHERE name = '${name}'")
+
+// ✅ 安全：#{} 预编译，参数化查询
+@Select("SELECT * FROM users WHERE name = #{name}")
+
+// MyBatis底层：PreparedStatement → 参数与SQL分离 → 无法改变SQL结构</code></pre>
+</div>
+</div>
+
+<div class="question">
+<h3>Q4：JWT vs Session的优缺点和适用场景？</h3>
+<div class="answer">
+<table style="width:100%;border-collapse:collapse;margin:10px 0">
+<tr style="background:#21262d"><th style="padding:8px;text-align:left">维度</th><th style="padding:8px;text-align:left">JWT</th><th style="padding:8px;text-align:left">Session</th></tr>
+<tr><td style="padding:8px;border:1px solid #30363d">存储位置</td><td style="padding:8px;border:1px solid #30363d">客户端</td><td style="padding:8px;border:1px solid #30363d">服务端</td></tr>
+<tr><td style="padding:8px;border:1px solid #30363d">扩展性</td><td style="padding:8px;border:1px solid #30363d">✅ 无状态，天然分布式友好</td><td style="padding:8px;border:1px solid #30363d">⚠️ 需共享Session(Redis)</td></tr>
+<tr><td style="padding:8px;border:1px solid #30363d">安全性</td><td style="padding:8px;border:1px solid #30363d">⚠️ 签发后不可撤销</td><td style="padding:8px;border:1px solid #30363d">✅ 服务端可控</td></tr>
+<tr><td style="padding:8px;border:1px solid #30363d">适用场景</td><td style="padding:8px;border:1px solid #30363d">微服务、移动端API</td><td style="padding:8px;border:1px solid #30363d">传统Web应用</td></tr>
+</table>
+</div>
+</div>
+
+<div class="question">
+<h3>Q5：HTTPS加密原理？SSL/TLS握手过程用3句话概括</h3>
+<div class="answer">
+<p><strong>一句话版本：</strong>客户端验证服务器证书（非对称加密）→ 双方协商生成临时对称密钥 → 之后全部用对称密钥加密通信。</p>
+<p><strong>三句话概括：</strong></p>
+<ol style="margin-left:20px">
+<li>ClientHello → ServerHello + 证书（含公钥）→ 客户端用CA根证书验证服务器身份</li>
+<li>客户端生成pre-master secret → 用服务器公钥加密发送 → 双方各自推导出对称会话密钥</li>
+<li>Finished消息互相确认 → 后续全部对称加密（AES）通信</li>
+</ol>
+</div>
+</div>
+
+<div class="question">
+<h3>Q6：Spring Security过滤器链原理？核心过滤器有哪些？</h3>
+<div class="answer">
+<pre><code>请求 → SecurityContextPersistenceFilter（恢复上下文）
+     → UsernamePasswordAuthenticationFilter（表单登录）
+     → BasicAuthenticationFilter（HTTP Basic）
+     → ExceptionTranslationFilter（异常转换）
+     → FilterSecurityInterceptor（最终授权决策）
+     → Controller
+
+// 核心：每个Filter检查不同认证方式，最后FilterSecurityInterceptor
+// 根据配置的权限规则决定放行或拒绝</code></pre>
+</div>
+</div>
+
+<div class="question">
+<h3>Q7：什么是OAuth2.0？授权码模式流程？</h3>
+<div class="answer">
+<p><strong>核心角色：</strong>Resource Owner（用户）→ Client（第三方应用）→ Authorization Server（授权服务器）→ Resource Server（资源服务器）。</p>
+<p><strong>授权码模式（最安全）：</strong></p>
+<ol style="margin-left:20px">
+<li>用户点击"微信登录" → 跳转授权页面 → 用户同意</li>
+<li>授权服务器返回 <code>authorization_code</code> 给客户端（通过浏览器重定向）</li>
+<li>客户端用code + client_secret 换 <code>access_token</code>（后端调用，code不暴露给前端）</li>
+<li>客户端用access_token访问资源服务器</li>
+</ol>
+<p><strong>为什么最安全：</strong>token不经过浏览器，code只能用一次且在服务器间交换。</p>
+</div>
+</div>
+
+<div class="question">
+<h3>Q8：Cookie的Secure、HttpOnly、SameSite属性含义？</h3>
+<div class="answer">
+<pre><code>// 三个安全属性组合使用
+Cookie cookie = new Cookie("token", jwt);
+cookie.setHttpOnly(true);   // JS无法读取 → 防XSS窃取
+cookie.setSecure(true);     // 仅HTTPS传输 → 防中间人截获
+cookie.setAttribute("SameSite", "Strict"); // 仅同站请求携带 → 防CSRF
+</code></pre>
+<table style="width:100%;border-collapse:collapse;margin:10px 0">
+<tr style="background:#21262d"><th style="padding:8px">属性</th><th style="padding:8px">作用</th><th style="padding:8px">防御</th></tr>
+<tr><td style="padding:8px;border:1px solid #30363d">HttpOnly</td><td style="padding:8px;border:1px solid #30363d">禁止JS访问</td><td style="padding:8px;border:1px solid #30363d">XSS</td></tr>
+<tr><td style="padding:8px;border:1px solid #30363d">Secure</td><td style="padding:8px;border:1px solid #30363d">仅HTTPS</td><td style="padding:8px;border:1px solid #30363d">中间人</td></tr>
+<tr><td style="padding:8px;border:1px solid #30363d">SameSite</td><td style="padding:8px;border:1px solid #30363d">限制跨站发送</td><td style="padding:8px;border:1px solid #30363d">CSRF</td></tr>
+</table>
+</div>
+</div>
+
+<div class="question">
+<h3>Q9：密码存储最佳实践？BCrypt vs MD5？</h3>
+<div class="answer">
+<pre><code>// ❌ 绝对禁止
+String hash = MD5(password);              // 彩虹表秒破
+String hash = SHA256(password);           // GPU暴力破解
+
+// ✅ 正确做法
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+String hash = encoder.encode(password);   // $2a$10$...每次结果不同
+
+// BCrypt核心优势：
+// 1. 内置盐值（自动生成随机salt，存于hash中）
+// 2. 计算慢（cost factor控制迭代次数，默认10=2^10次）
+// 3. 每次结果不同（相同密码两次encode结果不同）</code></pre>
+</div>
+</div>
+
+<div class="question">
+<h3>Q10：什么是CORS？Spring Boot如何配置跨域？</h3>
+<div class="answer">
+<p><strong>原理：</strong>浏览器的同源策略默认禁止跨域请求。CORS通过HTTP头让服务器声明允许哪些源访问。</p>
+<pre><code>// 方式1：@CrossOrigin注解
+@CrossOrigin(origins = "https://example.com")
+@RestController
+public class MyController { }
+
+// 方式2：全局配置（推荐）
+@Configuration
+public class CorsConfig implements WebMvcConfigurer {
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/api/**")
+            .allowedOrigins("https://example.com")
+            .allowedMethods("GET", "POST", "PUT", "DELETE")
+            .allowedHeaders("*")
+            .allowCredentials(true)
+            .maxAge(3600);
+    }
+}
+// 关键响应头：Access-Control-Allow-Origin</code></pre>
+</div>
+</div>
+
+<div class="donate">
+<h3>☕ 这些免费内容对你有帮助？请我喝杯咖啡</h3>
+<img src="../wechat-qr.png" alt="微信赞赏码" style="max-width:220px" onerror="this.src='mm_facetoface_collect_qrcode_1779427130944.png'">
+<p style="color:#8b949e;margin-top:10px">微信扫码赞赏 · 持续产出更多面试干货</p>
+</div>
+
+<div class="nav">
+<strong>🔥 全部免费工具 & 资源：</strong><br>
+<a href="index.html">📚 面试题库</a> |
+<a href="../java-interview-quiz/index.html">☕ 在线刷题</a> |
+<a href="../resume-builder/index.html">📝 简历生成器</a> |
+<a href="../interview-simulator/index.html">🎯 模拟面试</a> |
+<a href="../java-knowledge-map/index.html">🗺️ 知识全景图</a> |
+<a href="../arsenal/index.html">🎯 弹药库总入口</a>
+</div>
+
+<div class="stats" style="text-align:center">
+<span class="stat">🔐 Web安全</span>
+<span class="stat">🛡️ OWASP Top 10</span>
+<span class="stat">🔑 JWT/Session</span>
+<span class="stat">🔒 HTTPS/TLS</span>
+<span class="stat">⚙️ Spring Security</span>
+</div>
+</div>
+</body>
+</html>
