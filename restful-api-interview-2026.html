@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RESTful API设计面试10题 | Java实习面试通关</title>
+<meta name="description" content="2026 Java实习 RESTful API设计面试10题，覆盖HTTP方法幂等性、状态码、版本管理、HATEOAS、@RestController原理，带标准答案+代码片段">
+<meta name="keywords" content="RESTful API面试题,GET POST PUT区别,HTTP状态码面试,RESTful设计原则,幂等性面试,@RestController原理,API版本管理,2026 Java实习">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.8}
+header{background:linear-gradient(135deg,#1e40af,#0ea5e9);padding:30px 20px;text-align:center}
+header h1{font-size:1.8em;margin-bottom:10px}header p{opacity:.85}
+.container{max-width:800px;margin:0 auto;padding:20px}
+.q-card{background:#1e293b;border-radius:12px;padding:25px;margin:20px 0;border-left:4px solid #0ea5e9}
+.q-card h3{color:#0ea5e9;margin-bottom:15px;font-size:1.1em}
+.q-card p{margin:8px 0;font-size:1em}
+code{background:#334155;padding:2px 8px;border-radius:4px;font-size:.9em;color:#f1f5f9}
+pre{background:#0f172a;padding:15px;border-radius:8px;overflow-x:auto;margin:10px 0;font-size:.85em;border:1px solid #334155}
+.highlight{color:#fbbf24;font-weight:600}
+.tip-section{background:linear-gradient(135deg,#1e40af22,#0ea5e922);border:2px solid #0ea5e9;border-radius:16px;padding:25px;margin:30px 0;text-align:center}
+.tip-section h2{margin-bottom:10px;color:#0ea5e9}
+.tip-section p{margin:5px 0}
+.tip-section img{width:180px;margin:10px 0}
+.nav{text-align:center;margin:20px 0}
+.nav a{color:#0ea5e9;text-decoration:none;margin:0 10px}
+.nav a:hover{text-decoration:underline}
+footer{text-align:center;padding:20px;color:#64748b;font-size:.85em}
+</style>
+</head>
+<body>
+
+<header>
+<h1>🌐 RESTful API设计面试10题</h1>
+<p>2026 Java实习 · 高频必考 · 含标准答案</p>
+</header>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../java-interview-quiz/">☕ 题库</a>
+</div>
+
+<div class="container">
+
+<div class="q-card">
+<h3>Q1: GET和POST的区别？为什么GET是幂等的？</h3>
+<p>🔑 <span class="highlight">标准答案：</span></p>
+<p>GET用于<span class="highlight">获取资源</span>，POST用于<span class="highlight">创建资源</span>。关键区别：</p>
+<p>✅ GET幂等 — 调用100次结果相同，不会改变服务器状态</p>
+<p>✅ POST非幂等 — 每次调用创建新资源，调用N次产生N条记录</p>
+<p>✅ GET参数在URL中（长度限制），POST参数在请求体中（无长度限制）</p>
+<p>✅ GET可被缓存、收藏、分享，POST不行</p>
+<p>💡 <b>加分回答：</b>"严格RESTful中，GET是安全且幂等的，PUT是幂等（更新同一资源），POST是不幂等（创建新资源），DELETE是幂等（删除后再次删除结果相同——资源不存在）。"</p>
+</div>
+
+<div class="q-card">
+<h3>Q2: PUT和PATCH的区别？各自应用场景？</h3>
+<p>🔑 <span class="highlight">标准答案：</span></p>
+<p>✅ PUT — <span class="highlight">全量更新</span>。客户端传入完整资源对象，替换整个资源</p>
+<p>✅ PATCH — <span class="highlight">部分更新</span>。客户端只传入要修改的字段</p>
+<p>✅ PUT是幂等的（重复更新结果相同），PATCH不一定幂等</p>
+<pre>// PUT：替换整个用户
+PUT /users/1 {"name":"张三","email":"zhang@test.com","age":22}
+
+// PATCH：只改年龄
+PATCH /users/1 {"age":23}</pre>
+</div>
+
+<div class="q-card">
+<h3>Q3: 常见HTTP状态码及其含义？</h3>
+<p>🔑 <span class="highlight">标准答案（按5类记忆）：</span></p>
+<p>✅ <b>2xx 成功：</b>200 OK / 201 Created(POST成功) / 204 No Content(DELETE成功)</p>
+<p>✅ <b>3xx 重定向：</b>301 永久移动 / 302 临时移动 / 304 未修改(缓存生效)</p>
+<p>✅ <b>4xx 客户端错误：</b>400 参数错误 / 401 未认证 / 403 无权限 / 404 资源不存在 / 405 方法不允许 / 429 请求过多</p>
+<p>✅ <b>5xx 服务端错误：</b>500 服务器内部错误 / 502 网关错误 / 503 服务不可用</p>
+<p>💡 <b>面试追问："201和200区别？"</b> → 201在POST创建资源后返回，且应包含Location头指向新资源URL</p>
+</div>
+
+<div class="q-card">
+<h3>Q4: Spring Boot中@RestController和@Controller区别？</h3>
+<p>🔑 <span class="highlight">标准答案：</span></p>
+<p>✅ <span class="highlight">@RestController = @Controller + @ResponseBody</span></p>
+<p>✅ @Controller返回视图名（通过ViewResolver解析为HTML页面）</p>
+<p>✅ @RestController每个方法返回值直接序列化为JSON/XML写入HTTP响应体</p>
+<p>✅ 前后端分离项目100%用@RestController</p>
+<pre>@RestController  // ← 每个方法return都变成JSON
+@RequestMapping("/api/users")
+public class UserController {
+    @GetMapping
+    public List&lt;User&gt; list() {
+        return userService.findAll();  // → [{"id":1,"name":"张三"},...]
+    }
+}</pre>
+</div>
+
+<div class="q-card">
+<h3>Q5: RESTful API如何做版本管理？</h3>
+<p>🔑 <span class="highlight">标准答案（4种方式，推荐方案1）：</span></p>
+<p>✅ <b>方案1（推荐）：URL路径版本</b> — <code>/api/v1/users</code> <code>/api/v2/users</code></p>
+<p>✅ <b>方案2：请求头版本</b> — <code>Accept: application/vnd.myapp.v1+json</code></p>
+<p>✅ <b>方案3：参数版本</b> — <code>/api/users?version=1</code></p>
+<p>✅ <b>方案4：域名版本</b> — <code>v1.api.example.com</code></p>
+<p>💡 <b>实际项目做法：</b>URL路径版本最直观、最容易测试、Nginx路由最方便。Spring Boot中新建Controller，路径前缀不同即可。</p>
+</div>
+
+<div class="q-card">
+<h3>Q6: 什么是HATEOAS？实际用过吗？</h3>
+<p>🔑 <span class="highlight">标准答案：</span></p>
+<p>✅ HATEOAS = <span class="highlight">超媒体作为应用状态引擎</span></p>
+<p>✅ API响应中不仅返回数据，还返回<span class="highlight">下一步可执行的操作链接</span></p>
+<p>✅ 例如：查询订单后自动返回"取消订单"/"确认收货"等操作URL</p>
+<pre>// 普通REST返回：
+{"id":1, "status":"paid"}
+
+// HATEOAS返回：
+{
+  "id":1, "status":"paid",
+  "_links": {
+    "cancel": {"href":"/orders/1/cancel"},
+    "refund": {"href":"/orders/1/refund"}
+  }
+}</pre>
+<p>💡 <b>诚实回答：</b>"了解原理，Spring HATEOAS框架有点重。实际项目用Swagger文档描述API即可，HATEOAS的理想不错但落地不多。"</p>
+</div>
+
+<div class="q-card">
+<h3>Q7: API接口如何防止重复提交？</h3>
+<p>🔑 <span class="highlight">标准答案（3层防御）：</span></p>
+<p>✅ <b>第1层：前端防抖</b> — 按钮点击后置灰+loading，1秒内不可重复点击</p>
+<p>✅ <b>第2层：Token机制</b> — 打开表单时后端下发唯一token，提交时带上，后端用Redis setIfAbsent验证+删除</p>
+<p>✅ <b>第3层：业务幂等键</b> — 订单号/业务流水号在数据库唯一索引，重复插入直接忽略</p>
+<pre>// 防重Token核心代码
+String token = request.getHeader("X-Idempotent-Token");
+Boolean locked = redis.setIfAbsent("idem:"+token, "1", 5, TimeUnit.MINUTES);
+if (!locked) throw new BizException("请勿重复提交");</pre>
+</div>
+
+<div class="q-card">
+<h3>Q8: 如何处理API的跨域（CORS）问题？</h3>
+<p>🔑 <span class="highlight">标准答案：</span></p>
+<p>✅ CORS = <span class="highlight">浏览器同源策略限制</span>，跨域请求浏览器先发OPTIONS预检请求</p>
+<p>✅ <b>Spring Boot解决方案：</b></p>
+<pre>@Configuration
+public class CorsConfig implements WebMvcConfigurer {
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/api/**")
+            .allowedOrigins("https://your-frontend.com")
+            .allowedMethods("GET","POST","PUT","DELETE")
+            .allowCredentials(true);
+    }
+}</pre>
+<p>✅ <b>Nginx解决方案：</b>add_header Access-Control-Allow-Origin *;（生产环境不用*，指定域名）</p>
+<p>💡 <b>面试追问："OPTIONS预检请求什么时候发？"</b> → 非简单请求（Content-Type为application/json、自定义请求头）都会发预检</p>
+</div>
+
+<div class="q-card">
+<h3>Q9: API接口返回的JSON格式应该怎么设计？</h3>
+<p>🔑 <span class="highlight">标准答案：</span></p>
+<p>✅ <b>统一响应格式：</b></p>
+<pre>public class R&lt;T&gt; {
+    private int code;     // 200成功 4xx客户端错 5xx服务端错
+    private String msg;   // 可读的错误描述
+    private T data;       // 实际数据
+    private long timestamp;
+    
+    public static &lt;T&gt; R&lt;T&gt; ok(T data) { return new R<>(200,"success",data); }
+    public static R&lt;Void&gt; error(int code, String msg) { return new R<>(code,msg,null); }
+}</pre>
+<p>✅ <b>分页响应：</b>data里包一层：{"total":100, "page":1, "size":20, "list":[...]}</p>
+<p>✅ 前端统一拦截code，非200直接提示msg，不需要每个接口单独判断</p>
+</div>
+
+<div class="q-card">
+<h3>Q10: RESTful API的安全措施有哪些？</h3>
+<p>🔑 <span class="highlight">标准答案：</span></p>
+<p>✅ <b>认证：</b>JWT Token（无状态）或OAuth2（第三方登录）</p>
+<p>✅ <b>授权：</b>角色/权限控制（ADMIN/用户只能操作自己的数据）</p>
+<p>✅ <b>传输安全：</b>HTTPS加密传输</p>
+<p>✅ <b>输入校验：</b>@Valid + 参数校验注解，防止SQL注入和XSS</p>
+<p>✅ <b>限流：</b>API网关/Sentinel限制单IP/单用户QPS</p>
+<p>✅ <b>日志脱敏：</b>密码/手机号不打印到日志</p>
+<p>✅ <b>幂等控制：</b>支付类接口必须有防重机制</p>
+</div>
+
+<div class="tip-section">
+<h2>☕ 觉得有用？请我喝杯咖啡</h2>
+<p>这些面试题帮你省了至少20小时整理时间</p>
+<p style="font-size:.9em;color:#94a3b8">你的赞赏让我有动力产出更多免费干货</p>
+<img src="../mm_facetoface_collect_qrcode_1779427130944.png" alt="赞赏码">
+</div>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部29篇文章</a>
+<a href="../arsenal/">🎯 弹药库工具箱</a>
+<a href="../java-interview-quiz/">☕ 面试题库</a>
+<a href="../java-rank-test/">⚔️ 段位测试</a>
+</div>
+
+</div>
+<footer>© 2026 Abyte-zym · 免费Java面试资源 · 赞赏支持创作</footer>
+</body>
+</html>
