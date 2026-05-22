@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>监控可观测性面试10题 | Java实习面试宝典 2026</title>
+    <meta name="description" content="2026 Java实习监控可观测性面试必考题：Prometheus、Grafana、ELK、Micrometer、分布式链路追踪、日志采集。免费真题+标准答案，面试通过率翻倍。">
+    <meta name="keywords" content="Prometheus面试题, Grafana面试, ELK面试, 分布式链路追踪, Micrometer, Java监控面试, 可观测性面试, 2026 Java实习">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#c9d1d9;line-height:1.8}
+        .container{max-width:800px;margin:0 auto;padding:20px}
+        h1{color:#58a6ff;font-size:1.8em;margin:20px 0;text-align:center}
+        h2{color:#f0883e;font-size:1.2em;margin:25px 0 10px;border-bottom:1px solid #30363d;padding-bottom:6px}
+        .qa{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:20px;margin:15px 0}
+        .q{color:#7ee787;font-weight:700;margin-bottom:8px}
+        .qnum{color:#58a6ff;margin-right:8px}
+        .a{color:#c9d1d9;padding-left:10px;border-left:2px solid #30363d}
+        .code{background:#0d1117;border:1px solid #30363d;border-radius:4px;padding:12px;margin:10px 0;font-family:'Fira Code',monospace;font-size:0.9em;overflow-x:auto}
+        .tag{display:inline-block;background:#1f6feb22;color:#58a6ff;padding:2px 8px;border-radius:12px;font-size:0.8em;margin:3px}
+        .donate{background:#161b22;border:1px solid #f0883e;border-radius:12px;padding:20px;margin:30px 0;text-align:center}
+        .donate h3{color:#f0883e;margin-bottom:10px}
+        .donate p{font-size:0.9em;color:#8b949e}
+        .nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:20px 0;padding:15px;background:#161b22;border-radius:8px}
+        .nav a{color:#58a6ff;text-decoration:none;font-size:0.85em;padding:4px 10px;border:1px solid #30363d;border-radius:6px;transition:all .2s}
+        .nav a:hover{background:#1f6feb22;border-color:#58a6ff}
+        .tip{background:#1f6feb11;border:1px solid #58a6ff44;border-radius:6px;padding:10px 15px;margin:10px 0;font-size:0.9em}
+    </style>
+</head>
+<body>
+<div class="container">
+
+<h1>🔍 监控与可观测性面试10题</h1>
+<p style="text-align:center;color:#8b949e;margin-bottom:20px">
+    <span class="tag">Prometheus</span><span class="tag">Grafana</span><span class="tag">ELK</span><span class="tag">Micrometer</span><span class="tag">链路追踪</span><span class="tag">2026必考</span>
+</p>
+
+<p style="text-align:center;color:#8b949e">监控可观测性是2026年Java后端面试新热点——大厂必问，中小厂常见。10道题帮你拿到面试分。</p>
+
+<div class="qa">
+    <div class="q"><span class="qnum">Q1</span>什么是可观测性三大支柱？分别解决什么问题？</div>
+    <div class="a">
+        <strong>Metrics（指标）</strong>：回答"系统有没有问题"。如QPS、延迟P99、错误率。用Prometheus采集，Grafana展示。<br>
+        <strong>Logging（日志）</strong>：回答"出了什么问题"。如错误堆栈、请求日志。用ELK（Elasticsearch+Logstash+Kibana）或Loki存储分析。<br>
+        <strong>Tracing（链路追踪）</strong>：回答"问题出在哪个环节"。分布式系统中一个请求经过多个服务，用TraceId串联全链路。用Jaeger/Zipkin/SkyWalking实现。
+        <div class="tip">💡 面试亮点：三者的关系——Metrics发现问题→Tracing定位节点→Logging查看细节。不是互相替代，是互补。</div>
+    </div>
+</div>
+
+<div class="qa">
+    <div class="q"><span class="qnum">Q2</span>Prometheus的核心架构是什么？为什么它比Zabbix更适合云原生？</div>
+    <div class="a">
+        <strong>Pull模型</strong>：Prometheus Server主动从Target拉取metrics（HTTP GET /metrics端点），而非被推送。<br>
+        <strong>核心组件</strong>：Prometheus Server（采集+存储）→ Alertmanager（告警）→ Grafana（可视化）。<br>
+        <strong>TSDB存储</strong>：自研时序数据库，按时间窗口压缩，适合海量指标存储。<br>
+        <strong>PromQL</strong>：强大的查询语言，支持聚合、计算、函数。<br>
+        <strong>服务发现</strong>：自动发现K8s Pod，不需要手动配置IP。
+        <div class="code"># Prometheus配置示例：抓取Spring Boot Actuator暴露的metrics
+scrape_configs:
+  - job_name: 'spring-boot-app'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['localhost:8080']</div>
+    </div>
+</div>
+
+<div class="qa">
+    <div class="q"><span class="qnum">Q3</span>Spring Boot项目中如何暴露Metrics给Prometheus？用到了什么依赖？</div>
+    <div class="a">
+        引入<strong>Micrometer</strong>——Spring Boot 2.x+默认的metrics门面：
+        <div class="code">&lt;dependency&gt;
+    &lt;groupId&gt;io.micrometer&lt;/groupId&gt;
+    &lt;artifactId&gt;micrometer-registry-prometheus&lt;/artifactId&gt;
+&lt;/dependency&gt;
+# application.yml
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}</div>
+        Micrometer自动采集JVM指标（堆内存/GC/线程池）、HTTP请求指标（count/sum/max）、数据源指标等。访问 <code>/actuator/prometheus</code> 就能看到所有metrics。
+    </div>
+</div>
+
+<div class="qa">
+    <div class="q"><span class="qnum">Q4</span>ELK（ElasticSearch+Logstash+Kibana）日志系统的数据流是怎样的？</div>
+    <div class="a">
+        <strong>Filebeat</strong>（轻量）→ 采集日志文件，发送到Logstash或直接到ES。<br>
+        <strong>Logstash</strong>（重量处理）→ 解析、过滤、转换日志格式（grok正则提取字段）。<br>
+        <strong>Elasticsearch</strong> → 存储+索引日志，支持全文搜索。<br>
+        <strong>Kibana</strong> → 可视化查询、Dashboard、告警。
+        <div class="tip">💡 面试时说：实际项目中我们通过Filebeat采集容器日志，Logstash用grok提取traceId/level/message等字段到ES，再通过Kibana的Discover快速定位错误。</div>
+    </div>
+</div>
+
+<div class="qa">
+    <div class="q"><span class="qnum">Q5</span>分布式链路追踪的原理是什么？TraceId和SpanId怎么传递？</div>
+    <div class="a">
+        <strong>核心概念</strong>：<br>
+        • <strong>TraceId</strong>：整个请求链路的唯一标识，从入口生成，贯穿所有服务。<br>
+        • <strong>SpanId</strong>：链路中每个操作（一个RPC调用、一次DB查询）的唯一标识。<br>
+        • <strong>ParentSpanId</strong>：父操作的SpanId，形成调用树。<br><br>
+        <strong>传递方式</strong>：HTTP Header透传。如Jaeger使用 <code>uber-trace-id</code> header：
+        <div class="code">// 网关生成TraceId，放入MDC
+String traceId = UUID.randomUUID().toString();
+MDC.put("traceId", traceId);
+// Feign调用时通过Interceptor传递
+request.header("X-Trace-Id", traceId);</div>
+    </div>
+</div>
+
+<div class="qa">
+    <div class="q"><span class="qnum">Q6</span>Grafana Dashboard怎么设计？常用的Panel类型有哪些？</div>
+    <div class="a">
+        <strong>常用Panel</strong>：<br>
+        • <strong>Time series（时序图）</strong>：QPS、延迟P99、错误率趋势。<br>
+        • <strong>Stat（状态卡片）</strong>：当前在线用户数、Pod运行数。<br>
+        • <strong>Gauge（仪表盘）</strong>：CPU使用率、内存使用率。<br>
+        • <strong>Table（表格）</strong>：Top N慢SQL、Top N大对象。<br>
+        • <strong>Heatmap（热力图）</strong>：延迟分布。<br><br>
+        <strong>设计原则</strong>：第一行放"红灯指标"（错误率/可用性）→ 第二行放"黄灯指标"（P99延迟）→ 第三行放"绿灯指标"（QPS/资源使用率）。从上到下优先级递减。
+    </div>
+</div>
+
+<div class="qa">
+    <div class="q"><span class="qnum">Q7</span>什么是指标聚合？PromQL中rate()、irate()、increase()有什么区别？</div>
+    <div class="a">
+        • <strong>rate(counter[5m])</strong>：计算5分钟内每秒平均增长率。适合QPS统计。<br>
+        • <strong>irate(counter[5m])</strong>：计算区间内最后两个点的瞬时增长率。适合捕捉突发流量。<br>
+        • <strong>increase(counter[5m])</strong>：计算5分钟内的总增量。适合统计请求总数。<br>
+        • <strong>histogram_quantile(0.99, rate(...))</strong>：计算P99延迟。<br><br>
+        <div class="code"># 实用PromQL
+rate(http_server_requests_seconds_count[5m])           # 5分钟内平均QPS
+histogram_quantile(0.99, rate(http_server_requests_seconds_bucket[5m]))  # P99延迟
+increase(http_server_requests_seconds_count[1h])       # 1小时内请求总数</div>
+    </div>
+</div>
+
+<div class="qa">
+    <div class="q"><span class="qnum">Q8</span>生产环境CPU飙高到100%，你怎么排查？（监控实操题）</div>
+    <div class="a">
+        <strong>第一步：确认问题范围</strong>——Grafana看CPU趋势图，确认是持续高还是瞬时尖峰。同时看QPS是否有突变。<br>
+        <strong>第二步：定位进程/线程</strong>：
+        <div class="code"># Linux命令定位
+top -Hp $(pgrep -f java)     # 找到CPU最高的线程PID
+printf '%x\n' PID             # 线程PID转16进制
+jstack PID | grep 16进制 -A20 # 查看该线程的堆栈</div>
+        <strong>第三步：Arthas分析</strong>（阿里开源，面试加分项）：
+        <div class="code">dashboard          # 实时面板，看哪个线程吃CPU
+thread -n 3        # 显示CPU最高的3个线程及堆栈
+trace Class method # 追踪方法调用耗时</div>
+        <strong>第四步：常见原因</strong>——死循环、频繁Full GC（内存泄漏导致）、正则表达式回溯、Jackson序列化大对象。
+    </div>
+</div>
+
+<div class="qa">
+    <div class="q"><span class="qnum">Q9</span>怎么设计一个告警系统？什么是告警风暴？怎么解决？</div>
+    <div class="a">
+        <strong>告警设计四要素</strong>：<br>
+        1. <strong>合理阈值</strong>：不要设得太敏感。P99延迟 > 500ms 持续5分钟才告警，不是瞬时。<br>
+        2. <strong>告警分级</strong>：P0（服务不可用→电话+企微）、P1（延迟升高→企微群）、P2（磁盘使用率→邮件）。<br>
+        3. <strong>告警抑制</strong>：如果机器A宕机了，机器A上的所有告警只发一条，不要刷屏。<br>
+        4. <strong>静默期</strong>：计划内的变更/发布期间关闭告警。<br><br>
+        <strong>告警风暴</strong>：一个故障引发上百条告警。解决方案——告警聚合（Alertmanager的group_by）、告警依赖（A宕机则B的告警抑制）、值班轮转。
+    </div>
+</div>
+
+<div class="qa">
+    <div class="q"><span class="qnum">Q10</span>SIEM、APM、NPM这些缩写分别指什么？在你的实习项目中用过哪些？</div>
+    <div class="a">
+        • <strong>APM（应用性能监控）</strong>：SkyWalking、Pinpoint、Elastic APM——监控应用内部的延迟、错误、吞吐。<br>
+        • <strong>SIEM（安全信息和事件管理）</strong>：Splunk、ELK Security——分析安全日志，检测入侵。<br>
+        • <strong>NPM（网络性能监控）</strong>：监控网络延迟、丢包率。<br>
+        • <strong>RUM（真实用户监控）</strong>：前端性能，页面加载时间、白屏时间。<br><br>
+        <strong>实习面试话术</strong>："我在RAG项目中集成了Micrometer+Prometheus做指标采集，docker-compose里加了Grafana做Dashboard。在秒杀项目中用MDC+Logback做链路追踪，每个请求带TraceId，方便排查问题。"
+    </div>
+</div>
+
+<!-- 赞赏码 -->
+<div class="donate">
+    <h3>☕ 这些面试题帮到你了？</h3>
+    <p>一杯咖啡的钱，支持我持续维护30+篇Java面试系列文章。<br>每一份赞赏都是我深夜更新的动力 💪</p>
+    <img src="../mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏" style="width:180px;border-radius:12px;margin:10px auto;display:block">
+    <p style="font-size:0.8em;color:#8b949e">微信扫码 · 随缘赞赏</p>
+</div>
+
+<!-- 工具导航 -->
+<div class="nav">
+    <a href="https://Abyte-zym.github.io/java-career-blog/">📚 博客首页(30+篇)</a>
+    <a href="https://Abyte-zym.github.io/java-resume-builder/">📝 简历生成器</a>
+    <a href="https://Abyte-zym.github.io/java-interview-quiz/">☕ 面试题库</a>
+    <a href="https://Abyte-zym.github.io/interview-simulator/">🎯 面试模拟器</a>
+    <a href="https://Abyte-zym.github.io/resume-diagnosis/">🔍 简历诊断</a>
+    <a href="https://Abyte-zym.github.io/java-rank-test/">⚔️ 段位测试</a>
+    <a href="https://Abyte-zym.github.io/java-daily-challenge/">☕ 每日挑战</a>
+    <a href="https://Abyte-zym.github.io/arsenal/">🎯 弹药库</a>
+</div>
+
+<p style="text-align:center;color:#484f58;font-size:0.8em;margin-top:30px">© 2026 Abyte-zym · 30+面试文章持续更新 · 全部免费</p>
+
+</div>
+</body>
+</html>
