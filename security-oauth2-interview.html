@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Spring Security + OAuth2 面试10题 — 2026 Java实习生必背，RBAC/JWT/CSRF/Session共享/SSO全覆盖">
+<title>Spring Security面试10题 | Java实习面试必备</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f7fa;color:#333;line-height:1.8}
+header{background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:40px 20px;text-align:center}
+h1{font-size:28px;margin-bottom:8px}
+.sub{font-size:14px;opacity:.85}
+main{max-width:800px;margin:30px auto;padding:0 20px}
+.card{background:#fff;border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.q{font-weight:700;font-size:17px;color:#1a1a2e;margin-bottom:10px;border-left:3px solid #e94560;padding-left:12px}
+.a{color:#555;background:#f8f9fa;padding:14px;border-radius:8px;font-size:15px}
+code{background:#ffe8e0;padding:2px 6px;border-radius:4px;font-size:13px}
+a{color:#e94560}
+.footer{text-align:center;padding:30px;background:#fff;margin:30px 0;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.footer h3{margin-bottom:12px}
+.footer p{color:#888;font-size:14px;margin:6px 0}
+.qr{display:inline-block;padding:10px 24px;background:#e94560;color:#fff;border-radius:8px;font-size:14px;margin:10px 0;text-decoration:none}
+.nav{text-align:center;margin:20px 0;font-size:13px}
+.nav a{color:#555;margin:0 8px;text-decoration:none}
+.nav a:hover{color:#e94560}
+</style>
+</head>
+<body>
+<header>
+<h1>🔐 Spring Security + OAuth2 面试10题</h1>
+<p class="sub">2026 Java实习面试 · 安全框架 · 认证授权 · RBAC · JWT · SSO</p>
+</header>
+
+<nav class="nav">
+<a href="../java-resume-builder/">📝 简历生成</a> |
+<a href="../java-interview-quiz/">☕ 面试题库</a> |
+<a href="../interview-simulator/">🎯 模拟器</a> |
+<a href="../resume-diagnosis/">🔍 简历诊断</a> |
+<a href="../salary-report-2026/">💰 薪资查询</a> |
+<a href="../tools-navigator/">🔧 工具导航</a>
+</nav>
+
+<main>
+
+<div class="card">
+<div class="q">Q1：Spring Security的核心过滤器链是什么？</div>
+<div class="a">
+<b>SecurityFilterChain</b> 是 Spring Security 的核心。整个流程：
+<code>UsernamePasswordAuthenticationFilter</code> → <code>BasicAuthenticationFilter</code> → ... → <code>FilterSecurityInterceptor</code>。<br>
+自定义安全配置：继承 <code>SecurityFilterChain</code> Bean，配置 <code>authorizeHttpRequests</code> + <code>oauth2ResourceServer</code>。
+</div>
+</div>
+
+<div class="card">
+<div class="q">Q2：JWT和Session认证的区别？什么时候用JWT？</div>
+<div class="a">
+<b>Session</b>：服务端存储状态，基于Cookie。适合单体应用。<br>
+<b>JWT</b>：无状态，客户端携带Token，服务端用签名验证。适合分布式/微服务/移动端。<br>
+<b>选型</b>：分布式系统用JWT（无需Session共享）；对安全性要求极高的内网系统可用Session+Cookie+CSRF防护。
+</div>
+</div>
+
+<div class="card">
+<div class="q">Q3：RBAC权限模型怎么设计？用户-角色-权限表怎么建？</div>
+<div class="a">
+<b>5张核心表</b>：user → user_role(中间) → role → role_permission(中间) → permission。<br>
+关键SQL：<br>
+<code>SELECT p.code FROM permission p<br>
+JOIN role_permission rp ON p.id=rp.permission_id<br>
+JOIN user_role ur ON rp.role_id=ur.role_id<br>
+WHERE ur.user_id = ?</code><br>
+Spring Security中配合 <code>@PreAuthorize("hasRole('ADMIN')")</code> 注解使用。
+</div>
+</div>
+
+<div class="card">
+<div class="q">Q4：CSRF攻击是什么？Spring Security怎么防御？</div>
+<div class="a">
+<b>CSRF</b>：攻击者诱导用户点击恶意链接，利用用户已登录状态发送伪造请求。<br>
+<b>防御</b>：Spring Security默认开启CSRF保护 → 生成 <code>_csrf</code> Token嵌入表单 → 每次POST/PUT/DELETE验证Token。<br>
+<b>RESTful API</b>：如果用JWT+无Cookie，天然免疫CSRF，可以 <code>.csrf().disable()</code>。
+</div>
+</div>
+
+<div class="card">
+<div class="q">Q5：OAuth2.0四种授权模式？Refresh Token的作用？</div>
+<div class="a">
+<b>四种模式</b>：①授权码模式(Authorization Code) — 最安全，三方登录标准 ②密码模式(Password)— 自家App用 ③客户端模式(Client Credentials)— 服务间调用 ④简化模式(Implicit)— 已废弃。<br>
+<b>Refresh Token</b>：Access Token短期(15min)，Refresh Token长期(7天)。Access过期后用Refresh换新的，用户无感。
+</div>
+</div>
+
+<div class="card">
+<div class="q">Q6：微服务架构下怎么做认证鉴权？</div>
+<div class="a">
+<b>网关统一鉴权</b>：Gateway Filter 拦截请求 → 验证JWT → 解析userId+roles → 设置Header → 下游服务。<br>
+<b>Feign拦截器</b>：<code>RequestInterceptor</code> 自动透传JWT，保证服务间调用不丢失认证信息。<br>
+<b>白名单</b>：登录接口、Swagger、健康检查不放行会死循环。
+</div>
+</div>
+
+<div class="card">
+<div class="q">Q7：密码怎么安全存储？BCrypt vs MD5？</div>
+<div class="a">
+<b>绝不存明文</b>。MD5+SHA已不安全（彩虹表秒破）。<br>
+<b>BCrypt</b>：内置盐值+自适应迭代次数，<code>PasswordEncoder</code> 一行搞定：<br>
+<code>matches(rawPassword, encodedPassword)</code> → true/false。<br>
+Spring Security默认就是BCrypt，面试说这个就够了。
+</div>
+</div>
+
+<div class="card">
+<div class="q">Q8：分布式Session共享怎么解决？</div>
+<div class="a">
+三种方案：<br>
+① <b>Redis集中存储</b>（最常用）：<code>spring-session-data-redis</code>，所有节点读同一份Session<br>
+② <b>JWT无状态</b>：不需要Session，Token自包含用户信息<br>
+③ <b>IP Hash粘性</b>：Nginx ip_hash，同一用户始终打到一个节点（不推荐，节点挂了Session丢失）
+</div>
+</div>
+
+<div class="card">
+<div class="q">Q9：@PreAuthorize 和 @Secured 的区别？</div>
+<div class="a">
+<b>@Secured</b>：只支持角色判断，如 <code>@Secured("ROLE_ADMIN")</code>。简单场景够用。<br>
+<b>@PreAuthorize</b>：支持SpEL表达式，可以做复杂判断：<br>
+<code>@PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")</code><br>
+面试亮点：能说出SpEL+方法级权限控制。
+</div>
+</div>
+
+<div class="card">
+<div class="q">Q10：如何实现单点登录SSO？</div>
+<div class="a">
+<b>OAuth2 + JWT方案</b>：统一认证中心(CAS) → 用户登录一次 → 各子系统通过JWT验证身份。<br>
+<b>流程</b>：访问A系统 → 无Token → 跳转认证中心 → 登录 → 拿Token → 访问A/B/C全免登。<br>
+<b>关键</b>：Token存Redis，退出时全局失效所有子系统。
+</div>
+</div>
+
+<div class="footer">
+<h3>这个工具帮到你了吗？</h3>
+<p>扫码请作者喝杯咖啡 ☕ 激励产出更多干货</p>
+<p style="font-size:13px;color:#aaa">赞赏码已嵌入 · 微信扫码直达</p>
+<a href="../" class="qr">🏠 回到首页</a>
+</div>
+
+</main>
+</body>
+</html>
