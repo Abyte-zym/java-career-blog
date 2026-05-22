@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Java开发者必备工具导航——2026年最全Java免费工具合集：IDEA插件、调优工具、API测试、部署监控。提升效率必备。">
+<meta name="keywords" content="Java工具导航,Java开发工具,IDEA插件推荐,Java调优工具,Arthas,JProfiler,Java免费工具,2026">
+<title>Java开发者神器导航 | 2026必备工具合集</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:linear-gradient(135deg,#0c0c1d,#1a1a3e);color:#e0e0e0;min-height:100vh}
+.container{max-width:1000px;margin:0 auto;padding:20px}
+header{text-align:center;padding:40px 0 20px}
+header h1{font-size:2.2em;background:linear-gradient(90deg,#f093fb,#f5576c,#fda085);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+header p{color:#888;margin-top:10px}
+.category{margin:25px 0}
+.category h2{color:#fda085;font-size:1.3em;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.card{background:rgba(255,255,255,.05);border-radius:10px;padding:16px;transition:all .3s;border:1px solid rgba(255,255,255,.08);cursor:pointer}
+.card:hover{transform:translateY(-2px);background:rgba(255,255,255,.1);border-color:rgba(253,160,133,.3)}
+.card h3{font-size:1em;color:#fff;margin-bottom:6px}
+.card h3 a{color:#fda085;text-decoration:none}
+.card p{font-size:.82em;color:#999;line-height:1.5}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.7em;margin:3px;background:rgba(255,255,255,.1)}
+.tag.free{background:rgba(39,174,96,.2);color:#27ae60}
+.tag.opensource{background:rgba(52,152,219,.2);color:#3498db}
+.tag.must{background:rgba(231,76,60,.2);color:#e74c3c}
+.donate{text-align:center;margin:50px 0 30px;padding:30px;background:linear-gradient(135deg,rgba(102,126,234,.2),rgba(118,75,162,.2));border-radius:16px}
+.donate h3{color:#fda085;margin-bottom:8px}
+.donate img{width:160px;border-radius:12px;margin:10px auto;display:block}
+.donate p{color:#aaa;font-size:.85em}
+.links{text-align:center;padding:15px;margin:20px 0;background:rgba(255,255,255,.03);border-radius:10px}
+.links a{color:#fda085;margin:0 12px;text-decoration:none;font-size:.85em}
+footer{text-align:center;padding:20px;color:#555;font-size:.8em}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>🛠 Java开发者神器导航</h1>
+<p>2026年最全Java免费工具合集 · 持续更新</p>
+</header>
+
+<div class="category">
+<h2>🔥 性能调优（面试+实战必备）</h2>
+<div class="grid">
+<div class="card">
+<h3><a href="https://arthas.aliyun.com/" target="_blank">Arthas 阿尔萨斯</a> <span class="tag must">必装</span> <span class="tag opensource">开源</span></h3>
+<p>阿里开源Java诊断工具。watch方法入参返回值、trace调用链、thread查死锁、vmtool强制GC。线上排查神器。</p>
+</div>
+<div class="card">
+<h3><a href="https://github.com/alibaba/jvm-sandbox" target="_blank">JVM-Sandbox</a> <span class="tag opensource">开源</span></h3>
+<p>阿里JVM沙箱。AOP热插拔，不重启Java应用就能注入代码。适用于线上故障注入、流量录制回放。</p>
+</div>
+<div class="card">
+<h3><a href="https://visualvm.github.io/" target="_blank">VisualVM</a> <span class="tag free">免费</span></h3>
+<p>JDK自带可视化工具。CPU/内存监控、线程dump、堆分析、GC日志分析。本地调试首选。</p>
+</div>
+<div class="card">
+<h3><a href="https://fastthread.io/" target="_blank">fastThread</a> <span class="tag free">免费</span></h3>
+<p>线程dump在线分析工具。上传jstack日志秒出死锁检测、线程状态分布、热点方法排名。</p>
+</div>
+</div>
+</div>
+
+<div class="category">
+<h2>⚡ IDEA必备插件</h2>
+<div class="grid">
+<div class="card">
+<h3>SonarLint <span class="tag must">必装</span> <span class="tag free">免费</span></h3>
+<p>实时代码质量检查，600+条Java规则，写代码时就发现bug和安全漏洞。</p>
+</div>
+<div class="card">
+<h3>RestfulToolkit <span class="tag free">免费</span></h3>
+<p>RESTful接口搜索工具。右键搜索所有Controller的URL映射，一键跳转。团队联调效率翻倍。</p>
+</div>
+<div class="card">
+<h3>MyBatisX <span class="tag free">免费</span></h3>
+<p>MyBatis增强插件。Mapper→XML双向跳转，自动生成CRUD代码。MyBatis项目标配。</p>
+</div>
+<div class="card">
+<h3>GitToolBox <span class="tag free">免费</span></h3>
+<p>Git增强。行内展示最近提交者和时间，状态栏显示未推送提交数，省掉频繁git log。</p>
+</div>
+</div>
+</div>
+
+<div class="category">
+<h2>🧪 API测试 & Mock</h2>
+<div class="grid">
+<div class="card">
+<h3><a href="https://www.apifox.cn/" target="_blank">Apifox</a> <span class="tag free">免费</span></h3>
+<p>API文档+调试+Mock+测试一体化。Postman+Swagger+Mock功能的合集，国产好用。</p>
+</div>
+<div class="card">
+<h3><a href="https://www.postman.com/" target="_blank">Postman</a> <span class="tag free">免费</span></h3>
+<p>老牌API测试工具。环境变量、集合运行器、自动化测试脚本。面试官默认你用过。</p>
+</div>
+<div class="card">
+<h3><a href="http://json.cn/" target="_blank">JSON.cn</a> <span class="tag free">免费</span></h3>
+<p>在线JSON格式化/校验/转Java实体。粘贴JSON秒出POJO类，省手写getter/setter。</p>
+</div>
+</div>
+</div>
+
+<div class="category">
+<h2>📦 部署 & 监控</h2>
+<div class="grid">
+<div class="card">
+<h3><a href="https://prometheus.io/" target="_blank">Prometheus+Grafana</a> <span class="tag opensource">开源</span></h3>
+<p>监控黄金组合。Prometheus采集指标+Grafana可视化。Actuator暴露metrics端点即用。</p>
+</div>
+<div class="card">
+<h3><a href="https://www.docker.com/" target="_blank">Docker Desktop</a> <span class="tag free">免费</span></h3>
+<p>容器化部署标配。docker-compose一键启动MySQL+Redis+RabbitMQ，秒杀项目必备。</p>
+</div>
+<div class="card">
+<h3><a href="https://github.com/alibaba/nacos" target="_blank">Nacos</a> <span class="tag opensource">开源</span></h3>
+<p>阿里注册中心+配置中心。Spring Cloud Alibaba标配，微服务项目入口。</p>
+</div>
+</div>
+</div>
+
+<div class="category">
+<h2>📚 学习资源（面试必看）</h2>
+<div class="grid">
+<div class="card">
+<h3><a href="https://javaguide.cn/" target="_blank">JavaGuide</a> <span class="tag must">必看</span> <span class="tag free">免费</span></h3>
+<p>Java学习+面试指南，Github 140k+ Star。面试八股文最全合集，按专题分类查阅。</p>
+</div>
+<div class="card">
+<h3><a href="https://xiaolincoding.com/" target="_blank">小林Coding</a> <span class="tag free">免费</span></h3>
+<p>图解计算机基础。TCP三次握手、HTTPS加密、IO多路复用，面试最爱问的图解教程。</p>
+</div>
+<div class="card">
+<h3><a href="https://pdai.tech/" target="_blank">Java全栈知识体系</a> <span class="tag free">免费</span></h3>
+<p>Spring/MyBatis/Redis/MySQL全家桶深度解析。面试问到源码实现，这本都有答案。</p>
+</div>
+<div class="card">
+<h3><a href="https://github.com/Snailclimb/JavaGuide" target="_blank">CS-Notes</a> <span class="tag opensource">开源</span></h3>
+<p>CyC2018技术面试笔记。算法、操作系统、网络、数据库，一个仓库覆盖全部计算机基础。</p>
+</div>
+</div>
+</div>
+
+<div class="donate">
+<h3>☕ 这个导航帮到你了？请开发者喝杯咖啡</h3>
+<p>每天更新Java求职工具，持续维护靠你的支持</p>
+<img src="https://Abyte-zym.github.io/java-career-blog/qrcode-wx.png" alt="微信赞赏">
+<p style="font-size:13px;opacity:.8">扫码赞赏 | 更多工具：github.com/Abyte-zym</p>
+</div>
+
+<div class="links">
+<strong>🛠 更多免费Java工具</strong><br>
+<a href="https://Abyte-zym.github.io/java-resume-builder/">📝 简历生成</a>
+<a href="https://Abyte-zym.github.io/java-interview-quiz/">☕ 面试题库</a>
+<a href="https://Abyte-zym.github.io/interview-simulator/">🎯 模拟面试</a>
+<a href="https://Abyte-zym.github.io/java-career-blog/portfolio.html">💼 接单主页</a>
+<a href="https://Abyte-zym.github.io/java-career-blog/salary-report-2026.html">💰 薪资查询</a>
+</div>
+
+<footer>
+<p>2026 Java开发者工具导航 · 持续更新 · github.com/Abyte-zym</p>
+</footer>
+</div>
+</body>
+</html>

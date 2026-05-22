@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Java并发编程面试题2026 — synchronized锁升级、AQS原理、线程池调优、volatile与JMM内存屏障高频考题，附标准答案+代码。Java实习生面试必背。">
+<meta name="keywords" content="Java并发面试题,synchronized锁升级,AQS原理,线程池调优,volatile,CAS,Java实习生面试,2026面试">
+<title>Java并发编程面试10题 | 2026实习生必背</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:800px;margin:0 auto;padding:20px;line-height:1.8;color:#333;background:#f8f9fa}
+h1{color:#c0392b;border-bottom:3px solid #e74c3c;padding-bottom:10px}
+h2{color:#2c3e50;margin-top:30px;border-left:4px solid #3498db;padding-left:12px}
+.question{background:#fff;padding:18px;margin:15px 0;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08);border-left:4px solid #e74c3c}
+.answer{background:#f0f4f8;padding:15px;margin:5px 0 20px 20px;border-radius:6px}
+code{background:#2c3e50;color:#ecf0f1;padding:2px 8px;border-radius:4px;font-size:.9em}
+pre{background:#2c3e50;color:#ecf0f1;padding:15px;border-radius:8px;overflow-x:auto;font-size:.85em}
+.keyword{color:#e74c3c;font-weight:bold}
+.donate{text-align:center;margin:40px 0;padding:25px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:12px;color:#fff}
+.donate img{width:180px;border-radius:12px;margin:10px auto;display:block}
+.donate p{margin:5px 0}
+.note{background:#fff3cd;padding:12px;border-radius:6px;margin:10px 0;font-size:.9em}
+.back-link{display:inline-block;margin:20px 0;color:#3498db;text-decoration:none}
+.score{display:inline-block;background:#27ae60;color:#fff;padding:2px 10px;border-radius:10px;font-size:.75em;margin-left:8px}
+</style>
+</head>
+<body>
+
+<a href="https://Abyte-zym.github.io/java-career-blog/" class="back-link">← 返回博客首页</a>
+<h1>⚡ Java并发编程面试10题 <span class="score">高频 ★★★★★</span></h1>
+<p>并发编程是Java面试最核心的模块之一——80%的后端岗位必考。这10道题覆盖2026年最高频考点，每道附答案要点+代码。</p>
+
+<div class="note">📢 本文来源：3天10+HR真实沟通中提炼的面试题库。</div>
+
+<div class="question">
+<h2>1. synchronized锁升级过程是怎样的？<span class="score">必考</span></h2>
+</div>
+<div class="answer">
+<strong>答案：</strong>JDK6后synchronized引入了锁升级机制——<span class="keyword">无锁 → 偏向锁 → 轻量级锁 → 重量级锁</span>，只升不降。
+<br><br>
+• <span class="keyword">偏向锁</span>：对象头标记线程ID，同一线程重入无需CAS，减少开销<br>
+• <span class="keyword">轻量级锁</span>：竞争时通过CAS将Mark Word指向栈中Lock Record，自旋等待<br>
+• <span class="keyword">重量级锁</span>：自旋失败后膨胀，依赖Monitor（ObjectMonitor），线程阻塞<br>
+<strong>面试亮点：</strong>"偏向锁延迟（Biased Locking延迟4秒）在JDK15已默认禁用——因为高并发下偏向锁撤销成本高。"
+</div>
+
+<div class="question">
+<h2>2. AQS原理是什么？ReentrantLock和CountDownLatch怎么基于AQS实现的？</h2>
+</div>
+<div class="answer">
+<strong>答案：</strong>AQS（AbstractQueuedSynchronizer）是JUC包的核心骨架。内部维护一个<span class="keyword">int state</span> + <span class="keyword">FIFO双向队列（CLH变体）</span>。
+<br><br>
+<strong>工作流程：</strong>
+<pre>获取锁：tryAcquire(state)→CAS改state→失败→入队→park阻塞
+释放锁：tryRelease(state)→唤醒后续节点→unpark</pre>
+• ReentrantLock：state=0未锁，state≥1已锁（可重入计数）<br>
+• CountDownLatch：state=计数器，countDown()减1，await()等待state=0<br>
+<strong>面试必答：</strong>"AQS通过模板方法模式（tryAcquire/tryRelease）让子类实现，ReentrantLock有公平/非公平两种实现。"
+</div>
+
+<div class="question">
+<h2>3. volatile底层实现原理？和synchronized区别？</h2>
+</div>
+<div class="answer">
+<strong>答案：</strong>volatile通过<span class="keyword">内存屏障（Memory Barrier）</span>实现：
+<br>
+• <strong>可见性</strong>：写volatile变量后插入StoreLoad屏障，强制刷新到主存<br>
+• <strong>禁止重排序</strong>：通过happens-before规则约束<br>
+<br>
+<strong>vs synchronized：</strong>
+<table border="1" cellpadding="8" cellspacing="0" style="width:100%;border-collapse:collapse;margin:10px 0">
+<tr style="background:#f0f4f8"><th>特性</th><th>volatile</th><th>synchronized</th></tr>
+<tr><td>原子性</td><td>❌ 不保证</td><td>✅ 保证</td></tr>
+<tr><td>可见性</td><td>✅</td><td>✅</td></tr>
+<tr><td>性能</td><td>高（无锁）</td><td>较低</td></tr>
+<tr><td>适用</td><td>状态标记</td><td>临界区</td></tr>
+</table>
+</div>
+
+<div class="question">
+<h2>4. 线程池核心参数怎么设置？拒绝策略有哪些？</h2>
+</div>
+<div class="answer">
+<strong>答案：</strong>
+<pre>ThreadPoolExecutor(核心线程数, 最大线程数, 空闲存活时间, 
+                   时间单位, 工作队列, 线程工厂, 拒绝策略)</pre>
+• <span class="keyword">IO密集型</span>：核心线程 = 2 × CPU核数 + 1<br>
+• <span class="keyword">CPU密集型</span>：核心线程 = CPU核数 + 1<br><br>
+<strong>4种拒绝策略：</strong><br>
+1. AbortPolicy（默认）：抛RejectedExecutionException<br>
+2. CallerRunsPolicy：调用者线程执行<br>
+3. DiscardPolicy：直接丢弃<br>
+4. DiscardOldestPolicy：丢弃队列最老任务
+</div>
+
+<div class="question">
+<h2>5. ThreadLocal内存泄漏原因？怎么解决？</h2>
+</div>
+<div class="answer">
+<strong>答案：</strong>ThreadLocal的<span class="keyword">Entry继承了WeakReference</span>，但key是弱引用、value是强引用。
+<br><br>
+<strong>泄漏原因：</strong>GC回收key后，value仍被Entry强引用，且Entry被Thread→ThreadLocalMap强引用→value永不回收。
+<br>
+<strong>解决：</strong>①调用<code>remove()</code>方法（最关键）；②使用静态ThreadLocal减少实例数；③JDK8已优化——ThreadLocalMap的set/get/remove会主动清理key=null的Entry。
+</div>
+
+<div class="question">
+<h2>6. CAS的ABA问题是什么？怎么解决？</h2>
+</div>
+<div class="answer">
+<strong>答案：</strong>CAS比较时，值从A→B→A，误判为"未变"。
+<br><br>
+<strong>解决方案：</strong><br>
+• <code>AtomicStampedReference</code>：加版本号（stamp），每次更新version+1<br>
+• <code>AtomicMarkableReference</code>：加布尔标记位，适合"是否被改过"场景<br>
+<strong>实战：</strong>"秒杀项目用Redis Lua脚本而不用CAS——Redis单线程天然避免ABA。"
+</div>
+
+<div class="question">
+<h2>7. ConcurrentHashMap在JDK7和JDK8的实现区别？</h2>
+</div>
+<div class="answer">
+<strong>答案：</strong>从<span class="keyword">分段锁 → CAS+synchronized</span>的演进。
+<br>
+• <strong>JDK7</strong>：Segment数组 + HashEntry，并发度=段数（默认16），分段锁<br>
+• <strong>JDK8</strong>：Node数组 + CAS + synchronized，锁粒度到桶级别，链表→红黑树（≥8）<br>
+<strong>为什么改？</strong>"JDK7分段锁浪费内存且锁粒度固定，JDK8用CAS+synchronized（synchronized优化后性能相当）更灵活。"
+</div>
+
+<div class="question">
+<h2>8. 死锁的四个必要条件？怎么排查？</h2>
+</div>
+<div class="answer">
+<strong>答案：</strong>
+• <strong>互斥</strong>：资源独享<br>
+• <strong>持有并等待</strong>：持有资源A等资源B<br>
+• <strong>不可剥夺</strong>：别人不能用<br>
+• <strong>循环等待</strong>：A等B、B等A<br>
+<br>
+<strong>排查：</strong>①<code>jstack PID</code>查看死锁线程；②<code>jconsole</code>可视化检测；③Arthas <code>thread -b</code>查找死锁。
+</div>
+
+<div class="question">
+<h2>9. CompletableFuture怎么用？和Future有什么区别？</h2>
+</div>
+<div class="answer">
+<strong>Future缺点：</strong>①get()阻塞获取；②无法链式回调；③不能组合多个异步任务。
+<br><br>
+<strong>CompletableFuture：</strong>
+<pre>
+CompletableFuture.supplyAsync(() -> 查订单)
+    .thenApply(order -> 算价格)
+    .thenAccept(price -> System.out.println(price))
+    .exceptionally(e -> 默认值);
+</pre>
+关键方法：<code>supplyAsync</code>有返回值、<code>runAsync</code>无返回值、<code>thenCombine</code>合并两结果、<code>allOf</code>等全部完成。
+</div>
+
+<div class="question">
+<h2>10. 如何设计一个秒杀系统的并发控制？</h2>
+</div>
+<div class="answer">
+<strong>答案：</strong>分层控制——<br>
+① <span class="keyword">前端</span>：按钮防抖+验证码<br>
+② <span class="keyword">网关</span>：令牌桶限流（Sentinel）<br>
+③ <span class="keyword">服务层</span>：Redis Lua原子扣库存+Redisson分布式锁防重复下单<br>
+④ <span class="keyword">异步层</span>：RocketMQ削峰+异步落库<br>
+⑤ <span class="keyword">数据库</span>：乐观锁version字段+Canal监听binlog对账<br>
+<strong>面试金句：</strong>"秒杀本质是三层防护：限流→原子扣减→异步缓冲。任何一层漏了，下一层都会被打穿。"
+</div>
+
+<div class="donate">
+<h3>☕ 看完有收获？请我喝杯咖啡</h3>
+<p>这份资料帮你拿Offer，赞助让我继续更新</p>
+<img src="qrcode-wx.png" alt="微信赞赏码">
+<p style="font-size:13px;opacity:.8">扫码赞赏 | 更多工具：github.com/Abyte-zym</p>
+</div>
+
+<div style="text-align:center;margin:30px 0;padding:15px;background:#fff;border-radius:8px">
+<p style="font-size:16px">🛠 <strong>更多免费Java求职工具</strong></p>
+<p>
+<a href="https://Abyte-zym.github.io/java-resume-builder/" style="margin:0 10px;color:#2980b9">📝 简历生成器</a>
+<a href="https://Abyte-zym.github.io/java-interview-quiz/" style="margin:0 10px;color:#2980b9">☕ 面试题库</a>
+<a href="https://Abyte-zym.github.io/interview-simulator/" style="margin:0 10px;color:#2980b9">🎯 模拟面试</a>
+<a href="https://Abyte-zym.github.io/java-career-blog/portfolio.html" style="margin:0 10px;color:#2980b9">💼 接单主页</a>
+</p>
+</div>
+
+</body>
+</html>
