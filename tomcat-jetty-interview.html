@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tomcat性能调优+Jetty对比面试10题 | Java实习面试通关</title>
+<meta name="description" content="Tomcat线程池调优、JVM参数优化、Apr模式、NIO vs BIO、连接器配置、Session共享、Jetty嵌入式实战——Java后端必问10题，标准答案直接背。">
+<meta name="keywords" content="Tomcat面试题,Tomcat调优,Jetty嵌入式,NIO BIO区别,Tomcat线程池,Session共享,Java后端面试,2026面试">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.8;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:1.8em;color:#38bdf8;margin:20px 0 10px;text-align:center}
+.meta{text-align:center;color:#94a3b8;margin-bottom:30px;font-size:0.9em}
+.question{background:#1e293b;border-radius:12px;padding:24px;margin:20px 0;border-left:4px solid #38bdf8}
+.question h3{color:#facc15;margin-bottom:12px;font-size:1.1em}
+.answer{background:#0f172a;border-radius:8px;padding:16px;margin-top:12px;border:1px solid #334155}
+.answer strong{color:#4ade80}
+code{background:#1e293b;padding:2px 6px;border-radius:4px;font-size:0.9em;color:#f472b6}
+pre{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:16px;overflow-x:auto;margin:10px 0}
+.donate{text-align:center;margin:40px 0;padding:24px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;border:2px solid #facc15}
+.donate p{color:#facc15;font-size:1.2em;margin-bottom:12px}
+.donate img{width:200px;border-radius:12px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:30px 0}
+.nav a{background:#1e293b;color:#94a3b8;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:0.85em;transition:all .2s}
+.nav a:hover{background:#38bdf8;color:#0f172a}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>⚡ Tomcat性能调优+Jetty对比面试10题</h1>
+<p class="meta">Java后端实习生面试 · 2026年5月 · 每题含标准答案</p>
+
+<div class="nav">
+<a href="./">📚 全部文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../interview-quiz/">☕ 题库</a>
+<a href="../java-rank-test/">⚔️ 段位</a>
+</div>
+
+<div class="question">
+<h3>Q1：Tomcat默认最大线程数是多少？怎么调？</h3>
+<div class="answer">
+<strong>默认：</strong><code>maxThreads=200</code>，<code>minSpareThreads=10</code>。<br><br>
+<strong>调优公式：</strong><br>
+<pre>&lt;Connector port="8080" protocol="HTTP/1.1"
+    maxThreads="500"        <!-- CPU密集型: N+1; IO密集型: 2N -->
+    minSpareThreads="25"    <!-- 空闲时保留的线程数 -->
+    acceptCount="200"       <!-- 队列满后等待的最大请求数 -->
+    connectionTimeout="20000"
+/&gt;</pre>
+<strong>面试加分：</strong>提一句不要盲目调到1000——线程过多导致频繁上下文切换，反而吞吐量下降。压测后看CPU利用率来决定。
+</div>
+</div>
+
+<div class="question">
+<h3>Q2：Tomcat的BIO、NIO、APR三种模式有什么区别？</h3>
+<div class="answer">
+<strong>BIO（Blocking IO）：</strong>一个连接一个线程，连接不干活的线程也阻塞等。Tomcat7之前默认。并发差。<br><br>
+<strong>NIO（Non-blocking IO）：</strong>一个线程处理多个连接，Selector轮询就绪的Channel。Tomcat8+默认。适合高并发短连接。<br><br>
+<strong>APR（Apache Portable Runtime）：</strong>JNI调用操作系统级IO，性能最高。需要额外装native库。适合静态资源和高并发长连接。<br><br>
+<strong>一句话总结：</strong>NIO对付日常高并发够用，APR追求极致性能时启用。Spring Boot默认就是NIO。
+</div>
+</div>
+
+<div class="question">
+<h3>Q3：Tomcat怎么优化JVM参数？</h3>
+<div class="answer">
+<strong>关键JVM参数（<code>catalina.sh</code> 或 <code>setenv.sh</code>）：</strong>
+<pre>JAVA_OPTS="-Xms2048m -Xmx2048m      # 堆内存初始=最大
+-XX:+UseG1GC                        # G1垃圾回收器
+-XX:MaxGCPauseMillis=200            # GC最大停顿200ms
+-XX:+PrintGCDetails                 # 打印GC日志
+-Djava.security.egd=file:/dev/./urandom"  # 加速随机数生成</pre>
+<strong>面试要点：</strong>Spring Boot内嵌Tomcat改JVM参数在启动命令里加<code>-Xmx</code>。生产环境堆内存设物理内存的50-70%。
+</div>
+</div>
+
+<div class="question">
+<h3>Q4：Tomcat的类加载机制和JVM的有什么区别？</h3>
+<div class="answer">
+<strong>Tomcat打破了双亲委派：</strong><br>
+- <strong>WebappClassLoader：</strong>优先加载自己WEB-INF/classes，再委托给父加载器<br>
+- <strong>目的：</strong>不同Web应用使用同一库的不同版本互不干扰<br>
+- <strong>加载顺序：</strong>Bootstrap → System → Common → Webapp（反过来先找自己的）<br><br>
+<strong>实战意义：</strong>两个应用一个用Spring 5一个用Spring 6放同一Tomcat不会冲突。
+</div>
+</div>
+
+<div class="question">
+<h3>Q5：Tomcat的Session共享怎么实现？</h3>
+<div class="answer">
+<strong>三种方案：</strong><br>
+1. <strong>Redis集中存储：</strong>Spring Session + Redis。所有Tomcat读写同一Redis。<br>
+2. <strong>Tomcat Cluster：</strong>组播复制Session，节点间广播。大集群性能差。<br>
+3. <strong>IP哈希负载均衡：</strong>Nginx ip_hash让同一用户永远打到同一台Tomcat。<br><br>
+<strong>面试推荐回答：</strong>生产环境用Spring Session + Redis——简单可靠，不侵入代码。
+</div>
+</div>
+
+<div class="question">
+<h3>Q6：Tomcat和Jetty有什么区别？什么场景用哪个？</h3>
+<div class="answer">
+<strong>核心差异：</strong><br>
+| Tomcat | Jetty |
+|--------|-------|
+| 体积大，功能全 | 体积小，嵌入式首选 |
+| Servlet容器完整 | 更像一个Servlet库 |
+| Spring Boot默认(到2.x) | 可嵌入单元测试启动 |
+| 社区更大 | 更灵活可定制 |
+| 稳定性优先 | 轻量化优先 |<br>
+<strong>选型建议：</strong>传统Web项目用Tomcat。需要嵌入式（如微服务内嵌容器、单元测试启动）用Jetty。Spring Boot可以用Jetty替代Tomcat——改个pom依赖就行。
+</div>
+</div>
+
+<div class="question">
+<h3>Q7：Tomcat的Connector和Container是什么关系？</h3>
+<div class="answer">
+<strong>Tomcat架构 = Connector + Container：</strong><br>
+- <strong>Connector（连接器）：</strong>负责网络通信——接收HTTP请求，解析成ServletRequest<br>
+- <strong>Container（容器）：</strong>负责处理请求——Engine→Host→Context→Wrapper（责任链模式）<br>
+- <strong>关系：</strong>Connector把请求交给Engine，Engine路由到对应Host→Context→Wrapper（Servlet）<br><br>
+<strong>面试金句：</strong>"Connector管网络IO，Container管Servlet生命周期。两者解耦是Tomcat架构的核心。"
+</div>
+</div>
+
+<div class="question">
+<h3>Q8：Tomcat内存溢出（OOM）怎么排查？</h3>
+<div class="answer">
+<strong>四步排查法：</strong><br>
+1. <strong>看日志：</strong><code>catalina.out</code> 有 <code>OutOfMemoryError</code> 和堆栈<br>
+2. <strong>看是哪种OOM：</strong>Java heap space→增大<code>-Xmx</code>；PermGen/Metaspace→增大<code>-XX:MaxMetaspaceSize</code><br>
+3. <strong>生成dump：</strong><code>-XX:+HeapDumpOnOutOfMemoryError</code>→MAT/JProfiler分析<br>
+4. <strong>常见原因：</strong>Session不超时导致堆积/静态集合一直add不remove/线程池ThreadLocal没清理<br><br>
+<strong>面试加分：</strong>提到Arthas的<code>memory</code>命令可以实时监控内存使用。
+</div>
+</div>
+
+<div class="question">
+<h3>Q9：Spring Boot内嵌Tomcat怎么调参数？</h3>
+<div class="answer">
+<strong>两种方式：</strong><br>
+<strong>方式一（application.yml）：</strong>
+<pre>server:
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 20
+    max-connections: 10000
+    accept-count: 200
+  connection-timeout: 30s</pre>
+<strong>方式二（代码自定义）：</strong>
+<pre>@Bean
+public TomcatServletWebServerFactory factory() {
+    TomcatServletWebServerFactory f = new TomcatServletWebServerFactory();
+    f.addConnectorCustomizers(c -> {
+        Http11NioProtocol p = (Http11NioProtocol) c.getProtocolHandler();
+        p.setMaxThreads(500);
+    });
+    return f;
+}</pre>
+</div>
+</div>
+
+<div class="question">
+<h3>Q10：Tomcat的war包和jar包部署有什么区别？Spring Boot为什么用jar？</h3>
+<div class="answer">
+<strong>WAR（Web Archive）：</strong>部署到外部Tomcat的webapps目录。Tomcat解压→加载。需要外部Tomcat环境。<br><br>
+<strong>JAR（Java Archive）：</strong>Spring Boot Fat Jar内嵌Tomcat。一个jar包 = Tomcat + 你的代码。直接<code>java -jar</code>启动。<br><br>
+<strong>Spring Boot为什么选jar：</strong>"一次构建到处运行"——不需要预装Tomcat，一个jar包扔服务器就能跑。微服务时代的标准部署方式。<br><br>
+<strong>面试时加一句：</strong>Fat Jar的<code>BOOT-INF/lib</code>目录下能看到内嵌的Tomcat依赖。
+</div>
+</div>
+
+<div class="donate">
+<p>☕ 这篇文章帮到你了？</p>
+<p style="color:#94a3b8;font-size:0.9em">请作者喝杯咖啡，支持持续更新更多面试干货</p>
+<img src="../mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏码" style="max-width:200px;border-radius:12px">
+<p style="font-size:0.8em;color:#64748b;margin-top:8px">微信扫码赞赏</p>
+</div>
+
+<div class="nav">
+<a href="./">📚 全部49篇文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../interview-quiz/">☕ 题库</a>
+<a href="../java-rank-test/">⚔️ 段位</a>
+</div>
+
+</div>
+</body>
+</html>
