@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZooKeeper分布式协调面试10题 | Java实习面试通关</title>
+<meta name="description" content="ZooKeeper选举机制、ZAB协议、分布式锁实现、watcher原理、CAP取舍、脑裂处理、会话超时——Java后端必问10题，标准答案直接背。">
+<meta name="keywords" content="ZooKeeper面试题,ZAB协议,分布式锁ZooKeeper,watcher机制,脑裂,选举算法,Java后端面试,2026面试">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.8;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:1.8em;color:#38bdf8;margin:20px 0 10px;text-align:center}
+.meta{text-align:center;color:#94a3b8;margin-bottom:30px;font-size:0.9em}
+.question{background:#1e293b;border-radius:12px;padding:24px;margin:20px 0;border-left:4px solid #38bdf8}
+.question h3{color:#facc15;margin-bottom:12px;font-size:1.1em}
+.answer{background:#0f172a;border-radius:8px;padding:16px;margin-top:12px;border:1px solid #334155}
+.answer strong{color:#4ade80}
+code{background:#1e293b;padding:2px 6px;border-radius:4px;font-size:0.9em;color:#f472b6}
+pre{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:16px;overflow-x:auto;margin:10px 0}
+.tip{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:12px;margin:10px 0;font-size:0.9em}
+.donate{text-align:center;margin:40px 0;padding:24px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;border:2px solid #facc15}
+.donate p{color:#facc15;font-size:1.2em;margin-bottom:12px}
+.donate img{width:200px;border-radius:12px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:30px 0}
+.nav a{background:#1e293b;color:#94a3b8;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:0.85em;transition:all .2s}
+.nav a:hover{background:#38bdf8;color:#0f172a}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🦓 ZooKeeper分布式协调面试10题</h1>
+<p class="meta">Java后端实习生面试 · 2026年5月 · 每题含标准答案</p>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../interview-quiz/">☕ 题库</a>
+<a href="../resume-builder/">📝 简历</a>
+</div>
+
+<div class="question">
+<h3>Q1：ZooKeeper是什么？解决了什么问题？</h3>
+<div class="answer">
+<strong>一句话：</strong>分布式协调服务。核心能力是<strong>统一命名、配置管理、集群管理、分布式锁</strong>。<br><br>
+<strong>解决的实际问题：</strong><br>
+• Dubbo用ZK做服务注册发现——Provider上线注册临时节点，Consumer watch节点变化<br>
+• 分布式锁——多个服务抢同一商品库存时，ZK临时顺序节点保证只有一个拿到锁<br>
+• 配置中心——所有服务watch同一个配置节点，改一处所有服务自动感知<br>
+• 选主——多个备份节点通过ZK选举出一个Master<br><br>
+<strong>面试时提：</strong>Kafka早期用ZK管理Broker和Topic，新版已去ZK化。但Dubbo/Hadoop/微服务治理中ZK仍是标配。
+</div>
+</div>
+
+<div class="question">
+<h3>Q2：ZAB协议是什么？和Raft有什么区别？</h3>
+<div class="answer">
+<strong>ZAB（ZooKeeper Atomic Broadcast）：</strong>ZK自研的一致性协议，设计目标是<strong>崩溃恢复+原子广播</strong>。<br><br>
+<strong>两种模式：</strong><br>
+1. <strong>崩溃恢复模式：</strong>Leader挂了→重新选举→新Leader同步数据给Follower<br>
+2. <strong>消息广播模式：</strong>Leader接收写请求→转发Proposal给所有Follower→过半ACK→提交<br><br>
+<strong>和Raft的核心区别：</strong><br>
+| ZAB | Raft |<br>
+| 专门为ZK设计 | 通用共识算法 |<br>
+| Leader广播是FIFO顺序 | 日志复制严格有序 |<br>
+| 新Leader直接同步最新数据 | 新Leader从最新日志开始 |<br>
+| 实现较复杂 | 设计更简洁易懂 |<br><br>
+<strong>面试时只说一句话：</strong>"ZAB是ZK的专用共识协议，两阶段提交+过半确认，和Raft思想类似但实现不同。"
+</div>
+</div>
+
+<div class="question">
+<h3>Q3：ZK的选举机制是怎样的？</h3>
+<div class="answer">
+<strong>Fast Leader Election（快速选举算法）：</strong><br>
+每个节点投票时比较<strong>（ZXID大者优先 → 相同则myid大者优先）</strong>。<br><br>
+<strong>选举流程：</strong><br>
+1. 每个节点给自己投票<code>(myid, ZXID)</code><br>
+2. 广播自己的投票给集群其他节点<br>
+3. 收到别人的投票后，比较：谁的ZXID大选谁；ZXID相同比myid<br>
+4. 改投更强的节点，再次广播<br>
+5. 当某个节点获得<strong>超过半数</strong>的投票→成为Leader<br>
+6. Leader广播LEADING状态，Follower广播FOLLOWING<br><br>
+<strong>关键点：ZXID是事务ID，事务越多的节点数据越新→优先当Leader保证数据不丢。</strong>
+</div>
+</div>
+
+<div class="question">
+<h3>Q4：ZK如何实现分布式锁？</h3>
+<div class="answer">
+<strong>核心方案：临时顺序节点 + Watch机制</strong><br><br>
+<strong>加锁流程：</strong><br>
+1. 所有客户端在 <code>/lock</code> 下创建<strong>临时顺序节点</strong>，如 <code>/lock/seq-0000000001</code><br>
+2. 检查自己是不是序号最小的节点<br>
+3. 是→获得锁，执行业务<br>
+4. 不是→Watch前一个节点（比自己序号小的最大那个）<br>
+5. 前一个节点释放（客户端断开或删除）→收到通知→重新检查→自己变最小→获得锁<br><br>
+<strong>优点：</strong>FIFO公平锁，不会惊群效应——只唤醒下一个等待者。<br>
+<strong>和Redis锁对比：</strong>ZK锁强一致性但性能较低；Redis锁性能高但可能丢锁（主从切换）。秒杀场景用Redis，支付场景用ZK。
+</div>
+</div>
+
+<div class="question">
+<h3>Q5：ZK节点的4种类型？各自什么场景用？</h3>
+<div class="answer">
+| 类型 | 特点 | 典型场景 |
+|------|------|---------|
+| <strong>持久节点</strong> | 创建后一直存在，手动删除 | 配置信息 |
+| <strong>持久顺序节点</strong> | 持久+自动编号 | 全局唯一ID |
+| <strong>临时节点</strong> | 客户端断开自动删除 | 服务注册/心跳 |
+| <strong>临时顺序节点</strong> | 临时+自动编号 | 分布式锁/选主 |
+<br>
+<strong>面试亮点：</strong>临时节点的生命周期绑定客户端Session——这也是ZK能自动感知服务下线的原理。Dubbo的Provider挂了→临时节点消失→Consumer的watch触发→更新本地服务列表。
+</div>
+</div>
+
+<div class="question">
+<h3>Q6：Watcher机制有什么特点？</h3>
+<div class="answer">
+<strong>三个核心特点：</strong><br>
+1. <strong>一次性触发：</strong>Watcher触发后失效，需要重新注册<br>
+2. <strong>串行执行：</strong>所有Watcher回调串行执行（一个处理完才到下一个）<br>
+3. <strong>轻量级：</strong>Watcher传递的是事件类型+节点路径，不含数据<br><br>
+<strong>为什么是一次性的？</strong>如果服务端持续推送会浪费带宽。客户端收到通知后自己去getData()拿最新数据+重新注册Watcher。<br><br>
+<strong>常见陷阱：</strong>Watcher回调里不能做耗时操作——因为是串行的，会阻塞其他Watcher。
+</div>
+</div>
+
+<div class="question">
+<h3>Q7：ZK是CP还是AP？为什么？</h3>
+<div class="answer">
+<strong>答案：CP（强一致性+分区容错）。</strong><br><br>
+<strong>证明过程：</strong><br>
+• <strong>C（一致性）：</strong>Leader挂了期间不对外提供服务→牺牲可用性保一致性<br>
+• <strong>P（分区容错）：</strong>过半节点存活就能选举和提交→容忍网络分区<br>
+• <strong>不是A（可用性）：</strong>选举期间整个集群不可用（通常几秒到30秒）<br><br>
+<strong>对比Eureka：</strong>Eureka是AP——宁可返回旧数据也不拒绝服务。适合服务发现的一致性要求不高的场景。<br>
+<strong>对比Nacos：</strong>Nacos同时支持AP和CP模式，注册中心用AP（优先可用），配置中心用CP（要求一致性）。
+</div>
+</div>
+
+<div class="question">
+<h3>Q8：ZK集群为什么是奇数台？</h3>
+<div class="answer">
+<strong>核心原因：过半同意机制（Quorum）。</strong><br><br>
+<strong>3台 vs 4台对比：</strong><br>
+• 3台集群：容忍1台故障（2>3/2）<br>
+• 4台集群：也容忍1台故障（3>4/2）<br>
+→ 多花一台机器的钱，容错能力没增加。<br><br>
+<strong>5台集群：</strong>容忍2台故障。<br>
+<strong>结论：</strong>可用节点数 = 总节点数 - 故障数；但提交要求 故障数 < 总节点数/2。所以奇数台机器性价比最高。<br><br>
+<strong>面试一句话：</strong>"3台和4台都只能挂1台，多一台白花钱。所以生产环境一般用3台或5台。"
+</div>
+</div>
+
+<div class="question">
+<h3>Q9：ZK的Session超时怎么处理？临时节点什么时候删除？</h3>
+<div class="answer">
+<strong>Session生命周期：</strong><br>
+1. 客户端连接ZK→创建Session（分配SessionID+Timeout）<br>
+2. 客户端定期发心跳（Ping）<br>
+3. 服务端在<strong>sessionTimeout</strong>时间内没收到心跳→标记Session为Expired<br>
+4. Session过期→该客户端创建的所有<strong>临时节点全部删除</strong><br>
+5. 其他Watch这些节点的客户端收到通知<br><br>
+<strong>关键参数：</strong><br>
+• <code>sessionTimeout</code>：服务端允许的最大超时时间，客户端连接时声明<br>
+• <code>tickTime</code>：ZK基本时间单位，默认2000ms<br>
+• 最小超时=2×tickTime，最大超时=20×tickTime<br><br>
+<strong>面试陷阱：</strong>临时节点是客户端断开连接后才删除，不是心跳断了立刻删。需要等sessionTimeout到期。
+</div>
+</div>
+
+<div class="question">
+<h3>Q10：ZK不适合什么场景？</h3>
+<div class="answer">
+<strong>ZK的局限性：</strong><br>
+1. <strong>不适合大数据存储：</strong>单个节点数据量建议<1MB，不是数据库<br>
+2. <strong>不适合高并发写：</strong>所有写都要Leader→事务→广播，写QPS几百<br>
+3. <strong>不适合实时性要求高的场景：</strong>选举期间不可用（几秒~30秒）<br>
+4. <strong>不适合做消息队列：</strong>Watcher一次性且无持久化消费能力<br>
+5. <strong>不适合跨机房部署：</strong>网络延迟大会严重影响Leader选举和ZAB提交<br><br>
+<strong>替代方案：</strong><br>
+• 配置中心→Nacos/Apollo（更轻量）<br>
+• 分布式锁→Redis Redisson（更高性能）<br>
+• 选主→Etcd（K8s生态标配）<br>
+• 服务发现→Nacos/Eureka（专为此设计）
+</div>
+</div>
+
+<div class="donate">
+<p>☕ 这篇文章帮到你了？</p>
+<p style="color:#94a3b8;font-size:0.9em">请作者喝杯咖啡，支持更新更多面试干货</p>
+<img src="../mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏码">
+<p style="font-size:0.8em;color:#64748b;margin-top:8px">微信扫码赞赏</p>
+</div>
+
+<div class="nav">
+<a href="../arsenal/">🎯 Java面试弹药库（50+篇全免费）</a>
+<a href="../java-skill-radar/">📊 技能雷达测评</a>
+<a href="../interview-quiz/">☕ 真题刷题</a>
+<a href="../shop/">🛒 装备商店</a>
+</div>
+
+<div class="tip" style="text-align:center;margin-top:40px">
+<p style="color:#94a3b8">55篇面试文章 · 30+免费工具 · Java后端90%考点覆盖</p>
+<p style="color:#64748b;font-size:0.8em">© 2026 Abyte-zym · GitHub Pages · 赞赏支持</p>
+</div>
+
+</div>
+</body>
+</html>
