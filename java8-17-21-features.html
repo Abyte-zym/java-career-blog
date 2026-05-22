@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Java 8→17→21 新特性面试10题 | 2026 Java实习面试</title>
+<meta name="description" content="Java 8到21版本演进面试题：Lambda、Stream、Optional、Records、Sealed Classes、Pattern Matching、Virtual Threads——2026 Java实习必问。">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f6fa;color:#2d3436;line-height:1.8}
+.container{max-width:800px;margin:0 auto;padding:20px}
+header{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:40px 20px;text-align:center;border-radius:12px;margin-bottom:30px}
+h1{font-size:1.8em;margin-bottom:10px}
+header p{opacity:.9;font-size:1em}
+.qa{background:#fff;border-radius:10px;padding:25px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.qa h2{font-size:1.15em;color:#667eea;margin-bottom:12px;border-left:4px solid #667eea;padding-left:12px}
+.qa pre{background:#2d3436;color:#dfe6e9;padding:15px;border-radius:8px;overflow-x:auto;font-size:.9em;margin:10px 0}
+.qa code{background:#f0f0f0;padding:2px 6px;border-radius:4px;font-size:.9em}
+.qa ul{margin:8px 0 8px 20px}
+.qa li{margin:4px 0}
+.donate{background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff;text-align:center;padding:30px;border-radius:12px;margin:30px 0}
+.donate h3{margin-bottom:10px}
+.donate img{width:200px;border-radius:12px;border:4px solid #fff;margin:10px}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0;justify-content:center}
+.toolbar a{background:#fff;padding:8px 16px;border-radius:20px;text-decoration:none;color:#667eea;font-size:.85em;box-shadow:0 1px 4px rgba(0,0,0,.08);transition:all .2s}
+.toolbar a:hover{background:#667eea;color:#fff}
+footer{text-align:center;padding:20px;color:#999;font-size:.85em}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>☕ Java 8 → 17 → 21 新特性面试10题</h1>
+<p>2026 Java实习/应届面试高频考点 · Lambda · Stream · Records · Virtual Threads</p>
+</header>
+
+<div class="toolbar">
+<a href="index.html">📚 全部文章</a>
+<a href="https://Abyte-zym.github.io/arsenal">🎯 弹药库</a>
+<a href="https://Abyte-zym.github.io/java-interview-quiz">☕ 题库</a>
+<a href="https://Abyte-zym.github.io/java-resume-builder">📝 简历</a>
+</div>
+
+<div class="qa">
+<h2>1. Lambda表达式是什么？和匿名内部类有什么区别？</h2>
+<p><strong>答：</strong> Lambda是Java 8引入的函数式编程语法，本质是<code>函数式接口</code>的简洁实现。和匿名内部类的关键区别：</p>
+<ul>
+<li><strong>字节码层面：</strong> Lambda不生成独立的.class文件（使用invokedynamic指令），匿名内部类生成Outer$1.class</li>
+<li><strong>this引用：</strong> Lambda中this指向外部类，匿名内部类中this指向内部类自身</li>
+<li><strong>变量捕获：</strong> Lambda只能引用effectively final的外部变量</li>
+</ul>
+<pre>// Lambda写法
+Runnable r = () -> System.out.println("Hello");
+
+// 匿名内部类写法
+Runnable r2 = new Runnable() {
+    public void run() { System.out.println("Hello"); }
+};</pre>
+</div>
+
+<div class="qa">
+<h2>2. Stream API的核心操作有哪些？map和flatMap的区别？</h2>
+<p><strong>答：</strong> Stream操作分为<strong>中间操作（惰性）</strong>和<strong>终止操作（触发执行）</strong>：</p>
+<ul>
+<li>中间操作：filter、map、flatMap、sorted、distinct、limit、skip、peek</li>
+<li>终止操作：collect、forEach、reduce、count、anyMatch、findFirst</li>
+</ul>
+<p><strong>map vs flatMap：</strong> map是1对1映射，flatMap是1对多映射并将多个流<strong>展平</strong>为一个流。</p>
+<pre>// map: 每个元素变一个
+List&lt;String&gt; names = users.stream().map(User::getName).toList();
+
+// flatMap: 展平嵌套集合
+List&lt;String&gt; allTags = articles.stream()
+    .flatMap(a -> a.getTags().stream()).toList();</pre>
+</div>
+
+<div class="qa">
+<h2>3. Optional解决了什么问题？怎么正确使用？</h2>
+<p><strong>答：</strong> Optional是Java 8引入的容器类，解决<strong>NPE（空指针）</strong>问题，强制开发者显式处理null。正确姿势：</p>
+<ul>
+<li>✅ <code>orElseThrow()</code> - 为空抛异常</li>
+<li>✅ <code>orElseGet(() -> ...)</code> - 惰性提供默认值</li>
+<li>✅ <code>map()/flatMap()</code> - 链式转换</li>
+<li>❌ 不要用 <code>Optional.get()</code> 直接取值（可能NoSuchElementException）</li>
+<li>❌ 不要用Optional作为字段类型或方法参数</li>
+</ul>
+<pre>String result = Optional.ofNullable(user)
+    .map(User::getAddress)
+    .map(Address::getCity)
+    .orElse("未知城市");</pre>
+</div>
+
+<div class="qa">
+<h2>4. Java 17的Records是什么？和Lombok @Data有什么区别？</h2>
+<p><strong>答：</strong> Record是Java 17正式GA的特性，是一种<strong>不可变的透明数据载体</strong>。编译后自动生成：构造器、equals/hashCode、toString、getter（无前缀get）。</p>
+<p><strong>Record vs Lombok：</strong></p>
+<ul>
+<li>Record是<strong>语言级</strong>实现，Lombok是编译期注解处理器</li>
+<li>Record<strong>强制不可变</strong>（所有字段final），Lombok @Data生成的是可变bean</li>
+<li>Record不能继承其他类（已继承java.lang.Record），Lombok无此限制</li>
+</ul>
+<pre>// 一行代码 = 构造器 + getter + equals + hashCode + toString
+public record User(Long id, String name, String email) {}</pre>
+</div>
+
+<div class="qa">
+<h2>5. Sealed Classes（密封类）解决了什么问题？</h2>
+<p><strong>答：</strong> Java 17引入Sealed Classes，用于<strong>限制哪些类可以继承/实现</strong>当前类或接口。配合模式匹配实现<strong>穷举检查</strong>——编译器能验证所有子类型被覆盖。</p>
+<pre>public sealed interface Result permits Success, Failure {
+    record Success(Object data) implements Result {}
+    record Failure(String error) implements Result {}
+}
+
+// 编译器确保所有分支都被处理
+String msg = switch (result) {
+    case Result.Success s -> "成功: " + s.data();
+    case Result.Failure f -> "失败: " + f.error();
+}; // 无需default——编译器已验证穷举</pre>
+</div>
+
+<div class="qa">
+<h2>6. Pattern Matching（模式匹配）在Java 17/21中怎么用？</h2>
+<p><strong>答：</strong> 模式匹配让类型检查+类型转换一步完成：</p>
+<ul>
+<li><strong>Java 17：</strong> <code>instanceof</code>模式匹配</li>
+<li><strong>Java 21：</strong> <code>switch</code>模式匹配 + Record解构</li>
+</ul>
+<pre>// Java 17: instanceof模式匹配
+if (obj instanceof String s && s.length() > 5) {
+    System.out.println(s.toUpperCase()); // s已自动转为String
+}
+
+// Java 21: switch模式匹配
+return switch (shape) {
+    case Circle(var r) -> Math.PI * r * r;
+    case Rectangle(var w, var h) -> w * h;
+};</pre>
+</div>
+
+<div class="qa">
+<h2>7. Virtual Threads（虚拟线程）是什么？和平台线程的区别？</h2>
+<p><strong>答：</strong> Java 21正式GA的Virtual Threads是<strong>轻量级用户态线程</strong>，由JVM调度而非操作系统：</p>
+<ul>
+<li><strong>平台线程：</strong> 1:1映射OS线程，栈~1MB，创建成本高，限于~几千个</li>
+<li><strong>虚拟线程：</strong> M:N映射到少量OS线程，栈按需分配（堆上），可创建<strong>百万级</strong></li>
+<li><strong>使用场景：</strong> IO密集型任务（一个请求一个虚拟线程），无需线程池</li>
+</ul>
+<pre>// 创建10万个虚拟线程——以前不可能
+try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+    for (int i = 0; i < 100_000; i++) {
+        executor.submit(() -> {
+            Thread.sleep(100); // 阻塞时自动yield，不占用OS线程
+            return "done";
+        });
+    }
+}</pre>
+</div>
+
+<div class="qa">
+<h2>8. Java 8、11、17、21各版本最值得升级的特性是什么？</h2>
+<table style="width:100%;border-collapse:collapse;margin:10px 0">
+<tr style="background:#667eea;color:#fff">
+<th style="padding:8px;text-align:left">版本</th>
+<th style="padding:8px;text-align:left">里程碑特性</th>
+<th style="padding:8px;text-align:left">企业采纳度</th>
+</tr>
+<tr style="background:#f8f9fa"><td style="padding:8px">Java 8 (LTS)</td><td style="padding:8px">Lambda、Stream、Optional、新日期API</td><td style="padding:8px">95%+</td></tr>
+<tr><td style="padding:8px">Java 11 (LTS)</td><td style="padding:8px">HttpClient、String新方法(isBlank/lines)、Flight Recorder</td><td style="padding:8px">60%+</td></tr>
+<tr style="background:#f8f9fa"><td style="padding:8px">Java 17 (LTS)</td><td style="padding:8px">Records、Sealed Classes、Pattern Matching、ZGC</td><td style="padding:8px">40%+</td></tr>
+<tr><td style="padding:8px">Java 21 (LTS)</td><td style="padding:8px">Virtual Threads、Record Patterns、Sequenced Collections</td><td style="padding:8px">快速攀升</td></tr>
+</table>
+</div>
+
+<div class="qa">
+<h2>9. Text Blocks（文本块）和 String 新方法有哪些？</h2>
+<p><strong>答：</strong> Java 15正式GA的Text Blocks用<code>"""</code>包裹多行字符串，自动处理缩进：</p>
+<pre>String json = """
+    {
+        "name": "%s",
+        "age": %d
+    }
+    """.formatted("张三", 22);
+
+// Java 11新增的String方法
+"  hello  ".strip();        // 去除首尾空白（Unicode-aware）
+"".isBlank();               // 判断是否为空或仅空白
+"a\nb\nc".lines().count();  // = 3, 按行分割返回Stream
+"hello".repeat(3);          // "hellohellohello"</pre>
+</div>
+
+<div class="qa">
+<h2>10. var关键字和类型推断有什么限制？</h2>
+<p><strong>答：</strong> Java 10引入的<code>var</code>用于<strong>局部变量类型推断</strong>，编译器根据初始化表达式推断类型：</p>
+<ul>
+<li>✅ 局部变量、增强for循环、try-with-resources</li>
+<li>❌ 方法参数、返回类型、字段声明、Lambda参数（Java 11+允许Lambda参数用var）</li>
+<li>❌ 未初始化的变量声明（var x; // 编译错误）</li>
+<li>❌ 初始化为null（编译器无法推断类型）</li>
+</ul>
+<pre>var list = new ArrayList&lt;String&gt;();  // 类型推断为ArrayList&lt;String&gt;
+var map = Map.of("key", "value");    // Map&lt;String, String&gt;
+for (var user : users) { ... }       // 增强for循环中可用</pre>
+</div>
+
+<div class="donate">
+<h3>☕ 这个工具帮到你了？</h3>
+<p>请作者喝杯咖啡，持续更新更多面试干货 →</p>
+<img src="mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏码">
+<p style="font-size:.85em;margin-top:10px">微信扫码 · 随缘赞赏</p>
+</div>
+
+<div class="toolbar">
+<a href="index.html">📚 全部21篇文章</a>
+<a href="https://Abyte-zym.github.io/arsenal">🎯 弹药库</a>
+<a href="https://Abyte-zym.github.io/java-rank-test">⚔️ 段位测试</a>
+<a href="https://Abyte-zym.github.io/java-interview-quiz">☕ 题库</a>
+</div>
+
+<footer>
+<p>© 2026 Java实习面试指南 · <a href="https://Abyte-zym.github.io/arsenal">全部工具入口</a></p>
+</footer>
+</div>
+</body>
+</html>
