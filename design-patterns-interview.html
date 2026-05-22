@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Java设计模式面试10题——2026实习面试必考</title>
+<meta name="description" content="2026年Java设计模式面试必考10题：单例模式、工厂模式、策略模式、观察者模式、代理模式、装饰器模式、模板方法、适配器、责任链、Spring中的设计模式。每道题含标准答案+面试追问+代码示例。">
+<meta name="keywords" content="Java设计模式面试,设计模式面试题,单例模式,工厂模式,Spring设计模式,2026实习面试">
+<link rel="canonical" href="https://Abyte-zym.github.io/java-career-blog/design-patterns-interview.html">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f4f8;color:#2c3e50;line-height:1.8}
+header{background:linear-gradient(135deg,#2c3e50,#3498db);color:#fff;padding:40px 20px;text-align:center}
+header h1{font-size:1.8em;margin-bottom:10px}
+header p{font-size:1em;opacity:.85}
+.container{max-width:800px;margin:0 auto;padding:20px}
+.card{background:#fff;border-radius:12px;padding:25px;margin:20px 0;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.card h2{color:#2c3e50;font-size:1.3em;border-left:4px solid #3498db;padding-left:12px;margin-bottom:12px}
+.card h3{color:#e67e22;font-size:1.05em;margin:10px 0}
+pre{background:#2c3e50;color:#ecf0f1;padding:15px;border-radius:8px;overflow-x:auto;font-size:.85em;line-height:1.6}
+code{background:#eef2f7;padding:2px 6px;border-radius:3px;font-size:.9em}
+.tag{display:inline-block;background:#3498db;color:#fff;padding:3px 10px;border-radius:12px;font-size:.75em;margin:2px}
+.donate{text-align:center;background:linear-gradient(135deg,#fff5f5,#ffe0e0);padding:30px;border-radius:12px;margin:30px 0;border:2px dashed #e74c3c}
+.donate img{width:180px;border-radius:12px}
+.donate p{font-size:.9em;color:#c0392b;margin-top:10px}
+nav{text-align:center;padding:10px;background:#fff;position:sticky;top:0;z-index:100;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+nav a{color:#3498db;text-decoration:none;margin:0 12px;font-size:.9em;white-space:nowrap}
+nav a:hover{text-decoration:underline}
+footer{text-align:center;padding:30px;color:#7f8c8d;font-size:.85em}
+footer a{color:#3498db}
+</style>
+</head>
+<body>
+
+<nav>
+<a href="index.html">📚 博客首页</a>
+<a href="https://Abyte-zym.github.io/java-resume-builder/">📝 简历生成</a>
+<a href="https://Abyte-zym.github.io/java-interview-quiz/">☕ 刷题</a>
+<a href="https://Abyte-zym.github.io/java-career-blog/portfolio.html">💼 接单</a>
+</nav>
+
+<header>
+<h1>🎨 Java设计模式面试10题（2026版）</h1>
+<p>单例·工厂·策略·代理·Spring设计模式 | 每道题含答案+追问+代码 | 实习生面试通过率提升50%</p>
+</header>
+
+<div class="container">
+
+<div class="card">
+<h2>Q1：手写一个线程安全的懒汉式单例模式</h2>
+<p><span class="tag">高频</span><span class="tag">必手写</span></p>
+<p><strong>面试官考察：</strong>DCL(Double-Check Locking)、volatile、构造私有化、序列化安全。</p>
+<pre>public class Singleton {
+    // volatile：禁止指令重排，防止半初始化对象
+    private static volatile Singleton instance;
+    
+    private Singleton() {
+        // 防反射攻击
+        if (instance != null) throw new RuntimeException("已存在实例");
+    }
+    
+    public static Singleton getInstance() {
+        if (instance == null) {                  // 第一重检查：减少锁竞争
+            synchronized (Singleton.class) {
+                if (instance == null) {          // 第二重检查：确保只创建一次
+                    instance = new Singleton();
+                }
+            }
+        }
+        return instance;
+    }
+    
+    // 防序列化破坏单例
+    protected Object readResolve() { return getInstance(); }
+}</pre>
+<h3>追问：为什么用volatile？</h3>
+<p><code>new Singleton()</code> 分三步：分配内存→初始化对象→赋值给instance。JIT可能重排后两步，导致其他线程读到未初始化的对象。volatile禁止这个重排序。</p>
+<h3>追问：枚举单例和DCL哪个更好？</h3>
+<p>枚举单例更简单安全（天生防序列化、防反射），但不能懒加载也不能继承。DCL灵活但代码略复杂。Josh Bloch推荐枚举。</p>
+</div>
+
+<div class="card">
+<h2>Q2：简单工厂、工厂方法、抽象工厂区别</h2>
+<p><span class="tag">必问</span></p>
+<table style="width:100%;border-collapse:collapse;font-size:.9em">
+<tr style="background:#3498db;color:#fff"><th style="padding:8px">维度</th><th>简单工厂</th><th>工厂方法</th><th>抽象工厂</th></tr>
+<tr style="background:#eef2f7"><td style="padding:8px">复杂度</td><td>低</td><td>中</td><td>高</td></tr>
+<tr><td style="padding:8px">创建对象数</td><td>单个产品</td><td>单个产品族</td><td>多个产品族</td></tr>
+<tr style="background:#eef2f7"><td style="padding:8px">扩展性</td><td>差（改工厂类）</td><td>好（加新工厂）</td><td>好（加新工厂族）</td></tr>
+<tr><td style="padding:8px">开闭原则</td><td>违反</td><td>遵循</td><td>遵循</td></tr>
+<tr style="background:#eef2f7"><td style="padding:8px">Spring对标</td><td>BeanFactory</td><td>FactoryBean</td><td>ApplicationContext</td></tr>
+</table>
+<h3>追问：Spring中哪些地方用了工厂模式？</h3>
+<p>BeanFactory（简单工厂）、FactoryBean接口（工厂方法）、ApplicationContext（抽象工厂——创建一整套Bean）。</p>
+</div>
+
+<div class="card">
+<h2>Q3：策略模式解决什么问题？和if-else有何区别？</h2>
+<p><span class="tag">场景设计</span></p>
+<pre>// 策略接口
+interface PaymentStrategy {
+    void pay(double amount);
+}
+
+// 具体策略
+class AlipayStrategy implements PaymentStrategy {
+    public void pay(double amount) { System.out.println("支付宝付" + amount); }
+}
+class WechatPayStrategy implements PaymentStrategy {
+    public void pay(double amount) { System.out.println("微信付" + amount); }
+}
+
+// 上下文——组合策略
+class PaymentContext {
+    private PaymentStrategy strategy;
+    public PaymentContext(PaymentStrategy s) { this.strategy = s; }
+    public void execute(double amount) { strategy.pay(amount); }
+}
+
+// 使用
+PaymentContext ctx = new PaymentContext(new AlipayStrategy());
+ctx.execute(100);</pre>
+<h3>追问：策略模式和状态模式怎么区分？</h3>
+<p>策略模式是客户端主动选择用哪个算法（外部切换），状态模式是对象自身根据状态自动切换行为（内部驱动）。</p>
+</div>
+
+<div class="card">
+<h2>Q4：观察者模式在什么场景用？</h2>
+<p><span class="tag">框架应用</span></p>
+<p>一对多依赖关系，一个对象变化时通知所有依赖者。典型场景：事件监听、消息推送、数据变更通知。</p>
+<h3>追问：Spring事件机制是什么模式？</h3>
+<p>观察者模式。ApplicationEvent（事件）→ ApplicationListener（监听器/观察者）→ ApplicationContext（发布者/被观察者）。<code>@EventListener</code>注解就是观察者模式的Spring实现。</p>
+<h3>追问：和发布-订阅模式有啥不同？</h3>
+<p>观察者模式是同进程内同步通知，发布-订阅通过消息中间件（如MQ）异步解耦，跨进程通信。</p>
+</div>
+
+<div class="card">
+<h2>Q5：JDK动态代理和CGLIB代理的区别</h2>
+<p><span class="tag">Spring核心</span></p>
+<table style="width:100%;border-collapse:collapse;font-size:.9em">
+<tr style="background:#3498db;color:#fff"><th style="padding:8px">维度</th><th>JDK动态代理</th><th>CGLIB代理</th></tr>
+<tr style="background:#eef2f7"><td style="padding:8px">实现方式</td><td>实现接口</td><td>继承父类</td></tr>
+<tr><td style="padding:8px">核心类</td><td>Proxy + InvocationHandler</td><td>Enhancer + MethodInterceptor</td></tr>
+<tr style="background:#eef2f7"><td style="padding:8px">要求</td><td>必须有接口</td><td>类不能是final</td></tr>
+<tr><td style="padding:8px">性能</td><td>反射，稍慢</td><td>字节码生成，更快</td></tr>
+<tr style="background:#eef2f7"><td style="padding:8px">Spring默认</td><td>接口用JDK</td><td>无接口用CGLIB</td></tr>
+</table>
+<h3>追问：Spring Boot 2.0后默认用哪个？</h3>
+<p>默认CGLIB。配置 <code>spring.aop.proxy-target-class=true</code>（默认就是true）。因为CGLIB不需要接口，更灵活。</p>
+</div>
+
+<div class="card">
+<h2>Q6：装饰器模式真实场景</h2>
+<p><span class="tag">IO框架</span></p>
+<p>Java IO流就是装饰器模式的最佳案例：</p>
+<pre>// BufferedReader 装饰了 FileReader，在不修改原类的情况下增加了缓冲功能
+BufferedReader br = new BufferedReader(new FileReader("test.txt"));
+// 层层装饰：缓冲→输入流→文件
+// 每一层只加一个新功能，不改变原类的接口</pre>
+<h3>追问：装饰器模式和代理模式区别？</h3>
+<p>装饰器是增强功能（加法），代理是控制访问（控制权）。装饰器可以无限叠，代理通常一对一。但代码结构几乎一样——区别在意图。</p>
+</div>
+
+<div class="card">
+<h2>Q7：模板方法模式在框架中的应用</h2>
+<p><span class="tag">框架设计</span></p>
+<pre>// AbstractApplicationContext.refresh() 就是模板方法
+public void refresh() {
+    prepareRefresh();          // ①准备
+    obtainFreshBeanFactory();  // ②获取BeanFactory
+    prepareBeanFactory();      // ③准备BeanFactory
+    postProcessBeanFactory();  // ④后处理（钩子方法）
+    invokeBeanFactoryPostProcessors(); // ⑤执行后处理器
+    registerBeanPostProcessors();      // ⑥注册Bean后处理器
+    // ...更多步骤
+    finishRefresh();           // ⑦完成刷新
+    // 子类通过重写 postProcessBeanFactory() 来定制行为
+}</pre>
+<h3>追问：钩子方法和抽象方法的区别？</h3>
+<p>钩子方法有默认空实现（子类可选重写），抽象方法必须子类实现。钩子给你"可以选择"的灵活性。</p>
+</div>
+
+<div class="card">
+<h2>Q8：适配器模式的两个实现方式</h2>
+<p><span class="tag">兼容改造</span></p>
+<p><strong>类适配器（继承）</strong>和<strong>对象适配器（组合）</strong>。Java只支持对象适配器（单继承限制）。</p>
+<pre>// 对象适配器——推荐
+interface Target { void request(); }
+class Adaptee { void specificRequest() { System.out.println("原有方法"); } }
+class Adapter implements Target {
+    private Adaptee adaptee = new Adaptee();
+    public void request() { adaptee.specificRequest(); }  // 转换调用
+}</pre>
+<h3>追问：Spring MVC的HandlerAdapter是什么模式？</h3>
+<p>适配器模式。DispatcherServlet不关心具体Handler类型（Controller/HttpRequestHandler），通过HandlerAdapter统一调用。</p>
+</div>
+
+<div class="card">
+<h2>Q9：责任链模式如何在拦截器中使用</h2>
+<p><span class="tag">Web应用</span></p>
+<p>Servlet Filter链、Spring Interceptor链都是责任链模式。每个拦截器处理完调用<code>chain.doFilter()</code>传给下一个。</p>
+<pre>// Spring拦截器链伪代码
+class HandlerExecutionChain {
+    HandlerInterceptor[] interceptors;
+    int index = -1;
+    
+    boolean applyPreHandle(request, response) {
+        for (int i = 0; i < interceptors.length; i++) {
+            if (!interceptors[i].preHandle(request, response, handler)) {
+                triggerAfterCompletion(request, response);
+                return false;  // 被某个拦截器终止
+            }
+        }
+        return true;
+    }
+}</pre>
+<h3>追问：如何实现一个可动态增删拦截器的责任链？</h3>
+<p>用链表结构，每个节点持有下一节点的引用。LinkedList天然支持动态增删。核心：每个节点执行完自己的逻辑后调用<code>next.handle()</code>。</p>
+</div>
+
+<div class="card">
+<h2>Q10：Spring中一共用了哪些设计模式？（总结题）</h2>
+<p><span class="tag">必考总结</span></p>
+<table style="width:100%;border-collapse:collapse;font-size:.85em">
+<tr style="background:#e74c3c;color:#fff"><th style="padding:8px">模式</th><th>Spring中的应用</th></tr>
+<tr style="background:#eef2f7"><td style="padding:8px"><strong>单例</strong></td><td>Bean默认单例（scope=singleton）</td></tr>
+<tr><td style="padding:8px"><strong>工厂</strong></td><td>BeanFactory、FactoryBean</td></tr>
+<tr style="background:#eef2f7"><td style="padding:8px"><strong>代理</strong></td><td>AOP的JDK/CGLIB代理</td></tr>
+<tr><td style="padding:8px"><strong>模板方法</strong></td><td>AbstractApplicationContext.refresh()、JdbcTemplate</td></tr>
+<tr style="background:#eef2f7"><td style="padding:8px"><strong>观察者</strong></td><td>ApplicationEvent + @EventListener</td></tr>
+<tr><td style="padding:8px"><strong>适配器</strong></td><td>HandlerAdapter、AdvisorAdapter</td></tr>
+<tr style="background:#eef2f7"><td style="padding:8px"><strong>策略</strong></td><td>Resource接口的不同实现（ClassPathResource/FileUrlResource）</td></tr>
+<tr><td style="padding:8px"><strong>装饰器</strong></td><td>BeanDefinitionDecorator、ServerHttpRequestDecorator</td></tr>
+<tr style="background:#eef2f7"><td style="padding:8px"><strong>责任链</strong></td><td>Interceptor链、Filter链</td></tr>
+<tr><td style="padding:8px"><strong>建造者</strong></td><td>RestTemplateBuilder、MockMvcBuilders</td></tr>
+</table>
+<h3>追问：说出一个Spring不是设计模式但类似模式的设计</h3>
+<p>依赖注入(DI)本身不是GoF23种设计模式之一，但它实现了"好莱坞原则"——Don't call us, we'll call you。本质是控制反转(IoC)的实现。</p>
+</div>
+
+<div class="donate">
+<p style="font-size:1.2em;font-weight:bold">🔟 道题全背完，设计模式面试不再怕！</p>
+<p>如果这些内容帮到了你 →</p>
+<img src="https://Abyte-zym.github.io/java-career-blog/donate-qr.png" alt="赞赏码" onerror="this.style.display='none'">
+<p style="margin-top:8px">☕ 请杯咖啡，持续产出更多干货</p>
+</div>
+
+<nav style="margin:20px 0">
+<strong>📖 继续刷其他专题：</strong><br>
+<a href="redis-interview-cheatsheet.html">Redis 10题</a> |
+<a href="jvm-gc-interview-2026.html">JVM GC 10题</a> |
+<a href="concurrency-interview-2026.html">并发编程 10题</a> |
+<a href="springcloud-microservice-interview-2026.html">微服务 10题</a> |
+<a href="mysql-mybatis-optimization.html">MySQL优化 10题</a> |
+<a href="docker-k8s-interview-2026.html">Docker/K8s 10题</a> |
+<a href="spring-ai-intern-guide-2026.html">Spring AI</a>
+</nav>
+
+</div>
+
+<footer>
+<p>🛠 更多免费工具：<a href="https://Abyte-zym.github.io/java-resume-builder/">📝 简历生成器</a> | <a href="https://Abyte-zym.github.io/java-interview-quiz/">☕ 面试题库</a> | <a href="https://Abyte-zym.github.io/java-career-blog/portfolio.html">💼 接单主页</a></p>
+<p>© 2026 Java面试速通 | 内容持续更新</p>
+</footer>
+</body>
+</html>
