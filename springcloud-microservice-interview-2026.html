@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spring Cloud微服务面试10题 2026 | Java实习面试通关</title>
+<meta name="description" content="2026年Spring Cloud微服务面试必考题：Nacos注册中心原理、Sentinel熔断降级、Gateway网关、Feign负载均衡、Seata分布式事务——10道高频题含标准答案。Java实习生面试必备。">
+<meta name="keywords" content="Spring Cloud面试题,微服务面试,Spring Cloud Alibaba,Java实习面试,Nacos面试题,Sentinel面试题,分布式事务面试,2026Java面试">
+<link rel="canonical" href="https://abyte-zym.github.io/java-career-blog/springcloud-microservice-interview-2026.html">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:#f5f5f5; color:#333; line-height:1.8; }
+.container { max-width:800px; margin:40px auto; background:#fff; padding:40px; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,.08); }
+h1 { color:#1a1a2e; font-size:28px; margin-bottom:8px; }
+.meta { color:#888; font-size:14px; margin-bottom:24px; border-bottom:1px solid #eee; padding-bottom:16px; }
+.q { background:#f0f4ff; border-left:4px solid #4a90d9; padding:16px 20px; margin:20px 0; border-radius:0 8px 8px 0; font-weight:700; color:#1a1a2e; }
+.a { background:#fff; padding:16px 24px; margin:4px 0 28px; border:1px solid #e8e8e8; border-radius:8px; }
+.a p { margin:6px 0; }
+code { background:#2d2d2d; color:#f8f8f2; padding:2px 8px; border-radius:4px; font-size:13px; }
+pre { background:#2d2d2d; color:#f8f8f2; padding:16px; border-radius:8px; overflow-x:auto; font-size:13px; margin:12px 0; }
+.donate { text-align:center; padding:40px 20px; margin:40px 0; background:linear-gradient(135deg,#667eea,#764ba2); border-radius:12px; color:#fff; }
+.donate h3 { font-size:22px; margin-bottom:8px; }
+.donate p { margin-bottom:16px; opacity:.9; }
+.donate img { width:180px; border-radius:12px; border:3px solid #fff; }
+.footer { text-align:center; padding:20px; color:#999; font-size:13px; }
+.footer a { color:#4a90d9; text-decoration:none; }
+.crosslink { background:#fff3e0; padding:16px; margin:30px 0; border-radius:8px; border:1px solid #ffcc02; text-align:center; }
+.crosslink a { color:#e65100; font-weight:600; margin:0 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🔥 Spring Cloud微服务面试10题（2026版）</h1>
+<div class="meta">📅 2026-05-22 · 🏷️ Spring Cloud · 微服务 · Java实习面试 · 阅读约8分钟</div>
+
+<div class="crosslink">
+🧰 更多免费工具：<a href="https://abyte-zym.github.io/java-resume-builder/">📝简历生成器</a> | <a href="https://abyte-zym.github.io/java-interview-quiz/">☕面试题库</a> | <a href="https://abyte-zym.github.io/java-career-blog/portfolio.html">💼接单主页</a>
+</div>
+
+<p>2026年Java实习面试中，微服务相关题目占比从去年的15%飙升到<strong>30%+</strong>。Spring Cloud Alibaba已成为国内主流微服务技术栈——Nacos、Sentinel、Seata是面试必考。本文精选<strong>10道高频题</strong>，每道都附带标准答案。</p>
+
+<div class="q">1. Nacos的服务注册与发现原理是什么？</div>
+<div class="a">
+<p><strong>核心机制：</strong>Nacos采用 <code>临时实例(AP)</code> 和 <code>持久实例(CP)</code> 双模式。</p>
+<p>• <strong>临时实例：</strong>服务启动→向Nacos注册→维持心跳(5秒)→Nacos 15秒没收到心跳→剔除实例。基于Distro协议，保证AP（可用性+分区容错）。</p>
+<p>• <strong>持久实例：</strong>服务启动→注册→Nacos持久化存储。基于Raft协议，保证CP（一致性+分区容错）。适合对一致性要求高的场景。</p>
+<p><strong>面试亮点：</strong>"Nacos其实比Eureka强——它不仅做注册中心，也是配置中心。Netflix把Spring Cloud Netflix捐给Apache后，国内企业全面迁移到Nacos。"</p>
+</div>
+
+<div class="q">2. Sentinel的限流算法是什么？和RateLimiter有什么区别？</div>
+<div class="a">
+<p><strong>Sentinel默认使用滑动窗口算法：</strong>将时间窗口切分为多个小窗口，每个窗口独立计数。相比固定窗口避免了"突刺"问题。</p>
+<p>• <strong>QPS模式：</strong>每秒请求数超过阈值→拒绝。适合保护下游服务。</p>
+<p>• <strong>并发线程数模式：</strong>同一时刻处理的请求数超过阈值→拒绝。适合保护慢调用。</p>
+<p><strong>Sentinel vs Guava RateLimiter：</strong>RateLimiter是单机令牌桶，Sentinel支持<strong>集群流控+控制台实时调整</strong>，生产环境更实用。</p>
+</div>
+
+<div class="q">3. 微服务间调用，Feign和Dubbo怎么选？</div>
+<div class="a">
+<p><strong>Feign（声明式HTTP客户端）：</strong></p>
+<p>• Spring Cloud原生支持，基于HTTP/JSON</p>
+<p>• 集成Ribbon负载均衡 + Sentinel熔断</p>
+<p>• 适合：<strong>跨语言调用、对外开放API、简单RESTful场景</strong></p>
+<p><strong>Dubbo（RPC框架）：</strong></p>
+<p>• 阿里开源，基于TCP + 自定义协议</p>
+<p>• 性能更高（二进制传输），服务治理更完善</p>
+<p>• 适合：<strong>纯Java微服务、高并发内部调用、需要服务分组/版本路由</strong></p>
+<p><strong>一句话选型：</strong>对外用Feign/RestTemplate，对内高并发用Dubbo。</p>
+</div>
+
+<div class="q">4. Gateway网关的核心功能有哪些？</div>
+<div class="a">
+<p>Spring Cloud Gateway基于<strong>WebFlux（响应式编程）</strong>，性能比Zuul高3-5倍：</p>
+<p>• <strong>路由转发：</strong>根据Path/Host/Header转发到不同微服务</p>
+<p>• <strong>统一鉴权：</strong>在Gateway层校验JWT Token，下游服务不需要重复鉴权</p>
+<p>• <strong>限流：</strong>集成Redis + RequestRateLimiter</p>
+<p>• <strong>跨域处理：</strong>统一配置CORS</p>
+<p>• <strong>负载均衡：</strong>集成Spring Cloud LoadBalancer</p>
+<pre>spring:
+  cloud:
+    gateway:
+      routes:
+        - id: seckill
+          uri: lb://seckill-service
+          predicates:
+            - Path=/seckill/**</pre>
+</div>
+
+<div class="q">5. 分布式事务Seata的AT模式是怎么实现的？</div>
+<div class="a">
+<p><strong>Seata AT模式 = 两阶段提交的改良版：</strong></p>
+<p>① <strong>一阶段：</strong>各服务执行本地事务 + 记录<strong>undo_log（回滚日志）</strong>。</p>
+<p>② <strong>二阶段-提交：</strong>TC通知所有RM删除undo_log，释放锁。</p>
+<p>③ <strong>二阶段-回滚：</strong>TC通知RM根据undo_log做反向补偿。</p>
+<p><strong>核心优势：</strong>对业务代码无侵入，只需加@GlobalTransactional注解。</p>
+<p><strong>面试陷阱：</strong>"AT模式依赖数据库的ACID，如果用的是Redis+MongoDB组合，需要用TCC模式（Try-Confirm-Cancel）。"</p>
+</div>
+
+<div class="q">6. 微服务的配置中心为什么要用Nacos而不是application.yml？</div>
+<div class="a">
+<p><strong>application.yml的问题：</strong></p>
+<p>• 修改配置需要重新打包部署（CI/CD流水线10-30分钟）</p>
+<p>• 多环境（dev/test/prod）管理混乱</p>
+<p>• 敏感信息（密码/密钥）暴露在代码仓库</p>
+<p><strong>Nacos配置中心解决：</strong></p>
+<p>• <strong>动态刷新：</strong>修改配置后秒级生效（@RefreshScope）</p>
+<p>• <strong>环境隔离：</strong>namespace区分dev/prod</p>
+<p>• <strong>灰度发布：</strong>按标签推送不同配置</p>
+<p>• <strong>版本回滚：</strong>配置历史可追溯</p>
+</div>
+
+<div class="q">7. 服务雪崩是什么？怎么防止？</div>
+<div class="a">
+<p><strong>服务雪崩：</strong>A→B→C，C挂了→B的线程池打满→A调用B超时→A也挂了→整个链路崩溃。</p>
+<p><strong>三层防护（Sentinel实现）：</strong></p>
+<p>① <strong>限流：</strong>QPS阈值保护。每秒最多处理N个请求。</p>
+<p>② <strong>熔断：</strong>慢调用比例>50%→打开断路器→快速失败→半开探测→恢复。</p>
+<p>③ <strong>降级：</strong>返回兜底数据（如"活动太火爆"页面），而不是直接报错。</p>
+</div>
+
+<div class="q">8. Spring Cloud Alibaba和Spring Cloud Netflix有什么区别？</div>
+<div class="a">
+<p>2026年国内企业事实标准：</p>
+<table style="width:100%;border-collapse:collapse;margin:12px 0;">
+<tr style="background:#f0f4ff;">
+<th style="padding:10px;border:1px solid #ddd;">组件</th><th style="padding:10px;border:1px solid #ddd;">Netflix(已停止维护)</th><th style="padding:10px;border:1px solid #ddd;">Alibaba(主流)</th>
+</tr>
+<tr><td style="padding:10px;border:1px solid #ddd;">注册中心</td><td style="padding:10px;border:1px solid #ddd;">Eureka</td><td style="padding:10px;border:1px solid #ddd;"><strong>Nacos</strong></td></tr>
+<tr><td style="padding:10px;border:1px solid #ddd;">限流熔断</td><td style="padding:10px;border:1px solid #ddd;">Hystrix</td><td style="padding:10px;border:1px solid #ddd;"><strong>Sentinel</strong></td></tr>
+<tr><td style="padding:10px;border:1px solid #ddd;">网关</td><td style="padding:10px;border:1px solid #ddd;">Zuul</td><td style="padding:10px;border:1px solid #ddd;"><strong>Gateway</strong></td></tr>
+<tr><td style="padding:10px;border:1px solid #ddd;">配置中心</td><td style="padding:10px;border:1px solid #ddd;">Config</td><td style="padding:10px;border:1px solid #ddd;"><strong>Nacos</strong></td></tr>
+<tr><td style="padding:10px;border:1px solid #ddd;">分布式事务</td><td style="padding:10px;border:1px solid #ddd;">无</td><td style="padding:10px;border:1px solid #ddd;"><strong>Seata</strong></td></tr>
+</table>
+</div>
+
+<div class="q">9. 负载均衡算法有哪些？Ribbon默认是什么？</div>
+<div class="a">
+<p><strong>常见算法：</strong></p>
+<p>• <strong>轮询(RoundRobin)：</strong>依次分配，默认算法。适合服务器性能一致。</p>
+<p>• <strong>随机(Random)：</strong>随机选一台。</p>
+<p>• <strong>加权(Weighted)：</strong>性能好的机器权重高。</p>
+<p>• <strong>最小连接数：</strong>选当前连接最少的机器。</p>
+<p>• <strong>一致性哈希：</strong>相同用户请求打到同一台（适合有状态服务）。</p>
+<p>2026年：Spring Cloud LoadBalancer已替代Ribbon（Ribbon进入维护模式）。</p>
+</div>
+
+<div class="q">10. 你在项目里怎么用Spring Cloud Alibaba的？</div>
+<div class="a">
+<p><strong>以秒杀项目为例的标准回答：</strong></p>
+<p>"我的微服务秒杀项目使用Spring Cloud Alibaba全家桶。Nacos做服务注册发现和配置中心（动态刷新不用重启），Gateway统一鉴权路由到seckill-service，Sentinel在入口做QPS限流（防止流量尖刺），Seckill服务里用Redis Lua脚本原子扣库存，扣成功发RocketMQ异步落库削峰。整个架构能支撑QPS 5000+，库存0超卖。"</p>
+<p>—— 这个回答覆盖了5个核心组件，面试官会立刻觉得你有真实微服务经验。</p>
+</div>
+
+<div class="donate">
+<h3>☕ 这些内容对你有帮助吗？</h3>
+<p>免费工具+面试题库，都是我一点一点写的。如果帮到了你，请我喝杯咖啡吧～</p>
+<img src="https://abyte-zym.github.io/java-resume-builder/mm_facetoface_collect_qrcode_1779427130944.png" alt="赞赏码" style="background:#fff;padding:8px;">
+<p style="margin-top:8px;font-size:13px;">微信扫码赞赏 · 你的支持是我更新的动力 🙏</p>
+</div>
+
+<div class="crosslink">
+🔗 更多资源：<a href="https://abyte-zym.github.io/java-career-blog/">📚全部文章</a> | <a href="https://abyte-zym.github.io/java-career-blog/portfolio.html">💼接单主页</a> | <a href="https://abyte-zym.github.io/java-resume-builder/">📝免费简历生成器</a>
+</div>
+
+<div class="footer">
+© 2026 <a href="https://github.com/Abyte-zym">Abyte-zym</a> · 用爱发电 · <a href="https://abyte-zym.github.io/java-career-blog/">Java实习面试通关</a>
+</div>
+
+</div>
+</body>
+</html>
