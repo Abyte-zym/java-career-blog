@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>分布式系统设计面试10题 | Java实习面试通关</title>
+<meta name="description" content="2026 Java实习分布式系统面试—CAP定理·分布式事务·分布式锁·一致性协议·雪花算法">
+<style>
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#c9d1d9;--accent:#58a6ff;--green:#3fb950}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);max-width:800px;margin:0 auto;padding:20px;line-height:1.7}
+h1{color:var(--accent);border-bottom:2px solid var(--border);padding-bottom:12px}
+h2{color:var(--green);margin-top:30px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px;margin:16px 0}
+.q{color:var(--accent);font-weight:bold;font-size:18px}
+.a{background:#1a2332;border-radius:6px;padding:14px;margin:10px 0;border-left:3px solid var(--accent)}
+code{background:#2d3748;padding:2px 6px;border-radius:4px;font-size:14px}
+pre{background:#1a2332;border-radius:8px;padding:16px;overflow-x:auto;font-size:13px}
+.donate{text-align:center;margin:40px 0;padding:24px;background:var(--card);border:1px solid var(--border);border-radius:12px}
+.donate img{width:200px;border-radius:12px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}
+.nav a{color:var(--accent);text-decoration:none;padding:6px 14px;border:1px solid var(--border);border-radius:20px;font-size:13px}
+.nav a:hover{background:var(--accent);color:#fff}
+</style>
+</head>
+<body>
+
+<h1>🌐 分布式系统设计面试10题</h1>
+<p>2026 Java实习/校招高频题 · 覆盖CAP、分布式事务、分布式锁、一致性协议</p>
+
+<div class="nav">
+<a href="#q1">CAP定理</a><a href="#q2">分布式事务</a><a href="#q3">分布式锁</a><a href="#q4">一致性协议</a><a href="#q5">雪花算法</a>
+<a href="#q6">分布式ID</a><a href="#q7">幂等性</a><a href="#q8">限流算法</a><a href="#q9">服务发现</a><a href="#q10">最终一致性</a>
+</div>
+
+<!-- Q1 -->
+<div class="card" id="q1">
+<div class="q">Q1：什么是CAP定理？为什么CAP只能三选二？</div>
+<div class="a">
+<strong>标准答案：</strong>
+<ul>
+<li><strong>C（一致性）</strong>：所有节点同一时刻数据一致</li>
+<li><strong>A（可用性）</strong>：每个请求都能得到响应（无论成功失败）</li>
+<li><strong>P（分区容错）</strong>：网络分区时系统仍能工作</li>
+<li>网络分区不可避免，所以 <strong>P 必须选</strong>——实际是 CP 或 AP 的选择</li>
+<li><strong>CP</strong>：ZooKeeper（分区时停写，保证一致性）</li>
+<li><strong>AP</strong>：Eureka（分区时继续服务，允许短暂不一致）</li>
+</ul>
+<pre>// 面试加分句：
+"CAP指导架构选型——金融场景选CP(Nacos选CP模式)，高可用场景选AP(Redis Cluster)"</pre>
+</div>
+</div>
+
+<!-- Q2 -->
+<div class="card" id="q2">
+<div class="q">Q2：分布式事务有哪些方案？各有什么优缺点？</div>
+<div class="a">
+<strong>标准答案：</strong>
+<table style="width:100%;border-collapse:collapse;font-size:14px">
+<tr style="background:#1a2332"><th style="padding:8px;text-align:left">方案</th><th>原理</th><th>优点</th><th>缺点</th></tr>
+<tr><td style="padding:8px">2PC(XA)</td><td>协调者→参与者→预提交→提交</td><td>强一致</td><td>阻塞、单点</td></tr>
+<tr><td style="padding:8px">TCC</td><td>Try-Confirm-Cancel</td><td>不阻塞</td><td>编码复杂</td></tr>
+<tr><td style="padding:8px">消息表+MQ</td><td>本地事务+消息表→MQ→消费</td><td>最终一致、高性能</td><td>延迟高</td></tr>
+<tr><td style="padding:8px">Seata AT</td><td>自动生成回滚SQL</td><td>无侵入</td><td>依赖数据库undo_log</td></tr>
+</table>
+<pre>// 面试加分句：
+"秒杀项目用消息表+RocketMQ事务消息实现最终一致性——扣库存+发MQ+本地消息表，定时对账兜底"</pre>
+</div>
+</div>
+
+<!-- Q3 -->
+<div class="card" id="q3">
+<div class="q">Q3：分布式锁怎么实现？Redis和ZooKeeper方案对比？</div>
+<div class="a">
+<strong>标准答案：</strong>
+<table style="width:100%;border-collapse:collapse;font-size:14px">
+<tr style="background:#1a2332"><th>维度</th><th>Redis(SETNX)</th><th>ZooKeeper(临时顺序节点)</th></tr>
+<tr><td>原理</td><td>set key value NX EX 30</td><td>创建临时节点，最小序号获得锁</td></tr>
+<tr><td>续期</td><td>Redisson Watchdog自动续期</td><td>Session心跳自动续期</td></tr>
+<tr><td>死锁</td><td>过期时间兜底</td><td>客户端断开自动释放</td></tr>
+<tr><td>性能</td><td>高（纯内存）</td><td>较低（磁盘+网络）</td></tr>
+<tr><td>可靠性</td><td>RedLock/红锁</td><td>CP强一致</td></tr>
+</table>
+<pre>// 秒杀项目实际用法：
+@Lock(key = "seckill:lock:#{#productId}", waitTime = 3, leaseTime = 30)
+public void doSeckill(Long productId) {
+    // Lua脚本原子扣库存
+}</pre>
+</div>
+</div>
+
+<!-- Q4 -->
+<div class="card" id="q4">
+<div class="q">Q4：分布式一致性协议 Raft 和 Paxos 的核心区别？</div>
+<div class="a">
+<strong>标准答案：</strong>
+<ul>
+<li><strong>Paxos</strong>：论文提出，理论和实现复杂，允许乱序提交</li>
+<li><strong>Raft</strong>：强领导模型，Leader选举+日志复制，易懂</li>
+<li>核心流程：Leader选举（term递增）→ 日志复制（过半提交）</li>
+<li>应用：etcd、TiKV、Nacos（CP模式）</li>
+</ul>
+<pre>// 面试加分句：
+"Raft本质是Paxos的工程化——用Leader强制顺序简化了Paxos的乱序提交
+ Nacos CP模式基于Raft，AP模式基于Distro"</pre>
+</div>
+</div>
+
+<!-- Q5 -->
+<div class="card" id="q5">
+<div class="q">Q5：雪花算法（Snowflake）的ID结构是什么？时钟回拨怎么处理？</div>
+<div class="a">
+<strong>标准答案：</strong>
+<pre>
+Snowflake ID = 1bit(0) + 41bit(毫秒) + 10bit(机器ID) + 12bit(序列号)
+
+每秒可生成 2^12 × 1000 = 409.6万个ID
+</pre>
+<strong>时钟回拨处理：</strong>
+<ul>
+<li>方案1：等待时钟追上（短回拨适用）</li>
+<li>方案2：备用机器ID（发生回拨自动切换）</li>
+<li>方案3：美团Leaf方案——号段模式，完全避免时钟问题</li>
+</ul>
+</div>
+</div>
+
+<!-- Q6-Q10 简版 -->
+<div class="card" id="q6">
+<div class="q">Q6：分布式ID生成有哪些方案？</div>
+<div class="a">UUID（无序影响索引）→ 雪花算法（时钟依赖）→ 美团Leaf号段（推荐）→ Redis自增（简单但不持久）</div>
+</div>
+
+<div class="card" id="q7">
+<div class="q">Q7：接口幂等性怎么保证？</div>
+<div class="a"><strong>4种方案：</strong>①唯一索引（数据库约束）②Redis setIfAbsent去重key ③状态机（待支付→已支付不可逆）④Token机制（前端获取token→提交时校验+删除）<br>秒杀项目用Redis + 唯一订单号双重保障。</div>
+</div>
+
+<div class="card" id="q8">
+<div class="q">Q8：限流算法有哪些？令牌桶 vs 漏桶区别？</div>
+<div class="a">
+<strong>漏桶</strong>：恒定速率流出，突发流量被平滑 → 适合保护下游<br>
+<strong>令牌桶</strong>：固定速率放令牌，允许突发 → 适合秒杀场景<br>
+<strong>滑动窗口</strong>：精确到毫秒级计数 → Sentinel默认<br>
+<pre>// Sentinel配置示例
+@SentinelResource(value = "seckill", blockHandler = "blockHandler")
+public R doSeckill() { ... }</pre>
+</div>
+</div>
+
+<div class="card" id="q9">
+<div class="q">Q9：服务注册发现的原理是什么？</div>
+<div class="a">
+<ul>
+<li>服务提供者启动→向注册中心注册（Nacos/Eureka）</li>
+<li>注册中心维护健康检查（心跳/主动探测）</li>
+<li>消费者→拉取（Pull）+ 订阅（Push）服务列表</li>
+<li>服务下线→注册中心通知消费者剔除</li>
+</ul>
+<pre>// 面试加分句："Nacos同时支持CP（Raft）和AP（Distro），根据场景切换"</pre>
+</div>
+</div>
+
+<div class="card" id="q10">
+<div class="q">Q10：如何保证分布式系统数据最终一致性？</div>
+<div class="a">
+<strong>核心手段：</strong>①消息队列异步（削峰+重试）②本地消息表（发MQ前先写表）③定时对账（兜底补偿）④人工介入（死信队列告警）<br>
+<strong>秒杀项目实践</strong>：Redis扣库存→MQ异步下单→订单表+消息表双写→定时扫描未完成消息→重试/告警。
+</div>
+</div>
+
+<div class="donate">
+<h3>☕ 觉得有用？请我喝杯咖啡</h3>
+<p>免费工具持续更新中 · 你的支持是我的动力</p>
+<img src="mm_facetoface_collect_qrcode_1779427130944.png" alt="赞赏码">
+<p style="font-size:12px;color:#8b949e">还有19个免费Java面试工具 → <a href="https://Abyte-zym.github.io/arsenal" style="color:var(--accent)">全部工具入口</a></p>
+</div>
+
+</body>
+</html>
