@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>JVM垃圾回收面试题 | 2026 Java实习必考 | 免费面试工具</title>
+<meta name="description" content="2026年Java实习生面试必考的JVM GC题目：CMS vs G1 vs ZGC区别、Full GC触发条件、记忆集与卡表、三色标记法。含10道标准答案，实习生面试看这篇就够了。">
+<meta name="keywords" content="JVM GC面试题, Java垃圾回收, CMS G1 ZGC, Full GC, 三色标记, Java实习面试 2026">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,system-ui,sans-serif;line-height:1.8;color:#333;max-width:800px;margin:0 auto;padding:20px;background:#fafafa}
+h1{font-size:28px;color:#1a1a2e;margin:20px 0;border-bottom:3px solid #e94560;padding-bottom:10px}
+h2{font-size:22px;color:#16213e;margin:30px 0 15px;border-left:4px solid #0f3460;padding-left:12px}
+h3{font-size:18px;color:#533483;margin:20px 0 10px}
+.question{background:#fff;border-radius:8px;padding:20px;margin:15px 0;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.question strong{color:#e94560;font-size:18px}
+.answer{background:#f0f4ff;border-left:4px solid #0f3460;padding:15px;margin:10px 0;border-radius:0 8px 8px 0}
+code{background:#1a1a2e;color:#0f0;padding:3px 8px;border-radius:4px;font-size:13px}
+.donate{text-align:center;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:25px;border-radius:12px;margin:30px 0}
+.donate img{width:200px;border-radius:8px;margin:10px}
+.donate p{font-size:16px}
+.tip{background:#fff3cd;border:1px solid #ffc107;padding:15px;border-radius:8px;margin:20px 0}
+.stats{display:flex;gap:15px;margin:20px 0;flex-wrap:wrap}
+.stat{background:#fff;padding:12px 20px;border-radius:8px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,0.05);flex:1;min-width:120px}
+.stat .num{font-size:24px;font-weight:700;color:#e94560}
+.stat .label{font-size:12px;color:#666}
+</style>
+</head>
+<body>
+<h1>🔥 JVM垃圾回收面试题 | 2026 Java实习必背</h1>
+<p>统计显示：<strong>JVM GC是Java实习面试被问概率最高的考点之一</strong>，超过70%的技术面会涉及。这篇文章覆盖10道GC高频题+标准答案，背完就能答。</p>
+
+<div class="stats">
+  <div class="stat"><div class="num">70%+</div><div class="label">面试出现率</div></div>
+  <div class="stat"><div class="num">10</div><div class="label">必背题目</div></div>
+  <div class="stat"><div class="num">2026</div><div class="label">最新考纲</div></div>
+</div>
+
+<div class="tip">💡 <strong>省时间直接看：</strong>面试官90%只问前5题。背完前5题就能过技术面。</div>
+
+<h2>Q1: Java堆内存怎么划分？年轻代和老年代各用什么GC算法？</h2>
+<div class="question">
+<strong>面试官想听什么：</strong>分区结构+分代收集思想
+</div>
+<div class="answer">
+<p><strong>标准答案：</strong>堆分为<code>年轻代（Young）</code>和<code>老年代（Old）</code>。年轻代又分Eden区和两个Survivor区（S0/S1），默认比例8:1:1。</p>
+<p>年轻代用<code>标记-复制</code>算法——Eden满后触发Minor GC，存活对象复制到Survivor，年龄+1。老年代用<code>标记-清除/标记-整理</code>——空间不足触发Major GC（Full GC）。</p>
+<p><strong>加分句：</strong> "分代收集的核心假设是'大部分对象朝生夕死'——一次Minor GC后90%以上的对象会被回收。"</p>
+</div>
+
+<h2>Q2: CMS和G1的区别？为什么G1取代了CMS？</h2>
+<div class="question">
+<strong>面试官想听什么：</strong>停顿时间vs吞吐量，G1的Region设计
+</div>
+<div class="answer">
+<p><strong>标准答案：</strong></p>
+<ul>
+<li><strong>CMS</strong>：并发标记清除，追求低停顿。四个阶段：初始标记(STW)→并发标记→重新标记(STW)→并发清除。缺点：产生内存碎片、依赖Serial Old兜底、对CPU敏感。</li>
+<li><strong>G1</strong>：分区收集，将堆分成多个<code>Region</code>。维护<code>记忆集（Remembered Set）</code>避免全堆扫描。Mixed GC优先回收垃圾最多的Region——<strong>"垃圾优先"</strong>。可设置停顿目标（-XX:MaxGCPauseMillis）。</li>
+</ul>
+<p><strong>加分句：</strong> "JDK9起G1成为默认收集器，JDK14移除了CMS。G1解决了CMS的碎片问题，同时提供可预测的停顿时间。"</p>
+</div>
+
+<h2>Q3: Full GC什么时候触发？怎么排查频繁Full GC？</h2>
+<div class="question">
+<strong>面试官想听什么：</strong>触发条件+排查思路+工具
+</div>
+<div class="answer">
+<p><strong>触发条件（5种）：</strong></p>
+<ol>
+<li>调用<code>System.gc()</code>（建议，不一定执行）</li>
+<li>老年代空间不足</li>
+<li>方法区（元空间）空间不足</li>
+<li>CMS GC出现Concurrent Mode Failure</li>
+<li>Minor GC后存活对象太多，Survivor放不下，直接进老年代</li>
+</ol>
+<p><strong>排查思路：</strong><code>jstat -gcutil 进程ID 1000</code>实时看GC频率→<code>jmap -heap</code>看堆配置→<code>jmap -histo</code>找大对象→MAT分析dump文件。</p>
+</div>
+
+<h2>Q4: 三色标记法是什么？漏标问题怎么解决？</h2>
+<div class="question">
+<strong>面试官想听什么：</strong>并发标记的"漏标"问题+SATB/增量更新
+</div>
+<div class="answer">
+<p><strong>标准答案：</strong>三色标记是CMS/G1等并发收集器用的标记算法，将对象分为：</p>
+<ul>
+<li><strong>白色</strong>：未访问（垃圾候选）</li>
+<li><strong>灰色</strong>：已访问但子引用未扫完</li>
+<li><strong>黑色</strong>：已访问且子引用全扫完</li>
+</ul>
+<p><strong>漏标问题</strong>：并发标记时，用户线程可能把一个黑色对象引用的白色对象删除，同时灰色对象又不再引用它→白色对象被"漏掉"。</p>
+<p><strong>解决方案：</strong>G1用<code>SATB（原始快照）</code>——标记开始时拍快照，删除引用时通过写屏障记录到SATB队列。CMS用<code>增量更新</code>——新增引用时把黑色对象变回灰色重新扫描。</p>
+</div>
+
+<h2>Q5: ZGC有什么特点？和G1的区别？</h2>
+<div class="question">
+<strong>面试官想听什么：</strong>亚毫秒级停顿+染色指针
+</div>
+<div class="answer">
+<p><strong>标准答案：</strong>ZGC是JDK11引入的低延迟收集器，目标是把STW控制在<strong>亚毫秒级</strong>（<1ms），支持TB级堆。</p>
+<p><strong>核心技术：染色指针（Colored Pointer）</strong>——在64位指针中嵌入GC状态信息（marked0/marked1/remapped/finalizable），不需要额外对象头存储。配合<code>读屏障</code>，访问对象时自动修正指针状态。</p>
+<p><strong>和G1的区别：</strong>G1停顿10-100ms级，ZGC停顿<1ms级。G1有分代（Young/Old），ZGC不分代（JDK21引入分代ZGC）。大堆（>32G）场景ZGC碾压G1。</p>
+</div>
+
+<h2>Q6: 什么时候对象进入老年代？</h2>
+<div class="answer">
+<p><strong>四条路：</strong>①年龄到了（默认15，-XX:MaxTenuringThreshold）②动态年龄判定：Survivor中同龄对象超过50%时，大于该年龄的直接晋升 ③大对象直接分配在老年代（-XX:PretenureSizeThreshold）④Minor GC后Survivor放不下。</p>
+</div>
+
+<h2>Q7: 什么是STW？哪些GC阶段会STW？</h2>
+<div class="answer">
+<p>STW=Stop The World，暂停所有用户线程。CMS的初始标记和重新标记会STW；G1的初始标记、最终标记、筛选回收会STW；ZGC只有根扫描极短STW（<1ms）。</p>
+</div>
+
+<h2>Q8: GC Roots有哪些？</h2>
+<div class="answer">
+<p>①栈帧中的局部变量表引用 ②静态变量引用 ③常量池引用 ④JNI引用的对象 ⑤同步锁持有的对象 ⑥Java虚拟机内部的引用（如Class对象、异常对象）。</p>
+</div>
+
+<h2>Q9: 强引用、软引用、弱引用、虚引用的区别？</h2>
+<div class="answer">
+<p><strong>强引用</strong>：new出来的，永不回收。<strong>软引用</strong>：内存不足时回收，适合做缓存。<strong>弱引用</strong>：GC时必回收，适合WeakHashMap。<strong>虚引用</strong>：幽灵引用，唯一作用是对象被回收时收到通知（配合ReferenceQueue）。</p>
+</div>
+
+<h2>Q10: 怎么选择GC收集器？</h2>
+<div class="answer">
+<p>小堆（<4G）且低延迟：Serial。吞吐量优先：Parallel Scavenge+Parallel Old。JDK8/11：G1（默认，平衡）。JDK17+超大堆（>32G）：ZGC。JDK21+：分代ZGC。</p>
+</div>
+
+<div class="donate">
+  <h3>☕ 这篇文章帮到你了吗？</h3>
+  <p>免费工具和文章花了大量时间整理。如果觉得有用，请我喝杯咖啡 ☕</p>
+  <img src="qrcode-wx.png" alt="微信赞赏">
+  <p style="font-size:13px;opacity:.8">长按识别二维码赞赏 | 更多工具⬇️</p>
+</div>
+
+<div style="background:#16213e;color:#fff;padding:20px;border-radius:12px;text-align:center;margin:20px 0">
+  <h3 style="color:#fff">🚀 更多免费Java面试工具</h3>
+  <div style="display:flex;gap:15px;flex-wrap:wrap;justify-content:center;margin-top:15px">
+    <a href="https://Abyte-zym.github.io/interview-simulator" style="background:rgba(255,255,255,.1);color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none">☕ 面试模拟器</a>
+    <a href="https://Abyte-zym.github.io/java-resume-builder" style="background:rgba(255,255,255,.1);color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none">📝 简历生成器</a>
+    <a href="https://Abyte-zym.github.io/java-career-blog" style="background:rgba(255,255,255,.1);color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none">📚 面试题库</a>
+    <a href="https://Abyte-zym.github.io/java-career-blog/portfolio.html" style="background:rgba(255,255,255,.1);color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none">💼 接单服务</a>
+  </div>
+</div>
+
+<p style="text-align:center;color:#999;font-size:12px;margin-top:30px">
+  📅 更新于2026年5月 · 持续追踪最新面试趋势 · 
+  <a href="https://github.com/Abyte-zym">GitHub</a>
+</p>
+</body>
+</html>
