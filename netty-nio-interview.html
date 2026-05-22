@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Netty高性能网络编程面试10题 | Java实习面试通关</title>
+<meta name="description" content="Netty线程模型、Reactor模式、零拷贝、NIO vs BIO、epoll原理、粘包拆包——Java后端高级面试必问，10道标准答案直接背。">
+<meta name="keywords" content="Netty面试题,Reactor模式,NIO原理,零拷贝,epoll select区别,粘包拆包,Java NIO,2026面试">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.8;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:1.8em;color:#38bdf8;margin:20px 0 10px;text-align:center}
+.meta{text-align:center;color:#94a3b8;margin-bottom:30px;font-size:.9em}
+.q{background:#1e293b;border-radius:12px;padding:24px;margin:20px 0;border-left:4px solid #38bdf8}
+.q h3{color:#facc15;margin-bottom:12px;font-size:1.1em}
+.a{background:#0f172a;border-radius:8px;padding:16px;margin-top:12px;border:1px solid #334155}
+.a strong{color:#4ade80}
+code{background:#1e293b;padding:2px 6px;border-radius:4px;font-size:.9em;color:#f472b6}
+pre{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:16px;overflow-x:auto;margin:10px 0}
+.donate{text-align:center;margin:40px 0;padding:24px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;border:2px solid #facc15}
+.donate p{color:#facc15;font-size:1.2em;margin-bottom:12px}
+.donate img{width:200px;border-radius:12px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:30px 0}
+.nav a{background:#1e293b;color:#94a3b8;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:.85em;transition:.2s}
+.nav a:hover{background:#38bdf8;color:#0f172a}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>⚡ Netty高性能网络编程面试10题</h1>
+<p class="meta">Java后端进阶 · 2026年5月 · 每题含标准答案+代码示例</p>
+
+<div class="nav">
+<a href="index.html">📚 全部文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../interview-quiz/">☕ 题库</a>
+<a href="../shop/">🛒 装备商店</a>
+</div>
+
+<div class="q">
+<h3>Q1：Netty是什么？为什么要用Netty而不是直接用Java NIO？</h3>
+<div class="a">
+<strong>一句话：</strong>Netty是异步事件驱动的网络应用框架，封装了Java NIO的复杂性。<br><br>
+<strong>为什么不用Java NIO原语：</strong><br>
+1. <strong>API复杂：</strong>ByteBuffer到处flip/clear，Selector的keys处理繁琐<br>
+2. <strong>epoll空轮询bug：</strong>JDK NIO在Linux下Select空转100%CPU——Netty修复了<br>
+3. <strong>零拷贝内置：</strong>Netty的<code>FileRegion</code>/<code>CompositeByteBuf</code>一行搞定<br>
+4. <strong>编解码器生态：</strong>HTTP/WebSocket/Protobuf开箱即用<br>
+</div>
+</div>
+
+<div class="q">
+<h3>Q2：Netty的线程模型是什么？讲一下Reactor模式。</h3>
+<div class="a">
+<strong>主从Reactor多线程模型（ServerBootstrap默认）：</strong><br>
+<pre>
+                      BossGroup (1线程)
+                  EventLoop 轮询 Accept 事件
+                            ↓
+              新连接注册到 WorkerGroup
+                            ↓
+                    WorkerGroup (N线程 = CPU核数*2)
+             EventLoop-1   EventLoop-2   ...   EventLoop-N
+             (读→解码→业务→编码→写 全在一个线程)</pre>
+
+<strong>关键点：</strong>一个Channel从创建到销毁，始终绑定在同一个EventLoop线程——无锁化设计。<br><br>
+<strong>对比Reactor三种模式：</strong>Netty的BossGroup+WorkerGroup就是<strong>主从Reactor</strong>（MainReactor处理Accept，SubReactor处理IO）。
+</div>
+</div>
+
+<div class="q">
+<h3>Q3：BIO、NIO、AIO有什么区别？epoll为什么比select快？</h3>
+<div class="a">
+<strong>三者的区别：</strong><br>
+- <strong>BIO（阻塞IO）：</strong>一个连接一个线程，读写都阻塞。连接超过1000时线程爆炸。<br>
+- <strong>NIO（非阻塞IO）：</strong>一个线程管理多个连接。selector.select()只返回就绪的。<br>
+- <strong>AIO（异步IO）：</strong>操作系统回调通知。Linux上底层也是epoll，未必更快。<br><br>
+
+<strong>epoll vs select 核心差异：</strong><br>
+1. <strong>fd数量：</strong>select用fd_set，默认1024上限。epoll无限制。<br>
+2. <strong>遍历方式：</strong>select每次O(n)全量扫描。epoll回调注册，O(1)只拿就绪的。<br>
+3. <strong>内存拷贝：</strong>select每次把fd_set从用户态拷到内核态。epoll用mmap共享内存。<br>
+<br>
+<strong>面试金句：</strong>"epoll是事件驱动，select是轮询扫描。Netty在Linux下用epoll边缘触发+水平触发双模。"
+</div>
+</div>
+
+<div class="q">
+<h3>Q4：Netty怎么解决TCP粘包/拆包？</h3>
+<div class="a">
+<strong>粘包原因：</strong>TCP是流协议，send 10次100字节，底层可能合并成一次1000字节发出去。<br><br>
+<strong>Netty内置5种拆包器：</strong><br>
+<pre>// 1. 固定长度
+ch.pipeline().addLast(new FixedLengthFrameDecoder(100));
+
+// 2. 分隔符（最常用——Redis RESP协议就用\r\n）
+ch.pipeline().addLast(new DelimiterBasedFrameDecoder(8192, 
+    Delimiters.lineDelimiter()));
+
+// 3. 长度域（自定义协议：前4字节表长度）
+ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(
+    65535, 0, 4, 0, 4));
+
+// 4. 行分隔
+ch.pipeline().addLast(new LineBasedFrameDecoder(8192));
+
+// 5. 变长自定义
+ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(1024*1024, 
+    0, 2, -2, 0));</pre>
+</div>
+</div>
+
+<div class="q">
+<h3>Q5：Netty的零拷贝是什么意思？和操作系统的零拷贝是一回事吗？</h3>
+<div class="a">
+<strong>两个层面的"零拷贝"：</strong><br><br>
+
+<strong>1. Netty层面的零拷贝（减少Java堆内存拷贝）：</strong><br>
+- <code>CompositeByteBuf</code>：多个ByteBuf合并成一个逻辑Buf，不实际拷贝数据<br>
+- <code>Slice</code>：共享同一个byte[]，不同视图<br>
+- <code>FileRegion</code>：调用transferTo直接文件→Socket，绕过用户态<br><br>
+
+<strong>2. OS层面的零拷贝（减少内核态-用户态拷贝）：</strong><br>
+- <code>sendfile</code>(Linux)：DMA直接磁盘→内核缓冲区→Socket缓冲区（不经过用户态）<br>
+- <code>mmap</code>：内核和用户空间共享内存<br>
+- <code>splice</code>：两个fd之间管道传输<br><br>
+
+<strong>面试区分：</strong>Netty的CompositeByteBuf是JVM堆内优化；FileRegion底层调用OS的sendfile实现真正的零拷贝。
+</div>
+</div>
+
+<div class="q">
+<h3>Q6：Netty的ByteBuf和JDK的ByteBuffer有什么区别？</h3>
+<div class="a">
+<strong>核心对比：</strong><br>
+
+| ByteBuf | ByteBuffer |
+|---------|-----------|
+| 双指针 readIndex/writeIndex | 单指针 position，反复flip |
+| 自动扩容 | 需手动检查capacity |
+| 池化（PooledByteBufAllocator） | 每次new，GC压力 |
+| 引用计数（ReferenceCounted） | 无回收机制 |
+| 支持链式调用 | 不支持 |
+
+<strong>生产环境必须用池化：</strong><br>
+<pre>ByteBufAllocator allocator = PooledByteBufAllocator.DEFAULT;
+ByteBuf buf = allocator.buffer(1024);  // 从池中取，用完release归还</pre>
+</div>
+</div>
+
+<div class="q">
+<h3>Q7：Netty的ChannelPipeline是怎么工作的？</h3>
+<div class="a">
+<strong>双向链表责任链模式：</strong><br>
+<pre>
+I/O Request
+    ↓
+┌─── ChannelPipeline ───────────┐
+│  HeadContext (双向)            │
+│  ↓                             │
+│  [Encoder]  =====出站====>     │  // 出站Handler
+│  [Codec]    ==出/入==>         │  // 编解码器合并
+│  [Business]  <====入站====     │  // 业务Handler
+│  ↓                             │
+│  TailContext (双向)            │
+└────────────────────────────────┘
+    ↓
+I/O Response</pre>
+
+<strong>入站事件（Inbound）：</strong>ChannelActive→ChannelRead→ChannelReadComplete 从头到尾顺序执行<br>
+<strong>出站事件（Outbound）：</strong>write→flush 从尾到头逆序执行<br>
+<strong>传播控制：</strong><code>ctx.fireChannelRead()</code>继续传播；不调用则中断。<br><br>
+
+<strong>这个设计的好处：</strong>解码、业务处理、编码各司其职，新增功能只需addLast，不修改现有代码——开闭原则。
+</div>
+</div>
+
+<div class="q">
+<h3>Q8：Netty的EventLoop和Channel是怎么绑定的？</h3>
+<div class="a">
+<strong>绑定机制：</strong>Channel注册到EventLoop时，通过<code>next()</code>轮询从EventLoopGroup中选一个。<br><br>
+
+<pre>// 默认轮询算法（DefaultEventExecutorChooserFactory）
+public EventExecutor next() {
+    return executors[idx.getAndIncrement() & executors.length - 1]; // 2的幂次取模
+}</pre>
+
+<strong>关键保证：</strong>一个Channel创建后绑定到某个EventLoop → 永久绑定，直到Channel关闭。这意味着：<br>
+- ✅ 所有IO操作（读/写/关闭）在同一个线程 → 无锁<br>
+- ✅ 不需要synchronized<br>
+- ⚠️ 不能在EventLoop中做长耗时操作（如大量计算、阻塞IO）——会阻塞该EventLoop上所有Channel<br><br>
+
+<strong>长耗时任务的正确处理：</strong>提交到<code>DefaultEventExecutorGroup</code>（业务线程池）：
+<pre>pipeline.addLast(new DefaultEventExecutorGroup(16), 
+    new BusinessHandler());  // BusinessHandler在独立线程池执行</pre>
+</div>
+</div>
+
+<div class="q">
+<h3>Q9：Netty的心跳机制怎么实现？</h3>
+<div class="a">
+<strong>IdleStateHandler 三板斧：</strong><br>
+<pre>ch.pipeline().addLast(new IdleStateHandler(
+    60,   // readerIdleTime: 60秒没读到数据 → 触发 READER_IDLE
+    30,   // writerIdleTime: 30秒没写出数据 → 触发 WRITER_IDLE
+    0     // allIdleTime: 0=禁用
+));
+
+// 自定义心跳处理
+class HeartbeatHandler extends ChannelInboundHandlerAdapter {
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+        if (evt instanceof IdleStateEvent) {
+            IdleState state = ((IdleStateEvent) evt).state();
+            if (state == IdleState.READER_IDLE) {
+                ctx.close(); // 超过60秒没收到→踢下线
+            } else if (state == IdleState.WRITER_IDLE) {
+                ctx.writeAndFlush(new PingMessage()); // 30秒→发心跳
+            }
+        }
+    }
+}</pre>
+
+<strong>生产实践：</strong>服务端设readerIdle=2*客户端心跳间隔——留一倍容错空间。
+</div>
+</div>
+
+<div class="q">
+<h3>Q10：用Netty写一个简单的HTTP服务器，代码怎么搭？</h3>
+<div class="a">
+<strong>30行核心代码：</strong><br>
+<pre>EventLoopGroup boss = new NioEventLoopGroup(1);
+EventLoopGroup worker = new NioEventLoopGroup();
+try {
+    ServerBootstrap b = new ServerBootstrap();
+    b.group(boss, worker)
+     .channel(NioServerSocketChannel.class)
+     .childHandler(new ChannelInitializer<SocketChannel>() {
+         protected void initChannel(SocketChannel ch) {
+             ch.pipeline()
+               .addLast(new HttpServerCodec())       // HTTP编解码
+               .addLast(new HttpObjectAggregator(65536)) // 聚合完整请求
+               .addLast(new SimpleChannelInboundHandler<FullHttpRequest>() {
+                   protected void channelRead0(ChannelHandlerContext ctx, 
+                       FullHttpRequest req) {
+                       String body = "Hello Netty!";
+                       FullHttpResponse resp = new DefaultFullHttpResponse(
+                           HTTP_1_1, OK, Unpooled.copiedBuffer(body, UTF_8));
+                       resp.headers().set(CONTENT_TYPE, "application/json");
+                       resp.headers().set(CONTENT_LENGTH, body.length());
+                       ctx.writeAndFlush(resp).addListener(CLOSE);
+                   }
+               });
+         }
+     });
+    ChannelFuture f = b.bind(8080).sync();
+    f.channel().closeFuture().sync();
+} finally { boss.shutdownGracefully(); worker.shutdownGracefully(); }</pre>
+<strong>追问多说一句：</strong>实际项目用Spring WebFlux + Netty，Spring Boot 3默认底层就是Netty。
+</div>
+</div>
+
+<div class="donate">
+<p>☕ 这篇文章帮到你了？</p>
+<p style="color:#94a3b8;font-size:0.9em">请作者喝杯咖啡，支持持续更新更多面试干货</p>
+<img src="../mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏码">
+<p style="font-size:0.8em;color:#64748b;margin-top:8px">微信扫码赞赏</p>
+</div>
+
+<div class="nav">
+<a href="index.html">📚 全部58篇文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../shop/">🛒 装备商店</a>
+<a href="../resume-builder/">📝 简历生成</a>
+</div>
+
+</div>
+</body>
+</html>
