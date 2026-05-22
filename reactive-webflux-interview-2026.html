@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚡ Reactive/WebFlux 面试10题 — 2026 Java实习必备 | Java面试弹药库</title>
+<meta name="description" content="Spring WebFlux、Reactor、响应式编程面试全攻略。覆盖Mono/Flux区别、背压机制、R2DBC、Spring MVC vs WebFlux选型。2026年大厂面试新宠。">
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--text:#e2e8f0;--accent:#38bdf8;--highlight:#facc15;--green:#4ade80}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:2rem;color:var(--accent);margin:20px 0;text-align:center}
+h2{font-size:1.3rem;color:var(--highlight);margin:30px 0 15px;border-left:4px solid var(--accent);padding-left:12px}
+.qa{margin:20px 0}
+.q{font-weight:700;color:var(--accent);font-size:1.05rem}
+.a{background:var(--card);padding:15px;border-radius:10px;margin:8px 0 16px;border-left:3px solid var(--green)}
+code{background:#334155;padding:2px 8px;border-radius:4px;font-size:.9rem}
+pre{background:#1a1a2e;padding:15px;border-radius:10px;overflow-x:auto;margin:10px 0;font-size:.85rem;border:1px solid #334155}
+.hero-banner{background:linear-gradient(135deg,#1e293b,#0f172a);padding:30px;border-radius:16px;text-align:center;margin:20px 0;border:1px solid #334155}
+.donate-box{background:#1e293b;padding:25px;border-radius:16px;text-align:center;margin:30px 0;border:2px dashed #facc15}
+.donate-box img{width:200px;border-radius:12px;margin:10px}
+.donate-box p{color:#cbd5e1;margin:8px 0}
+.nav-links{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:25px 0}
+.nav-links a{background:#1e293b;color:#38bdf8;padding:8px 14px;border-radius:20px;text-decoration:none;font-size:.85rem;border:1px solid #334155;transition:all .2s}
+.nav-links a:hover{background:#334155;border-color:#38bdf8}
+.free-tag{background:#4ade80;color:#000;padding:2px 8px;border-radius:4px;font-size:.75rem;font-weight:700}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero-banner">
+<h1>⚡ 响应式编程 & WebFlux 面试10题</h1>
+<p style="color:#cbd5e1;font-size:1.1rem">2026年大厂面试新宠 — 字节/阿里/美团高频考点</p>
+<p style="color:#facc15;margin-top:10px">全部免费 <span class="free-tag">FREE</span> · 文末赞赏支持</p>
+</div>
+
+<div class="nav-links">
+<a href="index.html">📚 全部文章</a>
+<a href="springboot-interview-2026.html">Spring Boot</a>
+<a href="springcloud-microservice-interview-2026.html">微服务</a>
+<a href="https://Abyte-zym.github.io/arsenal/">🎯 弹药库</a>
+</div>
+
+<h2>🔥 为什么2026年要学Reactive？</h2>
+
+<div class="a">
+<p><strong>趋势判断：</strong>Spring 6.x / Spring Boot 3.x 已将 WebFlux 作为一等公民。字节跳动的基础架构、阿里的高并发网关、美团的实时数据处理——都在用响应式编程。2026年面试，能讲清楚 Mono/Flux 是明显的差异化优势。</p>
+</div>
+
+<!-- Q1 -->
+<div class="qa">
+<p class="q">Q1: 什么是响应式编程？与传统命令式编程有什么区别？</p>
+<div class="a">
+<p><strong>核心答案：</strong>响应式编程是<strong>异步、非阻塞、事件驱动</strong>的编程范式。数据作为"流"（Stream）推送，系统对数据变化做出反应，而不是主动轮询。</p>
+<p><strong>对比：</strong></p>
+<table style="width:100%;border-collapse:collapse;margin:10px 0">
+<tr style="background:#334155"><td style="padding:8px;border:1px solid #475569">维度</td><td style="padding:8px;border:1px solid #475569">命令式</td><td style="padding:8px;border:1px solid #475569">响应式</td></tr>
+<tr><td style="padding:8px;border:1px solid #475569">执行模型</td><td style="padding:8px;border:1px solid #475569">同步阻塞（一个线程等结果）</td><td style="padding:8px;border:1px solid #475569">异步非阻塞（回调/事件驱动）</td></tr>
+<tr><td style="padding:8px;border:1px solid #475569">线程模型</td><td style="padding:8px;border:1px solid #475569">Thread-per-Request（每个请求一个线程）</td><td style="padding:8px;border:1px solid #475569">Event Loop + 少量线程</td></tr>
+<tr><td style="padding:8px;border:1px solid #475569">适用场景</td><td style="padding:8px;border:1px solid #475569">低并发、CRUD业务</td><td style="padding:8px;border:1px solid #475569">高并发、IO密集、实时数据流</td></tr>
+<tr><td style="padding:8px;border:1px solid #475569">资源利用</td><td style="padding:8px;border:1px solid #475569">线程阻塞时浪费CPU</td><td style="padding:8px;border:1px solid #475569">少量线程服务大量请求</td></tr>
+</table>
+</div>
+</div>
+
+<!-- Q2 -->
+<div class="qa">
+<p class="q">Q2: Mono 和 Flux 的区别？什么时候用哪个？</p>
+<div class="a">
+<p><strong>核心答案：</strong></p>
+<ul style="margin-left:20px">
+<li><strong>Mono&lt;T&gt;：</strong>返回 <strong>0或1个</strong> 元素。比如查询单个用户、保存后返回ID。</li>
+<li><strong>Flux&lt;T&gt;：</strong>返回 <strong>0到N个</strong> 元素。比如查询列表、实时消息流、WebSocket推送。</li>
+</ul>
+<pre><code>// Mono — 最多一个结果
+Mono&lt;User&gt; user = userRepository.findById(1L);
+
+// Flux — 多个结果
+Flux&lt;User&gt; users = userRepository.findAll();
+
+// 互相转换
+Flux&lt;User&gt; flux = mono.flux();  // Mono → Flux
+Mono&lt;List&lt;User&gt;&gt; mono = flux.collectList();  // Flux → Mono</code></pre>
+<p><strong>面试金句：</strong>"Mono 对标 Optional，Flux 对标 Stream。核心区别是数据元素个数——0-1用Mono，0-N用Flux。"</p>
+</div>
+</div>
+
+<!-- Q3 -->
+<div class="qa">
+<p class="q">Q3: 什么是背压（Backpressure）？WebFlux 怎么处理？</p>
+<div class="a">
+<p><strong>核心答案：</strong>背压是指<strong>生产者速度 > 消费者速度</strong>时，消费者告诉生产者"慢一点"的机制。防止内存溢出。</p>
+<p><strong>WebFlux 的处理方式：</strong></p>
+<ul style="margin-left:20px">
+<li><strong>request(n)：</strong>消费者声明自己能处理n个元素</li>
+<li><strong>onBackpressureBuffer()：</strong>缓存多余数据</li>
+<li><strong>onBackpressureDrop()：</strong>丢弃多余数据</li>
+<li><strong>onBackpressureLatest()：</strong>只保留最新数据</li>
+<li><strong>limitRate()：</strong>限制生产速率</li>
+</ul>
+<pre><code>// 示例：限制速率 + 缓存策略
+Flux.interval(Duration.ofMillis(1))    // 每1ms产生一个数据（快）
+    .onBackpressureBuffer(100)          // 缓存100个
+    .limitRate(50)                      // 每秒最多50个
+    .subscribe(data -> process(data));  // 慢消费者</code></pre>
+<p><strong>面试金句：</strong>"背压是响应式系统的核心——Reactive Streams 规范通过 request(n) 实现从下游到上游的流量控制，这是传统 Future/CompletableFuture 做不到的。"</p>
+</div>
+</div>
+
+<!-- Q4 -->
+<div class="qa">
+<p class="q">Q4: Spring MVC（Tomcat）vs Spring WebFlux（Netty）怎么选？</p>
+<div class="a">
+<p><strong>核心答案：</strong></p>
+<table style="width:100%;border-collapse:collapse;margin:10px 0">
+<tr style="background:#334155"><td style="padding:8px;border:1px solid #475569">维度</td><td style="padding:8px;border:1px solid #475569">Spring MVC（Servlet）</td><td style="padding:8px;border:1px solid #475569">Spring WebFlux（Reactive）</td></tr>
+<tr><td style="padding:8px;border:1px solid #475569">运行时</td><td style="padding:8px;border:1px solid #475569">Tomcat/Jetty</td><td style="padding:8px;border:1px solid #475569">Netty/Undertow</td></tr>
+<tr><td style="padding:8px;border:1px solid #475569">并发模型</td><td style="padding:8px;border:1px solid #475569">线程池（200线程≈200并发）</td><td style="padding:8px;border:1px solid #475569">Event Loop（少量线程服务万级并发）</td></tr>
+<tr><td style="padding:8px;border:1px solid #475569">数据库</td><td style="padding:8px;border:1px solid #475569">JDBC/JPA（阻塞）</td><td style="padding:8px;border:1px solid #475569">R2DBC（非阻塞）</td></tr>
+<tr><td style="padding:8px;border:1px solid #475569">学习曲线</td><td style="padding:8px;border:1px solid #475569">低</td><td style="padding:8px;border:1px solid #475569">高</td></tr>
+<tr><td style="padding:8px;border:1px solid #475569">适用场景</td><td style="padding:8px;border:1px solid #475569">传统CRUD、业务逻辑复杂</td><td style="padding:8px;border:1px solid #475569">高并发网关、实时推送、API聚合</td></tr>
+</table>
+<p><strong>选型原则：</strong>如果整个链路（Controller→Service→DAO）都是非阻塞的，用 WebFlux；如果有JDBC等阻塞组件，就用MVC。混合使用反而降低性能。</p>
+</div>
+</div>
+
+<!-- Q5 -->
+<div class="qa">
+<p class="q">Q5: Reactor 中 map 和 flatMap 的区别？</p>
+<div class="a">
+<p><strong>核心答案：</strong></p>
+<ul style="margin-left:20px">
+<li><strong>map：</strong>同步转换，T → V。返回普通值。</li>
+<li><strong>flatMap：</strong>异步转换，T → Publisher&lt;V&gt;。返回 Mono/Flux，用于调用另一个异步方法。</li>
+</ul>
+<pre><code>// map：同步转换
+Mono&lt;String&gt; name = userMono.map(User::getName);
+
+// flatMap：异步转换（比如查完用户再查订单）
+Mono&lt;List&lt;Order&gt;&gt; orders = userMono
+    .flatMap(user -> orderService.findByUserId(user.getId()));
+
+// 如果用 map 返回 Mono&lt;Mono&lt;Order&gt;&gt; — 嵌套了，不对
+</code></pre>
+<p><strong>面试金句：</strong>"map 解决同步转换，flatMap 解决异步编排——当你需要在响应式流里调用另一个返回 Publisher 的方法时，必须用 flatMap 拍平。"</p>
+</div>
+</div>
+
+<!-- Q6 -->
+<div class="qa">
+<p class="q">Q6: WebFlux 的函数式端点（RouterFunction）和注解式（@RestController）怎么选？</p>
+<div class="a">
+<p><strong>核心答案：</strong></p>
+<ul style="margin-left:20px">
+<li><strong>@RestController：</strong>声明式，适合大多数场景，团队熟悉。</li>
+<li><strong>RouterFunction：</strong>函数式，适合需要动态路由、统一处理、函数组合的场景。</li>
+</ul>
+<pre><code>// 函数式风格
+@Bean
+public RouterFunction&lt;ServerResponse&gt; route(UserHandler handler) {
+    return RouterFunctions
+        .route(GET("/users/{id}"), handler::getUser)
+        .andRoute(POST("/users"), handler::createUser)
+        .andRoute(GET("/users"), handler::listUsers);
+}</code></pre>
+<p><strong>面试金句：</strong>"RouterFunction 的优势是路由即数据——可以对路由做 filter、transform 等函数式操作。但团队协作首选 @RestController。"</p>
+</div>
+</div>
+
+<!-- Q7 -->
+<div class="qa">
+<p class="q">Q7: Reactor 的 Schedulers 怎么设置？什么是执行模型？</p>
+<div class="a">
+<p><strong>核心答案：</strong></p>
+<table style="width:100%;border-collapse:collapse;margin:10px 0">
+<tr style="background:#334155"><td style="padding:8px;border:1px solid #475569">Scheduler</td><td style="padding:8px;border:1px solid #475569">线程池</td><td style="padding:8px;border:1px solid #475569">适用场景</td></tr>
+<tr><td style="padding:8px;border:1px solid #475569">Schedulers.immediate()</td><td style="padding:8px;border:1px solid #475569">当前线程</td><td style="padding:8px;border:1px solid #475569">测试/简单场景</td></tr>
+<tr><td style="padding:8px;border:1px solid #475569">Schedulers.single()</td><td style="padding:8px;border:1px solid #475569">单线程复用</td><td style="padding:8px;border:1px solid #475569">顺序严格的状态操作</td></tr>
+<tr><td style="padding:8px;border:1px solid #475569">Schedulers.parallel()</td><td style="padding:8px;border:1px solid #475569">CPU核心数个线程</td><td style="padding:8px;border:1px solid #475569">CPU密集计算</td></tr>
+<tr><td style="padding:8px;border:1px solid #475569">Schedulers.boundedElastic()</td><td style="padding:8px;border:1px solid #475569">动态扩缩、有上限</td><td style="padding:8px;border:1px solid #475569">IO密集、网络调用（默认）</td></tr>
+</table>
+<pre><code>Flux.range(1, 100)
+    .publishOn(Schedulers.parallel())  // 在并行线程执行
+    .map(this::cpuIntensiveWork)       // CPU密集
+    .subscribeOn(Schedulers.boundedElastic());  // 订阅在弹性线程</code></pre>
+<p><strong>publishOn vs subscribeOn：</strong>subscribeOn影响上游订阅线程；publishOn影响下游操作线程。</p>
+</div>
+</div>
+
+<!-- Q8 -->
+<div class="qa">
+<p class="q">Q8: R2DBC 是什么？和 JDBC 有什么区别？</p>
+<div class="a">
+<p><strong>核心答案：</strong>R2DBC（Reactive Relational Database Connectivity）是<strong>响应式关系型数据库驱动</strong>。JDBC是同步阻塞的，R2DBC是全异步非阻塞的。</p>
+<p><strong>对比：</strong></p>
+<pre><code>// JDBC（阻塞）
+User user = jdbcTemplate.queryForObject("SELECT * FROM users WHERE id=?", User.class, 1L);
+// 线程阻塞等待数据库返回
+
+// R2DBC（非阻塞）
+Mono&lt;User&gt; user = databaseClient.sql("SELECT * FROM users WHERE id=$1")
+    .bind(0, 1L)
+    .map(row -> new User(row.get("id"), row.get("name")))
+    .one();
+// 立即返回 Mono，不阻塞线程</code></pre>
+<p><strong>注意事项：</strong>R2DBC 不支持 JPA/Hibernate 的关联映射、懒加载等特性。适合简单CRUD+高并发场景。</p>
+</div>
+</div>
+
+<!-- Q9 -->
+<div class="qa">
+<p class="q">Q9: 在 WebFlux 中怎么做异常处理？</p>
+<div class="a">
+<p><strong>核心答案：</strong>三种方式：</p>
+<pre><code>// 1. onErrorReturn — 返回默认值
+userMono.onErrorReturn(new User("unknown"));
+
+// 2. onErrorResume — 切换到备用流
+userMono.onErrorResume(e -> {
+    log.error("查询失败", e);
+    return Mono.just(cachedUser);
+});
+
+// 3. @ExceptionHandler — 全局异常处理
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+    @ExceptionHandler(UserNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Mono&lt;ErrorResponse&gt; handleNotFound(UserNotFoundException e) {
+        return Mono.just(new ErrorResponse(404, e.getMessage()));
+    }
+}</code></pre>
+<p><strong>面试金句：</strong>"onErrorReturn 用于降级兜底，onErrorResume 用于故障转移，@ExceptionHandler 用于统一格式。三种方式组合使用确保系统韧性。"</p>
+</div>
+</div>
+
+<!-- Q10 -->
+<div class="qa">
+<p class="q">Q10: 你用 WebFlux 做过什么项目？踩过什么坑？</p>
+<div class="a">
+<p><strong>回答模板（结合你的RAG项目扩展）：</strong></p>
+<p>"在我的RAG智能知识库系统中，我用 WebFlux 实现了<strong>流式输出</strong>——调用大模型API后，通过 Flux 逐Token推送到前端，实现了打字机效果。相较于传统阻塞方式，WebFlux 让服务只用少量线程就支撑了100+并发对话。"</p>
+<p><strong>踩过的坑：</strong></p>
+<ul style="margin-left:20px">
+<li>❌ 在 flatMap 里用了阻塞调用（JDBC）→ 导致 Event Loop 线程堵塞 → ✅ 改用 R2DBC 或 Schedulers.boundedElastic() 隔离</li>
+<li>❌ subscribe() 忘记加 onError → 异常被吞 → ✅ 加 .doOnError() 日志</li>
+<li>❌ 背压没配置 → 内存溢出 → ✅ 加 limitRate + onBackpressureBuffer</li>
+</ul>
+</div>
+</div>
+
+<!-- 赞赏 -->
+<div class="donate-box">
+<h3>☕ 这份资料帮到你了？</h3>
+<p>整理不易，如果帮你通过了面试，请我喝杯咖啡~</p>
+<img src="https://raw.githubusercontent.com/Abyte-zym/jarvis-backup/main/mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏码" onerror="this.style.display='none'">
+<p style="font-size:.85rem;color:#94a3b8">更多免费工具：<a href="https://Abyte-zym.github.io/arsenal/" style="color:#38bdf8">Java面试弹药库</a></p>
+</div>
+
+<div class="nav-links">
+<a href="index.html">📚 全部36篇文章</a>
+<a href="https://Abyte-zym.github.io/arsenal">🎯 面试弹药库</a>
+<a href="https://Abyte-zym.github.io/java-interview-quiz">☕ 面试刷题库</a>
+</div>
+
+<p style="text-align:center;color:#64748b;font-size:.8rem;margin-top:20px">© 2026 Java面试弹药库 · 免费分享 · 随缘赞赏</p>
+</div>
+</body>
+</html>
