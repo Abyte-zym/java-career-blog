@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🛒 Java面试装备商店 | 从免费工具到付费服务一站式</title>
+<meta name="description" content="Java面试全链路装备——免费工具(简历/题库/段位测试) + 付费产品(押题密卷/1v1面试/训练营)，支持微信赞赏码即时获取。">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.6;padding:20px}
+.container{max-width:900px;margin:0 auto}
+h1{font-size:2em;text-align:center;background:linear-gradient(135deg,#facc15,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:20px 0 10px}
+.subtitle{text-align:center;color:#94a3b8;margin-bottom:40px}
+.section-title{font-size:1.3em;color:#38bdf8;margin:30px 0 16px;padding-bottom:8px;border-bottom:2px solid #1e293b}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin:20px 0}
+.card{background:#1e293b;border-radius:12px;padding:20px;border:1px solid #334155;transition:all .2s;position:relative}
+.card:hover{transform:translateY(-2px);border-color:#facc15}
+.card.free{border-left:3px solid #4ade80}
+.card.paid{border-left:3px solid #f97316}
+.card.vip{border-left:3px solid #a78bfa}
+.badge{position:absolute;top:10px;right:10px;padding:2px 10px;border-radius:12px;font-size:0.75em;font-weight:bold}
+.badge-free{background:rgba(74,222,128,0.2);color:#4ade80}
+.badge-paid{background:rgba(249,115,22,0.2);color:#f97316}
+.badge-vip{background:rgba(167,139,250,0.2);color:#a78bfa}
+.card h3{font-size:1em;margin-bottom:8px;color:#e2e8f0}
+.card p{font-size:0.85em;color:#94a3b8;margin-bottom:12px;line-height:1.5}
+.card .price{font-size:1.1em;font-weight:bold;color:#facc15}
+.card .price.free-tag{color:#4ade80}
+.card a{display:inline-block;background:#38bdf8;color:#0f172a;padding:6px 16px;border-radius:8px;text-decoration:none;font-size:0.85em;font-weight:bold;margin-top:8px}
+.card a:hover{background:#7dd3fc}
+.banner{background:linear-gradient(135deg,#1e293b,#0f172a);border:2px solid #facc15;border-radius:16px;padding:30px;text-align:center;margin:40px 0}
+.banner h2{color:#facc15;margin-bottom:12px}
+.banner p{color:#94a3b8;margin-bottom:16px}
+.banner img{width:180px;border-radius:12px}
+.categories{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:24px 0}
+.categories a{background:#1e293b;color:#94a3b8;padding:6px 16px;border-radius:20px;text-decoration:none;font-size:0.85em}
+.categories a:hover,.categories a.active{background:#facc15;color:#0f172a}
+.footer{text-align:center;color:#64748b;font-size:0.8em;margin:40px 0 20px}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🛒 Java面试装备商店</h1>
+<p class="subtitle">从免费工具到付费服务 — 全链路覆盖你的面试需求</p>
+
+<div class="categories">
+<a href="#free" class="active">🆓 免费工具</a>
+<a href="#paid">💰 付费产品</a>
+<a href="#vip">👑 VIP服务</a>
+<a href="#bundle">📦 超值套餐</a>
+</div>
+
+<!-- ===== 免费 ===== -->
+<h2 class="section-title" id="free">🆓 免费工具（30+款，永久免费）</h2>
+<div class="grid">
+
+<div class="card free">
+<span class="badge badge-free">免费</span>
+<h3>📝 简历生成器</h3>
+<p>填信息秒出专业简历，3天吸引10+HR主动联系的模板</p>
+<p class="price free-tag">¥0</p>
+<a href="https://Abyte-zym.github.io/resume-builder/" target="_blank">立即使用</a>
+</div>
+
+<div class="card free">
+<span class="badge badge-free">免费</span>
+<h3>☕ 面试真题题库</h3>
+<p>20+道Java高频题+标准答案，随机出题+即时评分</p>
+<p class="price free-tag">¥0</p>
+<a href="https://Abyte-zym.github.io/interview-quiz/" target="_blank">开始刷题</a>
+</div>
+
+<div class="card free">
+<span class="badge badge-free">免费</span>
+<h3>⚔️ Java段位测试</h3>
+<p>30题随机挑战→青铜到王者段位→分享朋友圈引战</p>
+<p class="price free-tag">¥0</p>
+<a href="https://Abyte-zym.github.io/java-rank-test/" target="_blank">测段位</a>
+</div>
+
+<div class="card free">
+<span class="badge badge-free">免费</span>
+<h3>🎯 JD押题器</h3>
+<p>粘贴任意JD秒出面试预测，85%押题率</p>
+<p class="price free-tag">¥0</p>
+<a href="https://Abyte-zym.github.io/java-jd-predictor/" target="_blank">押题</a>
+</div>
+
+<div class="card free">
+<span class="badge badge-free">免费</span>
+<h3>🔍 简历诊断器</h3>
+<p>粘贴简历秒得5维评分+优化建议</p>
+<p class="price free-tag">¥0</p>
+<a href="https://Abyte-zym.github.io/resume-diagnosis/" target="_blank">诊断</a>
+</div>
+
+<div class="card free">
+<span class="badge badge-free">免费</span>
+<h3>📊 技能雷达图</h3>
+<p>20题7维评估，生成雷达图一键分享</p>
+<p class="price free-tag">¥0</p>
+<a href="https://Abyte-zym.github.io/java-skill-radar/" target="_blank">测评</a>
+</div>
+
+<div class="card free">
+<span class="badge badge-free">免费</span>
+<h3>📋 30天通关清单</h3>
+<p>交互式打卡+进度保存+可打印PDF</p>
+<p class="price free-tag">¥0</p>
+<a href="https://Abyte-zym.github.io/30day-checklist/" target="_blank">打卡</a>
+</div>
+
+<div class="card free">
+<span class="badge badge-free">免费</span>
+<h3>📚 全套面试文章</h3>
+<p>50+篇SEO文章，全部免费阅读</p>
+<p class="price free-tag">¥0</p>
+<a href="https://Abyte-zym.github.io/java-career-blog/" target="_blank">阅读</a>
+</div>
+
+</div>
+
+<!-- ===== 付费 ===== -->
+<h2 class="section-title" id="paid">💰 付费产品（赞赏码即时获取）</h2>
+<div class="grid">
+
+<div class="card paid">
+<span class="badge badge-paid">¥9.9</span>
+<h3>🎯 大厂押题密卷</h3>
+<p>字节/阿里/美团/拼多多/快手各10题+追问防御。免费预览2题，赞赏解锁全部</p>
+<p class="price">¥9.9</p>
+<a href="https://Abyte-zym.github.io/interview-leak/" target="_blank">查看详情</a>
+</div>
+
+<div class="card paid">
+<span class="badge badge-paid">¥19.9</span>
+<h3>📦 PDF资料包</h3>
+<p>50+篇文章打包成PDF，离线阅读+打印学习</p>
+<p class="price">¥19.9</p>
+<a href="https://Abyte-zym.github.io/bundle-pack/" target="_blank">获取</a>
+</div>
+
+<div class="card paid">
+<span class="badge badge-paid">¥29.9</span>
+<h3>🔍 深度简历诊断</h3>
+<p>1v1诊断+定制优化方案，3天内交付</p>
+<p class="price">¥29.9</p>
+<a href="../resume-diagnosis/" target="_blank">预约</a>
+</div>
+
+<div class="card paid">
+<span class="badge badge-paid">¥9.9</span>
+<h3>🛠 Java项目脚手架</h3>
+<p>Spring Boot 3.5+JWT+Docker一键启动模板</p>
+<p class="price">¥9.9</p>
+<a href="https://Abyte-zym.github.io/java-starter-kit/" target="_blank">下载</a>
+</div>
+
+</div>
+
+<!-- ===== VIP ===== -->
+<h2 class="section-title" id="vip">👑 VIP服务</h2>
+<div class="grid">
+
+<div class="card vip">
+<span class="badge badge-vip">¥49/次</span>
+<h3>🎓 1v1模拟面试</h3>
+<p>60分钟真实面试模拟+即时反馈+改进方案</p>
+<p class="price">¥49</p>
+<a href="https://Abyte-zym.github.io/mock-interview-coaching/" target="_blank">预约</a>
+</div>
+
+<div class="card vip">
+<span class="badge badge-vip">¥99/次</span>
+<h3>🧠 面试失败诊断</h3>
+<p>深度复盘面试过程→弱点定位→针对性训练方案</p>
+<p class="price">¥99</p>
+<a href="https://Abyte-zym.github.io/interview-failure-diagnosis/" target="_blank">诊断</a>
+</div>
+
+<div class="card vip">
+<span class="badge badge-vip">¥299</span>
+<h3>🌱 7天训练营</h3>
+<p>Java面试系统通关，每日任务+1v1答疑+模拟面试</p>
+<p class="price">¥299</p>
+<a href="https://Abyte-zym.github.io/bootcamp-7day/" target="_blank">报名</a>
+</div>
+
+<div class="card vip">
+<span class="badge badge-vip">¥599</span>
+<h3>🚀 入职保障包</h3>
+<p>训练营+无限模拟面试+简历优化+Offer谈判，入职后付款</p>
+<p class="price">¥599</p>
+<a href="https://Abyte-zym.github.io/sponsor-kit/" target="_blank">了解</a>
+</div>
+
+</div>
+
+<!-- ===== 赞赏 ===== -->
+<div class="banner">
+<h2>☕ 觉得工具好用？</h2>
+<p>所有免费工具都是我精心打造，觉得有用请我喝杯咖啡</p>
+<img src="../mm_facetoface_collect_qrcode_1779427130944.png" alt="赞赏码">
+<p style="font-size:0.8em;color:#64748b">微信扫码赞赏 · 支持持续更新</p>
+</div>
+
+<div class="categories">
+<a href="https://Abyte-zym.github.io/arsenal/">🎯 弹药库总入口</a>
+<a href="https://Abyte-zym.github.io/java-career-blog/">📚 50+篇文章</a>
+<a href="https://Abyte-zym.github.io/resume-builder/">📝 简历生成</a>
+<a href="https://github.com/Abyte-zym">💻 GitHub</a>
+</div>
+
+<p class="footer">全部工具托管 GitHub Pages · 永久免费使用 · © 2026 Abyte-zym</p>
+
+</div>
+</body>
+</html>
