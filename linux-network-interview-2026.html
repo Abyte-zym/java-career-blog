@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="2026 Java后端面试Linux+网络高频10题，TCP三次握手·HTTP状态码·DNS解析·Linux排查命令。每道题含标准答案，面试直接背。">
+<title>Linux+网络面试10题 | Java实习 2026</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.7;padding:2rem 1rem}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:2rem;color:#38bdf8;margin-bottom:.5rem;text-align:center}
+.subtitle{text-align:center;color:#94a3b8;margin-bottom:2rem;font-size:.95rem}
+.card{background:#1e293b;border-radius:12px;padding:1.5rem;margin-bottom:1.2rem;border-left:4px solid #38bdf8}
+.card h2{font-size:1.1rem;color:#f1f5f9;margin-bottom:.6rem}
+.card .q{color:#fbbf24;font-weight:600;margin-bottom:.4rem}
+.card .a{color:#cbd5e1;font-size:.95rem}
+.card .a code{background:#334155;padding:.15rem .4rem;border-radius:4px;font-size:.85rem;color:#f8fafc}
+.highlight{background:#1e3a5f;padding:.6rem 1rem;border-radius:8px;margin:.8rem 0;color:#93c5fd;font-size:.9rem}
+.tag{display:inline-block;background:#334155;color:#94a3b8;padding:.2rem .6rem;border-radius:6px;font-size:.8rem;margin:.2rem}
+.nav{text-align:center;margin-top:2rem;padding:1rem}
+.nav a{color:#38bdf8;margin:0 .8rem;text-decoration:none;font-size:.9rem}
+.nav a:hover{text-decoration:underline}
+.footer{text-align:center;margin-top:2rem;padding:1.5rem;background:#1e293b;border-radius:12px}
+.footer img{width:180px;border-radius:8px}
+.footer p{color:#94a3b8;font-size:.85rem;margin-top:.5rem}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🐧 Linux + 网络 面试10题</h1>
+<p class="subtitle">2026 Java后端实习 · 每道题3分钟背完 · 高频命中率90%+</p>
+
+<div class="card">
+<h2>1. TCP三次握手、四次挥手过程</h2>
+<div class="q">📌 面试官：说说TCP连接的建立和释放。</div>
+<div class="a">
+<b>三次握手：</b><br>
+① 客户端→服务器：<code>SYN=1, seq=x</code>（我要连接）<br>
+② 服务器→客户端：<code>SYN=1, ACK=1, seq=y, ack=x+1</code>（收到，同意）<br>
+③ 客户端→服务器：<code>ACK=1, seq=x+1, ack=y+1</code>（确认，连接建立）<br><br>
+<b>为什么是三次？</b> 防止已失效的连接请求到达服务器——如果只用两次，服务器收到过期SYN就会错误打开连接。<br><br>
+<b>四次挥手：</b><br>
+① 客户端：<code>FIN=1</code>（我不发了）<br>
+② 服务器：<code>ACK=1</code>（收到）<br>
+③ 服务器：<code>FIN=1</code>（我也不发了）<br>
+④ 客户端：<code>ACK=1</code>（确认，等待2MSL后关闭）<br>
+<b>为什么四次？</b> TCP全双工——每方独立关闭发送方向。
+</div>
+</div>
+
+<div class="card">
+<h2>2. HTTP请求方法GET和POST的区别</h2>
+<div class="q">📌 面试官：GET和POST有什么区别？</div>
+<div class="a">
+| 维度 | GET | POST |
+|------|-----|------|
+| 参数位置 | URL Query参数 | 请求Body |
+| 长度限制 | URL长度限制(~2KB) | 无限制 |
+| 安全性 | 参数暴露在URL | Body相对安全 |
+| 幂等性 | 幂等（多次结果一样） | 非幂等 |
+| 缓存 | 可缓存 | 不可缓存 |
+| 语义 | 获取资源 | 创建/修改资源 |
+<br>
+<b>加分回答：</b>"虽然语义上GET是读、POST是写，但HTTP协议本身不强制。真正保证安全的是HTTPS+TLS加密——GET的URL也会被加密。"
+</div>
+</div>
+
+<div class="card">
+<h2>3. HTTP状态码常见分类</h2>
+<div class="q">📌 面试官：列举常见的HTTP状态码。</div>
+<div class="a">
+<b>1xx 信息：</b><code>100 Continue</code><br><br>
+<b>2xx 成功：</b><code>200 OK</code> | <code>201 Created</code> | <code>204 No Content</code><br><br>
+<b>3xx 重定向：</b><code>301 永久重定向</code> | <code>302 临时重定向</code> | <code>304 Not Modified</code>(缓存)<br><br>
+<b>4xx 客户端错误：</b><code>400 Bad Request</code> | <code>401 Unauthorized</code> | <code>403 Forbidden</code> | <code>404 Not Found</code> | <code>405 Method Not Allowed</code> | <code>429 Too Many Requests</code>(限流)<br><br>
+<b>5xx 服务端错误：</b><code>500 Internal Server Error</code> | <code>502 Bad Gateway</code> | <code>503 Service Unavailable</code> | <code>504 Gateway Timeout</code><br><br>
+<b>加分：</b>"RESTful API设计中，创建成功返回<code>201</code>而非<code>200</code>，限流返回<code>429</code>，微服务调用超时返回<code>504</code>——每个状态码都承载具体语义。"
+</div>
+</div>
+
+<div class="card">
+<h2>4. HTTPS加密原理</h2>
+<div class="q">📌 面试官：HTTPS怎么保证安全的？</div>
+<div class="a">
+<b>核心：TLS握手 + 混合加密</b><br><br>
+① 客户端→服务器：支持的加密套件 + 随机数1<br>
+② 服务器→客户端：选定加密套件 + 随机数2 + 数字证书(含公钥)<br>
+③ 客户端验证证书 → 生成随机数3 → 用服务器公钥加密 → 发送<br>
+④ 双方根据3个随机数算出<b>对称会话密钥</b><br>
+⑤ 之后所有通信用对称密钥加密<br><br>
+<b>为什么混合加密？</b> 非对称加密(RSA/ECDHE)安全但慢 → 只用于交换密钥；对称加密(AES)快 → 用于数据加密。<br>
+<b>证书作用：</b>CA签名保证"公钥确实是这个服务器的"——防止中间人攻击。
+</div>
+</div>
+
+<div class="card">
+<h2>5. TCP和UDP的区别</h2>
+<div class="q">📌 面试官：对比TCP和UDP。</div>
+<div class="a">
+| 维度 | TCP | UDP |
+|------|-----|-----|
+| 连接 | 面向连接 | 无连接 |
+| 可靠性 | 可靠（确认重传） | 不可靠 |
+| 顺序 | 有序 | 无序 |
+| 速度 | 慢 | 快 |
+| 头部开销 | 20字节 | 8字节 |
+| 场景 | HTTP/文件传输 | 视频直播/DNS/游戏 |
+<br>
+<b>加分：</b>"TCP通过序列号+确认应答+超时重传保证可靠性；UDP适合实时场景但需要应用层自己处理丢包——比如QUIC协议就在UDP上实现了可靠传输。"
+</div>
+</div>
+
+<div class="card">
+<h2>6. DNS解析过程</h2>
+<div class="q">📌 面试官：浏览器输入URL后，DNS怎么工作的？</div>
+<div class="a">
+① <b>浏览器缓存</b> → 查本地DNS缓存<br>
+② <b>操作系统缓存</b> → 查hosts文件 + OS DNS缓存<br>
+③ <b>本地DNS服务器</b> → 运营商提供的DNS<br>
+④ <b>根域名服务器</b> → 返回顶级域(.com)的NS<br>
+⑤ <b>顶级域服务器</b> → 返回权威DNS地址<br>
+⑥ <b>权威DNS服务器</b> → 返回最终IP<br><br>
+<b>优化：</b>CDN通过CNAME将域名指向最近的边缘节点；DNS预解析<code>&lt;link rel="dns-prefetch"&gt;</code>减少延迟。
+</div>
+</div>
+
+<div class="card">
+<h2>7. Linux常用排查命令</h2>
+<div class="q">📌 面试官：线上服务CPU飙升，你用什么命令排查？</div>
+<div class="a">
+<b>CPU问题排查：</b><br>
+<code>top</code> → 查看整体CPU/内存/负载<br>
+<code>top -Hp PID</code> → 查看进程内线程CPU<br>
+<code>jstack PID | grep -A 10 tid</code> → 转线程ID找堆栈<br><br>
+<b>内存问题排查：</b><br>
+<code>free -h</code> → 查看内存使用<br>
+<code>jmap -histo PID | head -20</code> → 对象占用排名<br>
+<code>jmap -dump:format=b,file=heap.hprof PID</code> → 导出堆dump<br><br>
+<b>磁盘/IO：</b><br>
+<code>df -h</code> → 磁盘空间<br>
+<code>iostat -x 1</code> → 磁盘IO<br><br>
+<b>网络：</b><br>
+<code>netstat -tlnp</code> → 监听端口<br>
+<code>ss -s</code> → socket统计
+</div>
+</div>
+
+<div class="card">
+<h2>8. 从输入URL到页面展示发生了什么</h2>
+<div class="q">📌 面试官：经典题——浏览器输入URL后发生了什么？</div>
+<div class="a">
+① <b>DNS解析</b> → URL → IP地址<br>
+② <b>TCP连接</b> → 三次握手<br>
+③ <b>TLS握手</b>（HTTPS）→ 交换证书+密钥<br>
+④ <b>发送HTTP请求</b> → GET/POST + Headers<br>
+⑤ <b>服务器处理</b> → Nginx → 应用 → 数据库<br>
+⑥ <b>返回HTTP响应</b> → 状态码 + HTML<br>
+⑦ <b>浏览器渲染</b> → 解析HTML → 构建DOM → CSS → 布局 → 绘制<br>
+⑧ <b>TCP挥手</b> → 四次挥手断开<br><br>
+<b>加分：</b>"这道题考察全链路视角——网络(DNS/TCP/TLS)、应用(HTTP/服务器)、前端(渲染引擎)三层的串联理解。"
+</div>
+</div>
+
+<div class="card">
+<h2>9. Session和Cookie的区别</h2>
+<div class="q">📌 面试官：Session和Cookie怎么协作的？</div>
+<div class="a">
+| 维度 | Cookie | Session |
+|------|--------|---------|
+| 存储位置 | 浏览器 | 服务器 |
+| 安全性 | 低（可篡改） | 高 |
+| 容量 | 4KB | 无限制 |
+| 跨域 | 受限 | 共享 |
+<br>
+<b>协作流程：</b>① 用户登录 → ② 服务器创建Session(存用户信息) → ③ 返回<code>Set-Cookie: JSESSIONID=xxx</code> → ④ 后续请求自动带Cookie → ⑤ 服务器根据SessionID找到Session<br><br>
+<b>分布式Session方案：</b>① Redis集中存储 ② JWT无状态Token(不需服务端存储) ③ Session粘滞(负载均衡固定路由)
+</div>
+</div>
+
+<div class="card">
+<h2>10. TCP粘包/拆包问题</h2>
+<div class="q">📌 面试官：Netty/TCP接收数据时遇到粘包怎么办？</div>
+<div class="a">
+<b>原因：</b>TCP是流式协议，没有消息边界——发送方连续发两条消息，接收方可能一次全收到(粘包)或分多次收到(拆包)。<br><br>
+<b>解决方案：</b><br>
+① <b>固定长度</b> → 每条消息固定N字节，不足补空格<br>
+② <b>分隔符</b> → 每条消息以<code>\n</code>或特殊字符结尾（如Redis协议）<br>
+③ <b>长度字段</b> → 消息头4字节声明body长度（如HTTP Content-Length）<br>
+④ <b>Netty内置</b> → <code>FixedLengthFrameDecoder</code>/<code>LineBasedFrameDecoder</code>/<code>LengthFieldBasedFrameDecoder</code><br><br>
+<b>一句话：</b>"粘包的本质是TCP不维护消息边界，应用层必须自己定协议——最常用的是长度前缀法。"
+</div>
+</div>
+
+<div class="highlight">
+💡 <b>面试技巧：</b>Linux+网络在Java后端面试中占15-20%。不要死记——每个TCP/UDP问题都结合你的秒杀项目回答："秒杀系统用TCP保证订单可靠传输，库存扣减的Redis Lua脚本通过TCP连接执行"。关联项目能加分。
+</div>
+
+<div class="nav">
+<a href="https://Abyte-zym.github.io/interview-quiz/">☕ 面试题库</a>
+<a href="https://Abyte-zym.github.io/java-resume-builder/">📝 简历生成器</a>
+<a href="https://Abyte-zym.github.io/interview-simulator/">🎯 模拟面试</a>
+<a href="https://Abyte-zym.github.io/java-career-blog/">📚 全部文章</a>
+</div>
+
+<div class="footer">
+<img src="qrcode-wx.png" alt="赞赏码">
+<p>如果这些内容帮到了你，请我喝杯咖啡 ☕</p>
+<p style="margin-top:.8rem"><span class="tag">TCP</span> <span class="tag">HTTP</span> <span class="tag">HTTPS</span> <span class="tag">DNS</span> <span class="tag">Linux</span> <span class="tag">Session</span> <span class="tag">TCP粘包</span></p>
+</div>
+</div>
+</body>
+</html>
