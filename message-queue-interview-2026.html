@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>消息队列面试10题 | RocketMQ+Kafka | 2026 Java实习面试</title>
+<meta name="description" content="2026年Java实习面试必备：RocketMQ和Kafka面试10题，涵盖消息可靠性、顺序消费、重复消费、事务消息、死信队列，附标准答案和代码示例。">
+<meta name="keywords" content="RocketMQ面试题,Kafka面试题,消息队列面试,Java实习面试,2026,顺序消费,事务消息,死信队列">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f7fa;color:#333;line-height:1.8}
+header{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:40px 20px;text-align:center}
+header h1{font-size:2em;margin-bottom:10px}
+.container{max-width:900px;margin:30px auto;padding:0 20px}
+.qa{background:#fff;border-radius:12px;padding:25px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.qa h3{color:#667eea;margin-bottom:12px;font-size:1.1em}
+.qa pre{background:#2d2d2d;color:#f8f8f2;padding:15px;border-radius:8px;overflow-x:auto;font-size:.9em;margin:10px 0}
+.qa code{background:#f0f0f0;padding:2px 6px;border-radius:4px;font-size:.9em}
+.qa pre code{background:transparent;padding:0}
+.tag{display:inline-block;background:#667eea;color:#fff;padding:3px 10px;border-radius:15px;font-size:.8em;margin:3px}
+.donate{text-align:center;padding:40px 20px;background:#fff;border-radius:12px;margin:30px 0;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.donate h3{color:#667eea;margin-bottom:15px}
+.donate img{width:200px;border-radius:12px}
+.nav{text-align:center;padding:20px;margin:20px 0}
+.nav a{display:inline-block;background:#667eea;color:#fff;padding:10px 24px;border-radius:25px;text-decoration:none;margin:5px;font-weight:500;transition:transform .2s}
+.nav a:hover{transform:translateY(-2px)}
+footer{text-align:center;padding:30px;color:#999;font-size:.85em}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🚀 消息队列面试10题</h1>
+  <p>RocketMQ + Kafka 核心考点 · 2026 Java实习面试必备</p>
+  <p style="margin-top:10px;opacity:.85">作者：张晏铭 | 长春理工软件工程应届 | Spring Boot+微服务项目实战</p>
+</header>
+
+<div class="container">
+
+<div class="nav">
+  <a href="index.html">📚 博客首页</a>
+  <a href="../java-interview-quiz/index.html">☕ 面试题库</a>
+  <a href="../resume-builder/index.html">📝 简历生成器</a>
+  <a href="https://github.com/Abyte-zym/seckill-system">🛒 秒杀项目源码</a>
+</div>
+
+<div class="qa">
+<h3>Q1：消息队列解决了什么问题？为什么不用直接调接口？</h3>
+<p><strong>标准答案：</strong>消息队列主要解决三个问题——<span class="tag">削峰填谷</span><span class="tag">解耦</span><span class="tag">异步处理</span>。直接调接口在高并发下会导致系统雪崩；MQ把请求暂存队列，消费者匀速处理，保护下游。</p>
+<p>👉 <strong>简历亮点</strong>：我的秒杀系统中，秒杀成功的请求先发到RocketMQ，订单服务异步消费，下游压力降低70%。</p>
+</div>
+
+<div class="qa">
+<h3>Q2：RocketMQ和Kafka怎么选？</h3>
+<p><strong>标准答案：</strong></p>
+<table style="width:100%;border-collapse:collapse;margin:10px 0">
+<tr style="background:#f0f0f0"><th style="padding:8px;text-align:left">维度</th><th style="padding:8px;text-align:left">RocketMQ</th><th style="padding:8px;text-align:left">Kafka</th></tr>
+<tr><td style="padding:8px">定位</td><td style="padding:8px">业务消息</td><td style="padding:8px">日志/流计算</td></tr>
+<tr><td style="padding:8px">事务消息</td><td style="padding:8px">✅ 原生支持</td><td style="padding:8px">⚠️ 需额外实现</td></tr>
+<tr><td style="padding:8px">延迟消息</td><td style="padding:8px">✅ 18个级别</td><td style="padding:8px">❌ 不支持</td></tr>
+<tr><td style="padding:8px">顺序消息</td><td style="padding:8px">✅ 队列级FIFO</td><td style="padding:8px">✅ 分区内有序</td></tr>
+<tr><td style="padding:8px">吞吐量</td><td style="padding:8px">10万级/秒</td><td style="padding:8px">百万级/秒</td></tr>
+</table>
+<p>"秒杀场景选RocketMQ,因为需要事务消息保证下单和库存扣减一致性;日志采集选Kafka,因为吞吐量更高。"</p>
+</div>
+
+<div class="qa">
+<h3>Q3：如何保证消息不丢失？</h3>
+<p><strong>标准答案：</strong>三端保障——</p>
+<p>① <strong>生产者端</strong>：使用同步发送+重试机制，send(msg, callback) 确认Broker收到</p>
+<p>② <strong>Broker端</strong>：同步刷盘（flushDiskType=SYNC_FLUSH）+主从同步复制</p>
+<p>③ <strong>消费者端</strong>：手动ACK（consumeMessage返回CONSUME_SUCCESS），处理完再确认</p>
+<pre>// 生产者同步发送
+SendResult result = producer.send(msg);
+if (result.getSendStatus() != SEND_OK) {
+    // 重试或落库补偿
+    retryOrSave(msg);
+}</pre>
+</div>
+
+<div class="qa">
+<h3>Q4：消息重复消费怎么处理？</h3>
+<p><strong>标准答案：</strong>MQ保证至少一次投递，但可能重复。消费者做<strong>幂等</strong>处理——<span class="tag">唯一键去重</span><span class="tag">Redis setNX</span><span class="tag">数据库唯一索引</span>。</p>
+<pre>// 消费端幂等：用消息ID+业务键去重
+String dedupKey = "msg:" + msg.getMsgId();
+Boolean success = redisTemplate.opsForValue()
+    .setIfAbsent(dedupKey, "1", 24, TimeUnit.HOURS);
+if (!success) return CONSUME_SUCCESS; // 已处理，跳过</pre>
+</div>
+
+<div class="qa">
+<h3>Q5：如何保证消息顺序消费？</h3>
+<p><strong>标准答案：</strong>RocketMQ中，同一笔订单的消息发到<strong>同一个MessageQueue</strong>（通过订单ID取模），消费者端用<code>MessageListenerOrderly</code>单线程消费该队列，保证FIFO。</p>
+<pre>// 顺序发送：相同订单号→同一队列
+msg.setKeys(orderId);
+SendResult result = producer.send(msg, 
+    (mqs, m, arg) -> {
+        int idx = Math.abs(arg.hashCode()) % mqs.size();
+        return mqs.get(idx);
+    }, orderId);</pre>
+</div>
+
+<div class="qa">
+<h3>Q6：什么是事务消息？秒杀场景怎么用？</h3>
+<p><strong>标准答案：</strong>RocketMQ事务消息分三步——①发送半消息(half msg) ②执行本地事务(扣库存) ③根据本地事务结果提交或回滚。如果④步骤超时, Broker会<strong>回查</strong>本地事务状态。</p>
+<p>👉 秒杀中：半消息→Redis Lua扣库存→成功则提交消息→订单服务消费落库。失败则回滚。</p>
+</div>
+
+<div class="qa">
+<h3>Q7：死信队列是什么？什么情况会进入死信？</h3>
+<p><strong>标准答案：</strong>消息消费失败达到最大重试次数(默认16次)后，会被投递到<strong>死信队列(DLQ)</strong>。人工介入处理补偿。常见原因：业务逻辑bug、下游服务宕机、数据格式错误。</p>
+</div>
+
+<div class="qa">
+<h3>Q8：消息堆积怎么排查和解决？</h3>
+<p><strong>标准答案：</strong>三步排查——<span class="tag">监控Dashboard</span>看消费延迟 → <span class="tag">检查消费者日志</span>是否有异常 → <span class="tag">扩容消费者实例</span>或临时提升消费线程数。</p>
+<p>紧急方案：新建一个临时Topic，把积压消息转发过去，加10倍消费者快速消费。</p>
+</div>
+
+<div class="qa">
+<h3>Q9：消息队列的push和pull模式有什么区别？</h3>
+<p><strong>标准答案：</strong></p>
+<p><span class="tag">Push模式</span>：Broker主动推给消费者，实时性好，但可能压垮消费者。</p>
+<p><span class="tag">Pull模式</span>：消费者主动拉取，自主控制速率，但可能有延迟。</p>
+<p>RocketMQ默认是<strong>长轮询(Long Polling)</strong>——消费者发起pull请求，Broker有消息立即返回，没消息挂起15秒。</p>
+</div>
+
+<div class="qa">
+<h3>Q10：你项目中RocketMQ是怎么用的？</h3>
+<p><strong>标准答案：</strong>"秒杀项目中，用户秒杀请求到达后，Redis Lua脚本扣减库存成功→发送下单消息到RocketMQ→订单消费服务异步落库。我用消息表+定时对账保证最终一致性，即使MQ宕机也不会丢订单。"</p>
+<p>👉 <strong>面试加分</strong>：这段描述同时展示了MQ+Redis+最终一致性三个知识点。</p>
+</div>
+
+<div class="donate">
+  <h3>☕ 这篇文章帮到你了？</h3>
+  <p style="margin-bottom:15px">请作者喝杯咖啡，支持更多免费面试内容</p>
+  <img src="mm_facetoface_collect_qrcode_1779427130944.png" alt="赞赏码" loading="lazy">
+  <p style="margin-top:10px;color:#999;font-size:.85em">微信扫码赞赏 · 每一份支持都是我更新的动力</p>
+</div>
+
+<div class="nav">
+  <a href="index.html">📚 更多面试题</a>
+  <a href="https://github.com/Abyte-zym/seckill-system">🛒 秒杀项目</a>
+  <a href="https://github.com/Abyte-zym/rag-assistant">🤖 RAG项目</a>
+</div>
+
+</div>
+
+<footer>
+  <p>© 2026 张晏铭 · 长春理工软件工程 · <a href="https://github.com/Abyte-zym">GitHub</a></p>
+  <p>消息队列面试10题 · RocketMQ + Kafka 全考点</p>
+</footer>
+</body>
+</html>
