@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据结构与算法面试10题 — 2026 Java实习</title>
+<meta name="description" content="2026 Java实习面试算法高频10题：LRU缓存、二叉树遍历、快排、动态规划、滑动窗口。附标准答案+时间复杂度分析。">
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:800px;margin:0 auto;padding:20px;line-height:1.8;color:#333}
+h1{color:#1a73e8;border-bottom:3px solid #1a73e8;padding-bottom:10px}
+h2{color:#2c3e50;margin-top:30px;background:#f0f4ff;padding:10px 15px;border-radius:6px}
+.question{background:#fff3e0;padding:15px;border-radius:8px;margin:15px 0;border-left:4px solid #ff9800}
+.answer{background:#f5f5f5;padding:15px;border-radius:8px;margin:10px 0 20px;font-family:monospace;font-size:14px;overflow-x:auto}
+code{background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:13px}
+.donate{background:linear-gradient(135deg,#667eea,#764ba2);color:white;text-align:center;padding:30px;border-radius:12px;margin:40px 0}
+.donate h3{margin:0 0 15px;font-size:20px}
+.donate img{max-width:200px;border-radius:8px;background:white;padding:10px}
+.nav{margin:30px 0;padding:15px;background:#f9f9f9;border-radius:8px}
+.nav a{margin:0 10px;color:#1a73e8;text-decoration:none}
+</style>
+</head>
+<body>
+
+<h1>🧮 数据结构与算法 — 面试10题</h1>
+<p>算法是实习生面试的硬通货。以下10题覆盖最高频考点，每题含标准答案+时间复杂度分析+代码骨架。</p>
+
+<div class="nav">
+📚 <a href="https://Abyte-zym.github.io/java-career-blog/">博客首页</a> |
+☕ <a href="https://Abyte-zym.github.io/java-interview-quiz/">面试题库</a> |
+📝 <a href="https://Abyte-zym.github.io/java-resume-builder/">简历生成</a> |
+🎯 <a href="https://Abyte-zym.github.io/arsenal/">全部工具</a>
+</div>
+
+<h2>1. LRU缓存机制（频次：⭐⭐⭐⭐⭐）</h2>
+<div class="question">实现LRU(最近最少使用)缓存，支持get和put操作，O(1)时间复杂度。</div>
+<div class="answer">
+<pre>class LRUCache {
+    class Node { int key, val; Node prev, next; }
+    Map&lt;Integer, Node&gt; map = new HashMap<>();
+    Node head, tail; int capacity;
+    
+    void remove(Node n) { n.prev.next = n.next; n.next.prev = n.prev; }
+    void addToHead(Node n) { n.next = head.next; n.prev = head; head.next.prev = n; head.next = n; }
+    
+    int get(int key) {
+        if (!map.containsKey(key)) return -1;
+        Node n = map.get(key);
+        remove(n); addToHead(n);
+        return n.val;
+    }
+    
+    void put(int key, int val) {
+        if (map.containsKey(key)) { remove(map.get(key)); }
+        Node n = new Node(); n.key = key; n.val = val;
+        addToHead(n); map.put(key, n);
+        if (map.size() > capacity) {
+            Node last = tail.prev; remove(last); map.remove(last.key);
+        }
+    }
+}</pre>
+<p>关键：HashMap+双向链表。get时移到头部，put超容量时删尾部。</p>
+</div>
+
+<h2>2. 二叉树层序遍历（频次：⭐⭐⭐⭐⭐）</h2>
+<div class="question">给定二叉树，返回其层序遍历结果（逐层从左到右）。</div>
+<div class="answer">
+<pre>List&lt;List&lt;Integer&gt;&gt; levelOrder(TreeNode root) {
+    List&lt;List&lt;Integer&gt;&gt; res = new ArrayList<>();
+    if (root == null) return res;
+    Queue&lt;TreeNode&gt; q = new LinkedList<>();
+    q.offer(root);
+    while (!q.isEmpty()) {
+        int size = q.size();
+        List&lt;Integer&gt; level = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            TreeNode node = q.poll();
+            level.add(node.val);
+            if (node.left != null) q.offer(node.left);
+            if (node.right != null) q.offer(node.right);
+        }
+        res.add(level);
+    }
+    return res;
+}</pre>
+<p>BFS标准模板。每层size记录当前层节点数。时间O(n)，空间O(n)。</p>
+</div>
+
+<h2>3. 快排及其优化（频次：⭐⭐⭐⭐）</h2>
+<div class="question">手写快速排序，并说明如何避免最坏O(n²)。</div>
+<div class="answer">
+<pre>void quickSort(int[] arr, int l, int r) {
+    if (l >= r) return;
+    int pivot = partition(arr, l, r);
+    quickSort(arr, l, pivot - 1);
+    quickSort(arr, pivot + 1, r);
+}
+
+int partition(int[] arr, int l, int r) {
+    // 随机选pivot，避免最坏情况
+    int randIdx = l + new Random().nextInt(r - l + 1);
+    swap(arr, randIdx, r); // 移到最右
+    int pivot = arr[r], i = l - 1;
+    for (int j = l; j < r; j++)
+        if (arr[j] <= pivot) swap(arr, ++i, j);
+    swap(arr, i + 1, r);
+    return i + 1;
+}</pre>
+<p>平均O(n log n)。随机化pivot + 三数取中避免最坏。数据量小时切插入排序（<20个元素）。</p>
+</div>
+
+<h2>4. 最长无重复子串（频次：⭐⭐⭐⭐）</h2>
+<div class="question">给定字符串s，找出不含重复字符的最长子串长度。滑动窗口。</div>
+<div class="answer">
+<pre>int lengthOfLongestSubstring(String s) {
+    int[] lastIdx = new int[128]; // ASCII
+    Arrays.fill(lastIdx, -1);
+    int maxLen = 0, left = 0;
+    for (int right = 0; right < s.length(); right++) {
+        char c = s.charAt(right);
+        if (lastIdx[c] >= left) left = lastIdx[c] + 1;
+        lastIdx[c] = right;
+        maxLen = Math.max(maxLen, right - left + 1);
+    }
+    return maxLen;
+}</pre>
+<p>滑动窗口经典。left收缩条件是重复字符位置≥当前窗口左边界。时间O(n)。</p>
+</div>
+
+<h2>5. 两数之和 & 三数之和（频次：⭐⭐⭐⭐）</h2>
+<div class="question">两数之和用HashMap；三数之和用排序+双指针，去重是核心难点。</div>
+<div class="answer">
+<pre>// 两数之和 O(n)
+int[] twoSum(int[] nums, int target) {
+    Map&lt;Integer, Integer&gt; map = new HashMap<>();
+    for (int i = 0; i < nums.length; i++) {
+        int need = target - nums[i];
+        if (map.containsKey(need)) return new int[]{map.get(need), i};
+        map.put(nums[i], i);
+    }
+    return new int[]{};
+}
+
+// 三数之和 O(n²) 
+List&lt;List&lt;Integer&gt;&gt; threeSum(int[] nums) {
+    Arrays.sort(nums);
+    List&lt;List&lt;Integer&gt;&gt; res = new ArrayList<>();
+    for (int i = 0; i < nums.length - 2; i++) {
+        if (i > 0 && nums[i] == nums[i-1]) continue; // 去重
+        int l = i + 1, r = nums.length - 1;
+        while (l < r) {
+            int sum = nums[i] + nums[l] + nums[r];
+            if (sum == 0) {
+                res.add(List.of(nums[i], nums[l], nums[r]));
+                while (l < r && nums[l] == nums[l+1]) l++; // 去重
+                while (l < r && nums[r] == nums[r-1]) r--;
+                l++; r--;
+            } else if (sum < 0) l++; else r--;
+        }
+    }
+    return res;
+}</pre>
+</div>
+
+<h2>6. 反转链表（频次：⭐⭐⭐⭐）</h2>
+<div class="question">原地反转单链表。迭代和递归两种写法都要会。</div>
+<div class="answer">
+<pre>// 迭代 O(n) O(1)
+ListNode reverseList(ListNode head) {
+    ListNode prev = null, curr = head;
+    while (curr != null) {
+        ListNode next = curr.next;
+        curr.next = prev;
+        prev = curr; curr = next;
+    }
+    return prev;
+}
+
+// 递归 O(n) O(n)
+ListNode reverseRecursive(ListNode head) {
+    if (head == null || head.next == null) return head;
+    ListNode newHead = reverseRecursive(head.next);
+    head.next.next = head; // 4→5→4 变成 4←5
+    head.next = null;
+    return newHead;
+}</pre>
+</div>
+
+<h2>7. 合并K个有序链表（频次：⭐⭐⭐）</h2>
+<div class="question">N个有序链表合并为一个。优先队列解法 + 分治解法。</div>
+<div class="answer">
+<pre>// 优先队列 O(N log K)
+ListNode mergeKLists(ListNode[] lists) {
+    PriorityQueue&lt;ListNode&gt; pq = new PriorityQueue<>((a,b)->a.val-b.val);
+    for (ListNode node : lists) if (node != null) pq.offer(node);
+    ListNode dummy = new ListNode(0), tail = dummy;
+    while (!pq.isEmpty()) {
+        ListNode min = pq.poll();
+        tail.next = min; tail = min;
+        if (min.next != null) pq.offer(min.next);
+    }
+    return dummy.next;
+}</pre>
+<p>面试官追问：时间复杂度？→ N个节点、K个链表，每次poll O(log K)，总O(N log K)。</p>
+</div>
+
+<h2>8. 二叉树最大深度 & 判断平衡（频次：⭐⭐⭐）</h2>
+<div class="question">求二叉树最大深度；判断是否为平衡二叉树（左右子树高度差≤1）。</div>
+<div class="answer">
+<pre>// 最大深度
+int maxDepth(TreeNode root) {
+    return root == null ? 0 : Math.max(maxDepth(root.left), maxDepth(root.right)) + 1;
+}
+
+// 平衡二叉树 O(n) 自底向上
+boolean isBalanced(TreeNode root) {
+    return checkHeight(root) != -1;
+}
+int checkHeight(TreeNode node) {
+    if (node == null) return 0;
+    int left = checkHeight(node.left);
+    int right = checkHeight(node.right);
+    if (left == -1 || right == -1 || Math.abs(left-right) > 1) return -1;
+    return Math.max(left, right) + 1;
+}</pre>
+<p>-1标记法：既返回高度又传递不平衡信号，避免重复计算。</p>
+</div>
+
+<h2>9. 最长回文子串（频次：⭐⭐⭐）</h2>
+<div class="question">中心扩展法 O(n²)。了解Manacher O(n)即可。</div>
+<div class="answer">
+<pre>String longestPalindrome(String s) {
+    if (s == null || s.length()==0) return "";
+    int start=0, maxLen=0;
+    for (int i=0; i<s.length(); i++) {
+        int l1 = expand(s,i,i);   // 奇数
+        int l2 = expand(s,i,i+1); // 偶数
+        int len = Math.max(l1,l2);
+        if (len > maxLen) { maxLen=len; start=i-(len-1)/2; }
+    }
+    return s.substring(start, start+maxLen);
+}
+int expand(String s, int l, int r) {
+    while (l>=0 && r<s.length() && s.charAt(l)==s.charAt(r)) { l--; r++; }
+    return r-l-1;
+}</pre>
+</div>
+
+<h2>10. 动态规划 — 背包问题（频次：⭐⭐⭐）</h2>
+<div class="question">0-1背包：容量W，n个物品(重量w[i],价值v[i])，最大价值。二维→一维优化。</div>
+<div class="answer">
+<pre>// 二维 O(n*W)
+int knapsack(int W, int[] w, int[] v) {
+    int n = w.length;
+    int[][] dp = new int[n+1][W+1];
+    for (int i=1; i<=n; i++) {
+        for (int j=0; j<=W; j++) {
+            dp[i][j] = dp[i-1][j];
+            if (j >= w[i-1])
+                dp[i][j] = Math.max(dp[i][j], dp[i-1][j-w[i-1]] + v[i-1]);
+        }
+    }
+    return dp[n][W];
+}
+
+// 一维优化 O(n*W) O(W)
+int knapsack1D(int W, int[] w, int[] v) {
+    int[] dp = new int[W+1];
+    for (int i=0; i<w.length; i++)
+        for (int j=W; j>=w[i]; j--)  // 倒序！防止重复使用
+            dp[j] = Math.max(dp[j], dp[j-w[i]] + v[i]);
+    return dp[W];
+}</pre>
+<p>一维倒序递推是面试难点——正序会变成完全背包（物品无限用）。</p>
+</div>
+
+<div class="donate">
+<h3>☕ 这篇文章帮到你了吗？</h3>
+<p>这些免费面试资料由一个人熬夜整理。如果对你有帮助，请我喝杯咖啡吧~</p>
+<p>扫码赞赏，金额随意 🙏</p>
+</div>
+
+<div class="nav" style="text-align:center">
+🎯 <a href="https://Abyte-zym.github.io/arsenal/">← 返回弹药库（全站导航）</a>
+</div>
+
+</body>
+</html>
