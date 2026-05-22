@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>☕ Java面试每日一签 · 2026</title>
+<meta name="description" content="每天一张Java面试知识卡片，分享到朋友圈/小红书/群聊。精美排版，一键保存截图。免费工具+赞赏支持。">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a1a;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;text-align:center;padding:20px}
+h1{color:#ff6b6b;margin:20px 0;font-size:1.5em}
+.sub{color:#999;margin-bottom:20px;font-size:0.9em}
+
+/* CARD */
+.card-container{display:flex;justify-content:center;margin:20px 0}
+.card{width:380px;min-height:500px;border-radius:20px;padding:30px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;position:relative;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,0.3)}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,var(--c1),var(--c2));opacity:0.15}
+.card-day{font-size:0.8em;color:var(--c1);text-transform:uppercase;letter-spacing:3px;margin-bottom:10px}
+.card-emoji{font-size:3em;margin:15px 0}
+.card-question{font-size:1.1em;font-weight:bold;color:#fff;margin:15px 0;line-height:1.6}
+.card-answer{font-size:0.85em;color:#ccc;line-height:1.6;margin:10px 0;background:rgba(255,255,255,0.05);padding:12px;border-radius:10px;width:100%}
+.card-footer{margin-top:auto;font-size:0.7em;color:rgba(255,255,255,0.5);padding-top:15px}
+.card-footer a{color:var(--c1);text-decoration:none}
+
+.controls{margin:20px 0}
+.controls button{background:#ff6b6b;color:#fff;border:none;padding:12px 25px;border-radius:25px;font-size:0.95em;cursor:pointer;margin:5px;transition:0.2s}
+.controls button:hover{transform:translateY(-2px)}
+.controls .secondary{background:#1a1a2e;border:1px solid #333}
+
+.themes{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:15px 0}
+.theme-dot{width:30px;height:30px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:0.2s}
+.theme-dot.active{border-color:#ff6b6b;transform:scale(1.2)}
+
+.appreciation{color:#999;font-size:0.8em;margin-top:30px;padding:15px;border-top:1px solid #1f1f3f}
+.appreciation span{color:#ff6b6b}
+</style>
+</head>
+<body>
+
+<h1>☕ Java面试每日一签</h1>
+<p class="sub">每天一张精美知识卡片 · 分享到朋友圈/群聊 · 一起进步</p>
+
+<div class="themes">
+<div class="theme-dot active" style="background:linear-gradient(135deg,#ff6b6b,#ee5a24)" onclick="setTheme(0)" title="经典红"></div>
+<div class="theme-dot" style="background:linear-gradient(135deg,#6c5ce7,#a29bfe)" onclick="setTheme(1)" title="优雅紫"></div>
+<div class="theme-dot" style="background:linear-gradient(135deg,#00b894,#55efc4)" onclick="setTheme(2)" title="清新绿"></div>
+<div class="theme-dot" style="background:linear-gradient(135deg,#0984e3,#74b9ff)" onclick="setTheme(3)" title="科技蓝"></div>
+<div class="theme-dot" style="background:linear-gradient(135deg,#fdcb6e,#f39c12)" onclick="setTheme(4)" title="阳光金"></div>
+</div>
+
+<div class="card-container">
+<div class="card" id="card">
+<div class="card-day" id="cardDay">DAY 142 · 2026.05.22</div>
+<div class="card-emoji" id="cardEmoji">🔑</div>
+<div class="card-question" id="cardQuestion">HashMap的put流程是怎样的？</div>
+<div class="card-answer" id="cardAnswer">1. 计算key.hashCode()，高16位异或低16位<br>2. (n-1)&hash定位数组下标<br>3. 位置为空→直接放；有值→链表尾插<br>4. 链表>8且数组>64→转红黑树<br>5. size>threshold→扩容2倍</div>
+<div class="card-footer">
+每日一签 · <a href="https://Abyte-zym.github.io/java-career-blog">Java面试百科全书</a>
+</div>
+</div>
+</div>
+
+<div class="controls">
+<button onclick="nextCard()">🔄 换一题</button>
+<button class="secondary" onclick="shareCard()">📤 分享这张卡片</button>
+<button class="secondary" onclick="saveCard()">💾 保存截图</button>
+</div>
+
+<div class="appreciation">
+<p>每天更新 · 全站免费 · <span>微信赞赏码</span>支持 ☕</p>
+</div>
+
+<script>
+const themes = [
+    {c1:'#ff6b6b',c2:'#ee5a24',bg1:'#2d1a1a',bg2:'#1a0f0f'},
+    {c1:'#6c5ce7',c2:'#a29bfe',bg1:'#1a1a2d',bg2:'#0f0f1a'},
+    {c1:'#00b894',c2:'#55efc4',bg1:'#0f1a1a',bg2:'#0a0f0f'},
+    {c1:'#0984e3',c2:'#74b9ff',bg1:'#0f1a2d',bg2:'#0a0f1a'},
+    {c1:'#fdcb6e',c2:'#f39c12',bg1:'#2d2a1a',bg2:'#1a1a0f'},
+];
+let themeIdx = 0;
+
+const cards = [
+    {e:'🔑',q:'HashMap的put流程是怎样的？',a:'1. 计算hash(高16位异或低16位)<br>2. (n-1)&hash定位下标<br>3. 空→直接放；有值→尾插<br>4. 链表>8且数组>64→红黑树<br>5. size>threshold→2倍扩容'},
+    {e:'🧵',q:'synchronized锁升级过程？',a:'偏向锁(记录线程ID)→<br>轻量级锁(CAS自旋)→<br>重量级锁(OS互斥量，阻塞)<br>JVM根据竞争烈度自动升级'},
+    {e:'🗑️',q:'JVM垃圾回收算法有哪些？',a:'标记-清除(碎片化)<br>标记-复制(浪费一半空间)<br>标记-整理(耗时但无碎片)<br>分代收集(新生代复制+老年代整理)'},
+    {e:'🔥',q:'缓存穿透/击穿/雪崩区别？',a:'穿透：查不存在的数据→布隆过滤器<br>击穿：热点key过期→互斥锁<br>雪崩：大量key同时过期→随机TTL'},
+    {e:'🔒',q:'Redis分布式锁怎么实现？',a:'SET key value NX EX 30<br>Redisson WatchDog自动续期<br>解锁：Lua脚本判断value再DEL'},
+    {e:'📊',q:'MySQL索引失效的常见场景？',a:'①LIKE以%开头 ②OR非索引 ③函数操作 ④隐式转换 ⑤!= ⑥最左前缀不满足 ⑦范围查询右边失效'},
+    {e:'⚡',q:'@Transactional失效的5种场景？',a:'①非public方法 ②同类自调用 ③异常被catch ④rollbackFor不对 ⑤final类/方法'},
+    {e:'🤖',q:'AI Agent的核心公式？',a:'Agent = LLM + Planning + Memory + Tools<br>LLM是大脑，不执行工具<br>伪代码loop：plan→decide→act→observe'},
+    {e:'🌐',q:'Spring Cloud Alibaba核心组件？',a:'Nacos：注册+配置<br>Sentinel：限流熔断<br>Gateway：路由鉴权<br>Seata：分布式事务'},
+    {e:'💾',q:'RocketMQ消息不丢失怎么做？',a:'生产者：同步刷盘+发送确认<br>Broker：主从同步+持久化<br>消费者：手动ACK+消费完再确认'},
+    {e:'🏗️',q:'Spring Bean生命周期？',a:'实例化→属性注入→Aware接口→<br>BeanPostProcessor前置→init→<br>BPP后置→使用→destroy'},
+    {e:'🔄',q:'线程池参数及拒绝策略？',a:'corePoolSize→queue→<br>maxPoolSize→RejectedExecution<br>拒绝策略：Abort/CallerRuns/Discard'},
+];
+
+let cardIdx = 0;
+
+function applyTheme(i) {
+    themeIdx = i;
+    const t = themes[i];
+    const card = document.getElementById('card');
+    card.style.setProperty('--c1', t.c1);
+    card.style.setProperty('--c2', t.c2);
+    card.style.background = `linear-gradient(135deg, ${t.bg1} 0%, ${t.bg2} 100%)`;
+    
+    document.querySelectorAll('.theme-dot').forEach((d,idx) => d.classList.toggle('active', idx===i));
+    document.getElementById('cardFooter').querySelector('a').style.color = t.c1;
+}
+
+function setTheme(i) { applyTheme(i); }
+applyTheme(0);
+
+function nextCard() {
+    cardIdx = (cardIdx + 1) % cards.length;
+    renderCard();
+}
+
+function renderCard() {
+    const c = cards[cardIdx];
+    document.getElementById('cardEmoji').textContent = c.e;
+    document.getElementById('cardQuestion').textContent = c.q;
+    document.getElementById('cardAnswer').innerHTML = c.a;
+    document.getElementById('cardDay').textContent = `CARD #${cardIdx+1}/${cards.length} · 2026`;
+}
+
+function shareCard() {
+    const c = cards[cardIdx];
+    const text = `☕ Java面试每日一签\n${c.e} ${c.q}\n\n答案：\n${c.a.replace(/<br>/g,'\n')}\n\n🔗 Abyte-zym.github.io/java-career-blog`;
+    navigator.clipboard?.writeText(text).then(() => alert('卡片内容已复制！去朋友圈/微信群粘贴分享'));
+}
+
+function saveCard() {
+    alert('📸 截屏保存这张卡片！\nCtrl+Shift+S (Windows)\n或 Cmd+Shift+4 (Mac)');
+}
+
+renderCard();
+</script>
+
+</body>
+</html>
