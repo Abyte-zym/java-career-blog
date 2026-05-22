@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JVM调优实战面试10题 | 2026 Java实习面试</title>
+<meta name="description" content="2026最新JVM调优面试题：内存泄漏排查、GC日志分析、Arthas诊断、堆Dump分析、CPU飙升定位。Java实习面试必备。">
+<meta name="keywords" content="JVM调优,内存泄漏,GC日志,Arthas,堆Dump,Java面试题,2026">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;color:#1a1a2e;line-height:1.8}
+.container{max-width:800px;margin:0 auto;padding:20px}
+h1{font-size:1.8em;color:#0f172a;margin:20px 0 10px}
+h2{font-size:1.2em;color:#2563eb;margin:30px 0 10px;border-left:4px solid #2563eb;padding-left:12px}
+.question{background:#fff;border-radius:12px;padding:20px;margin:15px 0;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.q{font-weight:700;color:#0f172a;margin-bottom:8px}
+.a{color:#334155;font-size:.95em}
+.a code{background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:.9em}
+.a pre{background:#1e293b;color:#e2e8f0;padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0}
+.donate{text-align:center;margin:40px 0;padding:30px;background:linear-gradient(135deg,#fef3c7,#fef9c3);border-radius:16px}
+.donate img{width:200px;border-radius:12px}
+.donate p{color:#92400e;margin:10px 0}
+.nav{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0;padding:16px;background:#fff;border-radius:12px}
+.nav a{background:#eff6ff;color:#2563eb;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:.85em}
+footer{text-align:center;padding:20px;color:#94a3b8;font-size:.85em}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🔥 JVM调优实战面试10题</h1>
+<p style="color:#64748b;margin-bottom:20px">2026年最新 · Java实习/应届面试 · 含排查命令和真实案例</p>
+
+<div class="nav">
+<a href="./">🏠 博客首页</a>
+<a href="https://Abyte-zym.github.io/java-interview-quiz/">☕ 面试题库</a>
+<a href="https://Abyte-zym.github.io/java-interview-simulator/">🎯 模拟器</a>
+<a href="https://Abyte-zym.github.io/java-resume-builder/">📝 简历生成</a>
+<a href="https://Abyte-zym.github.io/resume-diagnosis/">🔍 简历诊断</a>
+<a href="https://Abyte-zym.github.io/arsenal/">🎯 弹药库</a>
+</div>
+
+<div class="question"><div class="q">Q1: 线上Java应用CPU飙升到100%，你怎么排查？</div><div class="a">
+<strong>三步定位法：</strong><br>
+① <code>top -Hp PID</code> — 找到CPU最高的线程ID<br>
+② <code>printf '%x\n' TID</code> — 转16进制<br>
+③ <code>jstack PID | grep 0xTID -A 30</code> — 看这个线程在干什么<br><br>
+<strong>进阶：</strong>用 <code>arthas</code> 的 <code>thread -n 3</code> 直接看Top3繁忙线程，或 <code>dashboard</code> 实时监控。<br>
+<strong>常见原因：</strong>死循环、频繁GC、正则回溯、HashMap死链（JDK7）。
+</div></div>
+
+<div class="question"><div class="q">Q2: 内存泄漏怎么排查？</div><div class="a">
+<strong>标准流程：</strong><br>
+① <code>jmap -histo:live PID | head -20</code> — 看哪些对象实例最多<br>
+② <code>jmap -dump:live,format=b,file=heap.hprof PID</code> — dump堆快照<br>
+③ 用 MAT / VisualVM 打开hprof，分析 Dominator Tree（支配树）<br><br>
+<strong>Arthas法：</strong> <code>heapdump --live /tmp/dump.hprof</code> 然后下载分析。<br>
+<strong>面试加分：</strong>提到 <code>ThreadLocal未清理</code>、<code>静态集合持续增长</code>、<code>连接池未关闭</code> 是Top3泄漏源。
+</div></div>
+
+<div class="question"><div class="q">Q3: GC频繁怎么办？如何看GC日志？</div><div class="a">
+<strong>开启GC日志：</strong>
+<pre>-Xlog:gc*:file=/var/log/gc.log:time,uptime,level,tags</pre>
+<strong>分析工具：</strong> GCeasy（在线）、GCViewer<br>
+<strong>GC频繁原因+解决：</strong><br>
+• Young GC频繁 → 年轻代太小，调大 <code>-Xmn</code><br>
+• Full GC频繁 → 老年代满、元空间不足、System.gc() 调用<br>
+• 解决：调大堆、调GC算法（G1/ZGC）、查泄漏<br>
+<strong>G1关键参数：</strong> <code>-XX:MaxGCPauseMillis=200</code> 设置目标停顿
+</div></div>
+
+<div class="question"><div class="q">Q4: OOM有哪些类型？分别怎么解决？</div><div class="a">
+| 类型 | 报错信息 | 常见原因 | 解决 |
+|------|---------|---------|------|
+| Java堆 | Java heap space | 大对象/内存泄漏 | -Xmx调大/排查泄漏 |
+| 元空间 | Metaspace | 动态类加载过多 | -XX:MaxMetaspaceSize |
+| 直接内存 | Direct buffer | NIO未释放 | -XX:MaxDirectMemorySize |
+| 栈溢出 | StackOverflow | 递归过深 | 检查递归终止条件 |
+| GC开销 | GC overhead limit | GC耗时>98% | 排查内存泄漏 |
+</div></div>
+
+<div class="question"><div class="q">Q5: 说一下G1和ZGC的区别？什么时候选ZGC？</div><div class="a">
+| 特性 | G1 | ZGC |
+|------|----|-----|
+| 堆大小 | 4-64GB | 百GB~TB级 |
+| 停顿时间 | 200ms内 | <1ms（亚毫秒） |
+| 内存开销 | 10-20% | 使用染色指针 |
+| JDK版本 | JDK7+ | JDK15+（生产） |
+| 适用场景 | 通用 | 超低延迟、超大堆 |
+
+<strong>选ZGC：</strong> 要求RT<1ms的金融/交易系统，或堆>=32GB时G1停顿不可接受。<br>
+<strong>ZGC核心：</strong> 染色指针（Colored Pointer）+ 读屏障（Load Barrier），并发执行几乎所有GC阶段。
+</div></div>
+
+<div class="question"><div class="q">Q6: 怎么用Arthas诊断线上问题？</div><div class="a">
+<strong>最常用的5个命令：</strong><br>
+① <code>dashboard</code> — 实时看线程/内存/GC<br>
+② <code>thread -b</code> — 找死锁（或 <code>thread -n 3</code> 看最忙线程）<br>
+③ <code>jad com.xx.Service</code> — 反编译线上代码（确认版本）<br>
+④ <code>watch com.xx.Service method '{params,returnObj,throwExp}' -x 3</code> — 观测方法入参/返回值/异常<br>
+⑤ <code>trace com.xx.Service method -n 5</code> — 追踪方法调用链和耗时<br>
+<strong>面试亮点：</strong> 提到"不重启应用就能诊断"是Arthas最大价值。
+</div></div>
+
+<div class="question"><div class="q">Q7: 堆Dump分析，MAT里面看什么？</div><div class="a">
+<strong>MAT分析步骤：</strong><br>
+① 打开 Leak Suspects Report — 自动识别疑似泄漏<br>
+② 看 Dominator Tree — 按占用内存排序，找到最大的对象<br>
+③ 右键 → Path to GC Roots → 看谁在引用它<br>
+④ Histogram — 统计类实例数和总大小<br><br>
+<strong>典型泄漏特征：</strong><br>
+• <code>HashMap$Node</code> 数量异常多 → 静态Map未清理<br>
+• <code>ThreadLocal</code> 关联的Value存在 → Web应用中线程复用导致<br>
+• <code>Connection</code> 对象未关闭 → 连接池泄漏
+</div></div>
+
+<div class="question"><div class="q">Q8: 线上服务响应变慢，不是CPU也不是内存问题，怎么排查？</div><div class="a">
+<strong>排除CPU/内存后，重点查：</strong><br>
+① <code>netstat -antp | wc -l</code> — 连接数是否过多<br>
+② <code>iostat -x 1</code> — 磁盘IO是否瓶颈<br>
+③ <code>strace -p PID -c</code> — 系统调用耗时分布<br>
+④ Arthas <code>trace</code> 命令追踪每个方法耗时<br>
+⑤ 查看数据库慢查询日志（可能DB端出问题）<br>
+⑥ 检查下游服务超时（RocketMQ/Kafka消费延迟）<br>
+<strong>面试重点：</strong> 展现"全链路排查思维"，不只盯着Java进程。
+</div></div>
+
+<div class="question"><div class="q">Q9: 生产环境怎么优雅地做JVM参数调优？</div><div class="a">
+<strong>标准流程：</strong><br>
+① <strong>基线：</strong> 先用默认参数跑，记录GC日志+堆使用率<br>
+② <strong>压测：</strong> 模拟真实流量，观察GC频率和停顿<br>
+③ <strong>调参：</strong> 根据GC日志逐步调整 <code>-Xms=Xmx</code>、<code>-Xmn</code>、GC算法<br>
+④ <strong>灰度：</strong> 先在1-2台机器上验证，不要全量改<br>
+⑤ <strong>监控：</strong> 上线后持续观察Prometheus + Grafana面板<br><br>
+<strong>推荐生产参数模板：</strong>
+<pre>-Xms4g -Xmx4g -Xmn1.5g
+-XX:+UseG1GC -XX:MaxGCPauseMillis=200
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:HeapDumpPath=/var/log/heap.hprof</pre>
+</div></div>
+
+<div class="question"><div class="q">Q10: 你做过哪些JVM调优？踩过什么坑？</div><div class="a">
+<strong>面试话术（结合秒杀项目）：</strong><br>
+"秒杀项目压测时发现QPS到3000后频繁Full GC，排查发现：<br>
+① 秒杀返回结果直接用 <code>new String(byte[])</code> 创建了大量临时字符串<br>
+② 改用StringBuilder拼接后，Young GC频率从每5秒降到每30秒<br>
+③ 另外发现Redis的Lettuce连接池没限制大小，改后堆使用率从85%降到60%。<br>
+<strong>关键经验：</strong> 小对象频繁创建是Young GC的元凶，先看GC日志再动参数，别上来就调堆大小。"
+</div></div>
+
+<div class="donate">
+<p>☕ 如果这些内容帮到了你</p>
+<img src="https://raw.githubusercontent.com/Abyte-zym/jarvis-backup/main/mm_facetoface_collect_qrcode_1779427130944.png" alt="赞赏码">
+<p style="font-size:.85em">微信扫码 · 随缘赞赏</p>
+</div>
+
+<div class="nav">
+<a href="./">🏠 返回首页</a>
+<a href="https://Abyte-zym.github.io/arsenal/">🎯 全部工具入口</a>
+</div>
+</div>
+<footer>© 2026 Java面试弹药库 · 免费开源 · 随缘赞赏</footer>
+</body>
+</html>
