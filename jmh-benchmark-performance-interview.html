@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JMH基准测试+性能调优面试10题 | Java实习面试通关</title>
+<meta name="description" content="JMH基准测试注解、死代码消除陷阱、JVM预热、StringBuilder vs StringBuffer实测、Arthas火焰图、接口性能优化——Java后端必问10题。">
+<meta name="keywords" content="JMH面试题,基准测试,JVM性能调优,Arthas,火焰图,StringBuilder,Java性能优化,2026面试">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.8;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:1.8em;color:#38bdf8;margin:20px 0 10px;text-align:center}
+.meta{text-align:center;color:#94a3b8;margin-bottom:30px;font-size:0.9em}
+.question{background:#1e293b;border-radius:12px;padding:24px;margin:20px 0;border-left:4px solid #38bdf8}
+.question h3{color:#facc15;margin-bottom:12px;font-size:1.1em}
+.answer{background:#0f172a;border-radius:8px;padding:16px;margin-top:12px;border:1px solid #334155}
+.answer strong{color:#4ade80}
+code{background:#1e293b;padding:2px 6px;border-radius:4px;font-size:0.9em;color:#f472b6}
+pre{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:16px;overflow-x:auto;margin:10px 0}
+.tip{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:12px;margin:10px 0;font-size:0.9em}
+.donate{text-align:center;margin:40px 0;padding:24px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;border:2px solid #facc15}
+.donate p{color:#facc15;font-size:1.2em;margin-bottom:12px}
+.donate img{width:200px;border-radius:12px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:30px 0}
+.nav a{background:#1e293b;color:#94a3b8;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:0.85em;transition:all .2s}
+.nav a:hover{background:#38bdf8;color:#0f172a}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>⚡ JMH基准测试+性能调优面试10题</h1>
+<p class="meta">Java后端实习生面试 · 2026年5月 · 每题含标准答案</p>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../java-skill-radar/">📊 雷达</a>
+<a href="../interview-quiz/">☕ 题库</a>
+</div>
+
+<div class="question">
+<h3>Q1：为什么要用JMH？不用System.currentTimeMillis()测性能？</h3>
+<div class="answer">
+<strong>JMH（Java Microbenchmark Harness）是OpenJDK官方基准测试工具。</strong><br><br>
+<strong>直接用System.currentTimeMillis()的致命缺陷：</strong><br>
+1. <strong>JVM预热：</strong>JIT编译器在方法执行一定次数后才触发编译。第一次跑100ms，跑1000次后可能只有10ms。手写测试拿到的可能是预热前的慢数据。<br>
+2. <strong>死代码消除（Dead Code Elimination）：</strong>JIT检测到计算结果没被使用，直接删掉整段代码。你测的不是"执行时间"而是"0时间"。<br>
+3. <strong>循环展开/向量化：</strong>JIT可能把你手写的循环优化掉。<br>
+4. <strong>GC干扰：</strong>测试途中Full GC暂停50ms，你的System.currentTimeMillis()全算进去了。<br><br>
+<strong>JMH做了什么：</strong>自动预热(fork=3, warmup=5)、Blackhole防止死代码消除、隔离GC影响、多线程安全测量。
+</div>
+</div>
+
+<div class="question">
+<h3>Q2：JMH有哪些核心注解？各干什么？</h3>
+<div class="answer">
+<strong>6个核心注解：</strong><br>
+<pre>@BenchmarkMode(Mode.AverageTime)  // 测量平均时间
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
+@Warmup(iterations = 5, time = 1)  // 预热5轮，每轮1秒
+@Measurement(iterations = 10, time = 1)  // 正式测量10轮
+@Fork(3)  // Fork 3个独立JVM进程（避免JVM优化跨测试传播）
+@State(Scope.Benchmark)  // 共享状态</pre>
+<strong>Mode枚举：</strong>Throughput（吞吐量）、AverageTime（平均时间）、SampleTime（采样分布）、SingleShotTime（冷启动）、All（全部测）。
+</div>
+</div>
+
+<div class="question">
+<h3>Q3：StringBuilder真的比String快吗？用JMH怎么验证？</h3>
+<div class="answer">
+<strong>测出来才敢说：</strong>
+<pre>@Benchmark
+public String stringConcat() {
+    String s = "";
+    for (int i = 0; i < 100; i++) s += i;
+    return s;  // 每次+=都new String，100次=100个对象
+}
+
+@Benchmark
+public String stringBuilder() {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < 100; i++) sb.append(i);
+    return sb.toString();  // 只产生1个对象
+}</pre>
+<strong>实测结果（JMH）：</strong>StringBuilder比String.concat快约<strong>200-400倍</strong>。String.concat每次循环创建新String→100次=100个对象→GC压力大。StringBuilder内部是可扩容char数组，不产生中间对象。<br><br>
+<strong>但：</strong>Javac会对简单String拼接做编译优化，单行String a="a"+"b"+"c"会被优化成StringBuilder。复杂场景（循环内拼接）才需要手写StringBuilder。
+</div>
+</div>
+
+<div class="question">
+<h3>Q4：怎么排查线上CPU突然飙到100%？</h3>
+<div class="answer">
+<strong>五步排查法：</strong><br>
+1. <code>top -Hp PID</code> — 找到CPU最高的线程TID<br>
+2. <code>printf '%x\n' TID</code> — TID转十六进制<br>
+3. <code>jstack PID | grep 十六进制 -A 30</code> — 定位到具体代码行<br>
+4. <strong>Arthas火焰图：</strong><code>profiler start --duration 60</code> 生成火焰图，一眼看出CPU热点<br>
+5. <strong>常见原因：</strong>死循环/正则回溯/频繁Full GC/JSON序列化大对象/数据库慢查询阻塞线程池<br><br>
+<strong>面试时提Arthas直接加分</strong>——比只说jstack/jmap高级。
+</div>
+</div>
+
+<div class="question">
+<h3>Q5：接口响应从200ms突然变成2s，怎么定位？</h3>
+<div class="answer">
+<strong>分层排查，从外到内：</strong><br>
+1. <strong>网络层：</strong><code>ping/curl -w "@curl-format.txt"</code> 排除网络延迟<br>
+2. <strong>Nginx层：</strong>看access.log的request_time vs upstream_time，判断是Nginx慢还是后端慢<br>
+3. <strong>应用层：</strong><strong>Arthas trace</strong> <code>trace com.xx.Controller methodName</code> 打印每个方法耗时，秒级定位<br>
+4. <strong>数据库层：</strong>慢查询日志 → EXPLAIN → 缺失索引？锁等待？<br>
+5. <strong>缓存层：</strong>Redis慢了？<code>redis-cli --latency</code> 看延迟。key过期导致缓存击穿？<br>
+6. <strong>JVM层：</strong><code>jstat -gcutil PID 1000</code> 看GC频率<br><br>
+<strong>Arthas trace是最强武器</strong>——一条命令看出整条调用链上每个方法的耗时。
+</div>
+</div>
+
+<div class="question">
+<h3>Q6：full gc过于频繁怎么处理？</h3>
+<div class="answer">
+<strong>三步走：</strong><br>
+1. <strong>先看现象：</strong><code>jstat -gcutil PID 1000</code> — FGC/YGC次数、各代内存使用率<br>
+2. <strong>找原因：</strong><code>jmap -histo:live PID | head -20</code> — 哪个类实例最多？可能有内存泄漏<br>
+3. <strong>解决方案：</strong><br>
+   - 代码泄漏：把static Map改成WeakHashMap<br>
+   - 堆太小：-Xmx调大<br>
+   - 大量短命对象：调大Young区<br>
+   - MetaSpace满：-XX:MaxMetaspaceSize调大<br>
+   - ThreadLocal没remove：改代码<br><br>
+<strong>面试必杀技：</strong>说"我会先看jstat确认是Young GC频繁还是Full GC频繁，两者原因不同。Young GC频繁→调大Eden区；Full GC频繁→dump堆分析"。
+</div>
+</div>
+
+<div class="question">
+<h3>Q7：Arthas用过吗？怎么用的？</h3>
+<div class="answer">
+<strong>生产环境四大场景：</strong><br>
+1. <code>dashboard</code> — 实时看线程、内存、GC，类似top但针对JVM<br>
+2. <code>trace com.xx.Service method</code> — 打印方法调用链每个节点耗时，比日志高效10倍<br>
+3. <code>watch com.xx.Service method '{params, returnObj, throwExp}'</code> — 看方法入参出参，不重启不改代码<br>
+4. <code>profiler start --duration 60</code> — 生成CPU火焰图，一眼看出哪个方法吃CPU<br><br>
+<strong>面试官追问"用过吗"：</strong>答"用过，Arthas是阿里开源的Java诊断工具，trace命令在生产上帮我快速定位过接口慢的问题，不用加日志不用重启——监控工具和诊断工具的区别"。
+</div>
+</div>
+
+<div class="question">
+<h3>Q8：怎么用JMH验证@synchronized和ReentrantLock的性能差异？</h3>
+<div class="answer">
+<strong>设计对比基准测试：</strong>
+<pre>@Benchmark
+@Group("sync")
+public void synchronizedMethod() {
+    synchronized (lock) { counter++; }
+}
+
+@Benchmark
+@Group("lock")
+public void lockMethod() {
+    lock.lock();
+    try { counter++; } finally { lock.unlock(); }
+}</pre>
+<strong>结论（JDK 6+）：</strong>synchronized经过锁升级（偏向→轻量→重量）后，和ReentrantLock性能基本持平。但ReentrantLock提供：tryLock(超时)、公平锁、Condition多条件等待、可中断——这些synchronized做不到。<br><br>
+<strong>选型：</strong>简单场景用synchronized（代码简洁），需要高级特性用ReentrantLock。
+</div>
+</div>
+
+<div class="question">
+<h3>Q9：Spring Boot启动慢怎么排查和优化？</h3>
+<div class="answer">
+<strong>排查：</strong><code>java -jar app.jar --debug</code> 打印自动配置报告，看哪些AutoConfiguration被加载了。<br><br>
+<strong>六大优化手段：</strong><br>
+1. <strong>排除不需要的自动配置：</strong><code>@SpringBootApplication(exclude={DataSourceAutoConfiguration.class})</code><br>
+2. <strong>延迟初始化：</strong><code>spring.main.lazy-initialization=true</code>（Bean首次使用时才创建）<br>
+3. <strong>减少组件扫描范围：</strong><code>@ComponentScan("com.xx.core")</code><br>
+4. <strong>Spring Boot 3.x AOT编译：</strong>提前编译减少启动时间<br>
+5. <strong>JVM参数：</strong><code>-XX:+TieredCompilation -XX:TieredStopAtLevel=1</code> 关闭C2编译，启动快<br>
+6. <strong>升级到Spring Boot 3.4+：</strong>支持CDS(Class Data Sharing)<br><br>
+<strong>Spring Boot 3.x + Virtual Threads启动可以秒级。</strong>
+</div>
+</div>
+
+<div class="question">
+<h3>Q10：线上出现内存泄漏，怎么在不重启的情况下止血？</h3>
+<div class="answer">
+<strong>紧急止损三步：</strong><br>
+1. <strong>限流保护：</strong>在Nginx/Gateway层对该接口限流，防止更多请求进来触发泄漏<br>
+2. <strong>重启前分析：</strong><code>jmap -dump:live,file=heap.hprof PID</code> 保留现场，然后重启<br>
+3. <strong>离线分析dump：</strong>用MAT/JProfiler打开dump，看Dominator Tree——哪个对象占用最多内存→追溯GC Root→定位泄漏代码<br><br>
+<strong>常见泄漏源：</strong><br>
+- ThreadLocal没remove（线程池复用线程，ThreadLocal值一直存在）<br>
+- static Map不断put不remove<br>
+- 打开流没close（FileInputStream/Socket）<br>
+- 监听器/回调注册后没注销<br>
+- 数据库连接池泄漏（没归还）<br><br>
+<strong>面试必背：</strong>"先限流止损→dump现场→重启恢复→MAT分析根因。绝对不能一直重启——每次重启dump就丢了，永远找不到原因。"
+</div>
+</div>
+
+<div class="donate">
+<p>☕ 这篇文章帮到你了？</p>
+<p style="color:#94a3b8;font-size:0.9em">请作者喝杯咖啡，支持持续更新更多面试干货</p>
+<img src="../mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏码">
+<p style="font-size:0.8em;color:#64748b;margin-top:8px">微信扫码赞赏</p>
+</div>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部65篇文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../java-skill-radar/">📊 技能雷达</a>
+<a href="../shop/">🛒 装备商店</a>
+</div>
+
+</div>
+</body>
+</html>
