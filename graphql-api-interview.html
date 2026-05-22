@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GraphQL API面试10题 | Java实习面试通关</title>
+<meta name="description" content="GraphQL vs REST、N+1查询解决(DataLoader)、Schema设计、Subscription实时推送、Spring Boot集成graphql-java——2026后端面试新增考点，10题标准答案直接背。">
+<meta name="keywords" content="GraphQL面试题,GraphQL vs REST,N+1问题,DataLoader,Schema设计,Subscription,graphql-java,Spring Boot GraphQL">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.8;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:1.8em;color:#38bdf8;margin:20px 0 10px;text-align:center}
+.meta{text-align:center;color:#94a3b8;margin-bottom:30px;font-size:0.9em}
+.question{background:#1e293b;border-radius:12px;padding:24px;margin:20px 0;border-left:4px solid #38bdf8}
+.question h3{color:#facc15;margin-bottom:12px;font-size:1.1em}
+.answer{background:#0f172a;border-radius:8px;padding:16px;margin-top:12px;border:1px solid #334155}
+.answer strong{color:#4ade80}
+code{background:#1e293b;padding:2px 6px;border-radius:4px;font-size:0.9em;color:#f472b6}
+pre{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:16px;overflow-x:auto;margin:10px 0}
+.tip{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:12px;margin:10px 0;font-size:0.9em}
+.donate{text-align:center;margin:40px 0;padding:24px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;border:2px solid #facc15}
+.donate p{color:#facc15;font-size:1.2em;margin-bottom:12px}
+.donate img{width:200px;border-radius:12px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:30px 0}
+.nav a{background:#1e293b;color:#94a3b8;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:0.85em;transition:all .2s}
+.nav a:hover{background:#38bdf8;color:#0f172a}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🔗 GraphQL API面试10题</h1>
+<p class="meta">Java后端实习生面试 · 2026年5月 · 新增高频考点</p>
+
+<div class="nav">
+<a href="..">📚 全部文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../interview-quiz/">☕ 题库</a>
+<a href="../resume-builder/">📝 简历</a>
+</div>
+
+<div class="question">
+<h3>Q1：GraphQL和REST有什么区别？什么场景用哪个？</h3>
+<div class="answer">
+<strong>核心区别：</strong><br>
+| REST | GraphQL |<br>
+| 多端点（/users, /posts, /comments） | 单端点（POST /graphql） |<br>
+| 服务端定义返回字段 | 客户端指定返回字段 |<br>
+| 容易Over-fetching/Under-fetching | 精确返回，不多不少 |<br>
+| HTTP缓存天然支持 | 需自己处理缓存 |<br>
+| 学习成本低 | Schema类型系统学习曲线 |<br><br>
+<strong>选型：</strong>简单CRUD→REST。复杂关联查询、移动端多端不同数据需求→GraphQL。两者可共存。
+</div>
+</div>
+
+<div class="question">
+<h3>Q2：GraphQL如何解决N+1查询问题？</h3>
+<div class="answer">
+<strong>问题场景：</strong>查询10个作者，每个作者有N本书——1次查作者 + 10次查书 = 11次SQL。<br><br>
+<strong>解决方案：DataLoader批处理</strong>
+<pre>private DataLoader<Long, List<Book>> bookLoader = 
+    DataLoader.newDataLoader(ids -> 
+        CompletableFuture.supplyAsync(() -> 
+            bookRepo.findByAuthorIds(ids)  // 一次SQL: WHERE author_id IN (1,2,3,...)
+        )
+    );</pre>
+<strong>原理：</strong>DataLoader收集同一帧内的所有key→合并成一条SQL→结果按key分发回调用者。MySQL的 <code>WHERE author_id IN (1,2,3,...)</code> 一条查询替代N条。
+</div>
+</div>
+
+<div class="question">
+<h3>Q3：GraphQL Schema怎么定义？核心类型有哪些？</h3>
+<div class="answer">
+<strong>Schema示例：</strong>
+<pre>type Query {
+    user(id: ID!): User
+    users(page: Int, size: Int): [User!]!
+}
+
+type Mutation {
+    createUser(input: CreateUserInput!): User!
+    deleteUser(id: ID!): Boolean!
+}
+
+type Subscription {
+    userCreated: User!
+}
+
+type User {
+    id: ID!
+    name: String!
+    email: String
+    posts: [Post!]!  # 关联查询
+    createdAt: String!
+}</pre>
+<strong>三大根类型：</strong>Query(读)、Mutation(写/删/改)、Subscription(实时推送)。<code>!</code> 表示非空。
+</div>
+</div>
+
+<div class="question">
+<h3>Q4：GraphQL Subscription是什么？和WebSocket什么关系？</h3>
+<div class="answer">
+<strong>定义：</strong>客户端订阅某个事件，服务端有变化时主动推送。底层走WebSocket。<br><br>
+<strong>工作流程：</strong><br>
+1. 客户端发送订阅请求：<code>subscription { userCreated { id name } }</code><br>
+2. 服务端建立WebSocket长连接<br>
+3. 每次有用户创建→服务端推送给所有订阅者<br><br>
+<strong>适用场景：</strong>实时通知、聊天消息、股票行情、订单状态变更。
+</div>
+</div>
+
+<div class="question">
+<h3>Q5：Spring Boot怎么集成GraphQL？</h3>
+<div class="answer">
+<strong>依赖（Spring for GraphQL）：</strong>
+<pre>implementation 'org.springframework.boot:spring-boot-starter-graphql'</pre>
+<strong>定义Controller：</strong>
+<pre>@Controller
+public class UserGraphQLController {
+    
+    @QueryMapping
+    public User user(@Argument Long id) {
+        return userService.findById(id);
+    }
+    
+    @MutationMapping
+    public User createUser(@Argument CreateUserInput input) {
+        return userService.create(input);
+    }
+    
+    @SubscriptionMapping
+    public Flux<User> userCreated() {
+        return userService.userCreatedStream();
+    }
+    
+    @SchemaMapping(typeName = "User", field = "posts")
+    public List<Post> posts(User user, @Argument int limit) {
+        return postService.findByAuthorId(user.getId(), limit);
+    }
+}</pre>
+<strong>Schema文件：</strong><code>src/main/resources/graphql/schema.graphqls</code> 与Java代码自动映射。
+</div>
+</div>
+
+<div class="question">
+<h3>Q6：GraphQL的安全性怎么保证？有哪些攻击方式？</h3>
+<div class="answer">
+<strong>5种防御：</strong><br>
+1. <strong>深度限制：</strong>防止循环嵌套查询炸服——<code>graphql.servlet.max-query-depth=5</code><br>
+2. <strong>复杂度限制：</strong>给每个字段分配成本，查询总成本超阈值拒绝<br>
+3. <strong>速率限制：</strong>单端点容易被滥用，需要per-query或per-IP限流<br>
+4. <strong>查询白名单：</strong>生产环境只允许预先注册的persisted queries<br>
+5. <strong>超时控制：</strong>防止慢查询资源耗尽<br><br>
+<strong>面试提到graphql-java-kickstart + voyager 做SDL校验是加分项。</strong>
+</div>
+</div>
+
+<div class="question">
+<h3>Q7：GraphQL的缓存怎么做？和REST有什么不同？</h3>
+<div class="answer">
+<strong>REST的缓存天然简单：</strong>每个URL一个资源，CDN+浏览器直接缓存。<br><br>
+<strong>GraphQL的缓存挑战：</strong>单端点POST，CDN无法按query内容缓存。<br><br>
+<strong>解决方案：</strong><br>
+1. <strong>持久化查询（Persisted Queries）：</strong>查询ID→GET /graphql?id=xxx → 可被CDN缓存<br>
+2. <strong>DataLoader层缓存：</strong>同一请求内去重<br>
+3. <strong>应用层缓存：</strong>Redis缓存DataLoader的批量查询结果<br>
+4. <strong>客户端缓存：</strong>Apollo Client/Relay自动归一化缓存（Normalization Caching）
+</div>
+</div>
+
+<div class="question">
+<h3>Q8：GraphQL的错误处理怎么做？和REST的HTTP状态码有什么不同？</h3>
+<div class="answer">
+<strong>核心差异：</strong>GraphQL总返回200 OK。错误放在响应体的 <code>errors</code> 数组里。<br><br>
+<strong>响应示例：</strong>
+<pre>{
+  "data": { "user": null },
+  "errors": [{
+    "message": "User not found",
+    "extensions": {
+      "code": "NOT_FOUND",
+      "classification": "DataFetchingException"
+    }
+  }]
+}</pre>
+<strong>面试说：</strong>"GraphQL允许部分成功——10个字段里8个成功2个失败，不会全滚。这对移动端弱网环境很友好。"
+</div>
+</div>
+
+<div class="question">
+<h3>Q9：GraphQL怎么处理文件上传？</h3>
+<div class="answer">
+<strong>GraphQL原生不支持文件上传——</strong>因为它是JSON协议。需要扩展：<br><br>
+<strong>方案1（graphql-multipart）：</strong><br>
+<pre>mutation ($file: Upload!) {
+    uploadAvatar(file: $file) { url }
+}</pre>
+用 <code>multipart/form-data</code> 编码，文件二进制+GraphQL查询混传。<br><br>
+<strong>方案2（实践中更推荐）：</strong><br>
+单独REST端点 <code>POST /upload</code> 上传文件→返回URL→再调GraphQL mutation把URL关联到用户。这样CDN缓存、断点续传、进度条都容易做。
+</div>
+</div>
+
+<div class="question">
+<h3>Q10：你在项目中用过GraphQL吗？没用过怎么回答？</h3>
+<div class="answer">
+<strong>诚实但展示学习能力：</strong><br>
+"目前项目用的是REST，但我主动了解过GraphQL。知道它解决的核心问题是客户端数据需求的灵活性——移动端不同页面需要不同字段组合，REST要调两三个接口，GraphQL一个查询搞定。<br><br>
+我对DataLoader的批处理机制印象深刻——它用Event Loop收集同帧key然后合并SQL，和我们秒杀项目里消息队列批量消费的思路很像。<br><br>
+如果团队有GraphQL需求，我有信心快速上手——Schema类型系统和Spring的注解驱动开发思路一致。"<br><br>
+<strong>关键：</strong>不提"没做过"，只提"我了解过+愿意学+有相似经验"。
+</div>
+</div>
+
+<div class="donate">
+<p>☕ 这篇文章帮到你了？</p>
+<p style="color:#94a3b8;font-size:0.9em">请作者喝杯咖啡，支持63篇面试干货持续更新</p>
+<img src="../mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏码">
+<p style="font-size:0.8em;color:#64748b;margin-top:8px">微信扫码赞赏</p>
+</div>
+
+<div class="nav">
+<a href="..">📚 全部63篇文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../interview-shop/">🛒 装备商店</a>
+<a href="../company-packs/">🎯 公司定制包</a>
+</div>
+
+<div class="tip" style="text-align:center;margin-top:40px">
+<p style="color:#94a3b8">覆盖率：Java后端面试90%+考点 | 63篇 · 30+工具 · 全部免费</p>
+</div>
+</div>
+</body>
+</html>
