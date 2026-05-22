@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>缓存策略+Redis高级面试10题 | Java实习面试通关</title>
+<meta name="description" content="Cache-Aside/Read-Through/Write-Through/Write-Behind四种缓存策略区别、Redis布隆过滤器、缓存预热方案、多级缓存架构、热点Key探测——Java后端必问10题。">
+<meta name="keywords" content="缓存策略面试题,Cache-Aside,Read-Through,Redis布隆过滤器,缓存预热,多级缓存,热点Key,缓存与DB双写一致性,2026面试">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.8;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:1.8em;color:#38bdf8;margin:20px 0 10px;text-align:center}
+.meta{text-align:center;color:#94a3b8;margin-bottom:30px}
+.question{background:#1e293b;border-radius:12px;padding:24px;margin:20px 0;border-left:4px solid #38bdf8}
+.question h3{color:#facc15;margin-bottom:12px}
+.answer{background:#0f172a;border-radius:8px;padding:16px;margin-top:12px;border:1px solid #334155}
+.answer strong{color:#4ade80}
+code{background:#1e293b;padding:2px 6px;border-radius:4px;font-size:0.9em;color:#f472b6}
+pre{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:16px;overflow-x:auto;margin:10px 0}
+.donate{text-align:center;margin:40px 0;padding:24px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;border:2px solid #facc15}
+.donate p{color:#facc15;font-size:1.2em;margin-bottom:12px}
+.donate img{width:200px;border-radius:12px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:30px 0}
+.nav a{background:#1e293b;color:#94a3b8;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:0.85em;transition:all .2s}
+.nav a:hover{background:#38bdf8;color:#0f172a}
+.tip{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:12px;margin:10px 0;font-size:0.9em}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🗄️ 缓存策略+Redis高级面试10题</h1>
+<p class="meta">Java后端实习生面试 · 2026年5月 · 每题含标准答案</p>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../salary-negotiation-script/">💰 谈判脚本</a>
+<a href="../interview-quiz/">☕ 题库</a>
+</div>
+
+<div class="question">
+<h3>Q1：Cache-Aside、Read-Through、Write-Through、Write-Behind四种缓存策略分别是什么？</h3>
+<div class="answer">
+<strong>Cache-Aside（旁路缓存，最常用）：</strong><br>
+• 读：先查缓存→命中返回→未命中查DB→写缓存→返回<br>
+• 写：更新DB→删除缓存（或更新缓存）<br>
+• Redis+MySQL经典组合就是Cache-Aside<br>
+• <strong>优点：</strong>简单灵活，缓存故障不影响DB<br>
+• <strong>缺点：</strong>代码入侵，需要手动管理缓存逻辑<br><br>
+<strong>Read-Through：</strong>缓存层自动读DB。应用只和缓存交互，缓存miss时自动load。<br>
+<strong>Write-Through：</strong>缓存层同时写缓存+DB，保证强一致。<br>
+<strong>Write-Behind（异步回写）：</strong>先写缓存，异步批量写DB。性能最高但数据可能丢失。<br><br>
+<strong>面试时一句话总结：</strong>Cache-Aside手动挡最灵活，Write-Through自动挡强一致，Write-Behind异步高性能。
+</div>
+</div>
+
+<div class="question">
+<h3>Q2：缓存和数据库双写一致性怎么保证？先删缓存还是先写数据库？</h3>
+<div class="answer">
+<strong>核心方案：延迟双删</strong><br>
+<pre>1. 先删除缓存
+2. 更新数据库  
+3. 延迟一段时间（如500ms）
+4. 再次删除缓存</pre>
+<strong>为什么不能先删缓存再更新DB？</strong><br>
+A删缓存→B查缓存miss→B查DB（旧值）→B写缓存→A更新DB→缓存里是旧值，数据不一致。<br><br>
+<strong>为什么不能先更新DB再删缓存？</strong><br>
+A查缓存miss→A查DB（旧值）→B更新DB→B删缓存→A写缓存（旧值）→数据不一致。但概率极低（A写缓存需要发生在B删缓存之后），所以实际大多用<strong>先更新DB再删缓存</strong>。<br><br>
+<strong>Canal+MQ方案（阿里常用）：</strong>监听MySQL binlog→发MQ→消费端删缓存。准实时，一致性强。
+</div>
+</div>
+
+<div class="question">
+<h3>Q3：布隆过滤器原理？怎么解决缓存穿透？</h3>
+<div class="answer">
+<strong>布隆过滤器：</strong>一个bit数组+k个哈希函数。插入元素时把k个哈希位置都置1。查询时只要有一个位置是0就不存在，全是1则可能存在（有误判率）。<br><br>
+<strong>解决缓存穿透：</strong>把所有合法Key提前灌入布隆过滤器。查询时先过布隆→不存在直接返回空→存在则查缓存→缓存miss查DB。<br><br>
+<strong>Guava实现：</strong>
+<pre>BloomFilter<String> filter = BloomFilter.create(
+    Funnels.stringFunnel(Charset.defaultCharset()),
+    1000000,  // 预计元素量
+    0.01      // 误判率
+);
+filter.put("userId:123");
+if (!filter.mightContain(key)) return null;</pre>
+<strong>Redis布隆过滤器：</strong>Redis 4.0+内置 <code>bf.add</code> / <code>bf.exists</code> 命令，比Guava更分布式友好。
+</div>
+</div>
+
+<div class="question">
+<h3>Q4：缓存预热怎么做？秒杀场景下什么时候预热？</h3>
+<div class="answer">
+<strong>三种预热方式：</strong><br>
+1. <strong>启动预热（@PostConstruct/ApplicationReadyEvent）：</strong>项目启动时加载热点数据到Redis<br>
+2. <strong>定时预热（@Scheduled）：</strong>每天凌晨重新加载最新数据<br>
+3. <strong>触发预热（管理接口）：</strong>运营后台点"预热"按钮，手动触发<br><br>
+<strong>秒杀预热方案：</strong>
+<pre>@EventListener(ApplicationReadyEvent.class)
+public void preheat() {
+    List<Product> hotProducts = db.queryHotSeckill();
+    for (Product p : hotProducts) {
+        redis.set("seckill:stock:" + p.getId(), 
+                   String.valueOf(p.getStock()));
+    }
+}</pre>
+<strong>预热时机：</strong>秒杀开始前1小时执行预热，提前把库存和商品信息加载到Redis，避免秒杀瞬间缓存全部miss打崩DB。
+</div>
+</div>
+
+<div class="question">
+<h3>Q5：多级缓存架构怎么设计？JVM本地缓存+Redis分布式缓存的协作？</h3>
+<div class="answer">
+<strong>典型三级架构：</strong><br>
+<pre>Nginx缓存 → JVM本地缓存(Caffeine) → Redis → MySQL</pre>
+<strong>查询流程：</strong><br>
+1. 先查Caffeine本地缓存（最快，纳秒级）<br>
+2. miss→查Redis（次快，毫秒级）<br>
+3. miss→查MySQL（慢，秒级）→回写Redis→回写Caffeine<br><br>
+<strong>本地缓存选型：</strong><br>
+• <strong>Caffeine：</strong>Spring Boot 3内置，W-TinyLFU算法，淘汰率高命中率<br>
+• <strong>Guava Cache：</strong>老牌，LRU淘汰<br><br>
+<strong>一致性方案：</strong>DB更新→删Redis→发MQ广播→各节点清本地缓存。或用短TTL（本地缓存30秒过期）+Redis主动失效兜底。
+</div>
+</div>
+
+<div class="question">
+<h3>Q6：热点Key怎么探测和处理？</h3>
+<div class="answer">
+<strong>探测方式：</strong><br>
+1. <strong>Redis <code>--hotkeys</code>：</strong>redis-cli --hotkeys，扫描所有Key统计访问频率<br>
+2. <strong>客户端统计：</strong>在代码里对每个Key的访问计数，定时上报<br>
+3. <strong>代理层：</strong>在Redis Proxy层统计，如Codis/Twemproxy<br><br>
+<strong>处理方案：</strong><br>
+• <strong>本地缓存兜底：</strong>把热点数据缓存到Caffeine，减少Redis压力<br>
+• <strong>Key拆分：</strong>将 <code>product:123</code> 拆成 <code>product:123:0</code> 到 <code>product:123:9</code>，分散到不同Redis节点<br>
+• <strong>读写分离：</strong>热点Key走从节点读，分摊主节点压力<br>
+• <strong>限流保护：</strong>对热点Key加令牌桶限流，保护下游
+</div>
+</div>
+
+<div class="question">
+<h3>Q7：Redis内存满了怎么办？淘汰策略怎么选？</h3>
+<div class="answer">
+<strong>8种淘汰策略：</strong><br>
+| 策略 | 行为 |
+|------|------|
+| noeviction | 不淘汰，报错 |
+| allkeys-lru | 所有Key中LRU淘汰 |
+| allkeys-lfu | 所有Key中LFU淘汰 |
+| allkeys-random | 随机淘汰 |
+| volatile-lru | 有TTL的Key中LRU淘汰 |
+| volatile-lfu | 有TTL的Key中LFU淘汰 |
+| volatile-random | 有TTL的Key中随机 |
+| volatile-ttl | 挑TTL最近的淘汰 |
+
+<strong>选型建议：</strong><br>
+• 缓存场景→<strong>allkeys-lru</strong>（淘汰最久没用的）<br>
+• 有热点数据→<strong>allkeys-lfu</strong>（保留高频访问的）<br>
+• 有持久化+过期→<strong>volatile-lru</strong>（只淘汰有过期时间的）<br><br>
+<strong>面试加分：</strong>提到LFU的logarithmic counter——不是精确计数，而是对数增长，节省内存。
+</div>
+</div>
+
+<div class="question">
+<h3>Q8：Redis Cluster的16384个槽位怎么分配？为什么是16384？</h3>
+<div class="answer">
+<strong>槽位分配：</strong><code>CRC16(key) % 16384</code> 决定Key落在哪个槽。<br>
+<strong>为什么是16384（16K）？</strong><br>
+• CRC16结果范围是0~65535（64K）<br>
+• 如果用64K→心跳包太大（每个节点需告知所有槽位，bitmap就是8KB）<br>
+• 16K→心跳包2KB，控制在小包范围内<br>
+• 16K对集群规模（<1000节点）绰绰有余<br><br>
+<strong>迁移流程：</strong>
+<pre>CLUSTER SETSLOT 1234 MIGRATING nodeA
+CLUSTER SETSLOT 1234 IMPORTING nodeB  
+# 逐个迁移Key
+MIGRATE host port key 0 5000
+# 迁移完成
+CLUSTER SETSLOT 1234 NODE nodeB</pre>
+</div>
+</div>
+
+<div class="question">
+<h3>Q9：Redis Pipeline和事务(MULTI/EXEC)有什么区别？</h3>
+<div class="answer">
+<strong>Pipeline（管道）：</strong><br>
+• 批量发送命令，减少RTT<br>
+• <strong>不保证原子性</strong>——命令之间可能插入其他客户端的命令<br>
+• 适合批量读写（如一次性查100个Key）<br>
+• 性能提升：100个命令从100次RTT→1次RTT<br><br>
+<strong>事务（MULTI/EXEC）：</strong><br>
+• 命令排队，EXEC一次性执行<br>
+• <strong>保证原子性：</strong>事务内命令不会被其他客户端打断<br>
+• <strong>不支持回滚：</strong>某条命令失败，其他命令继续执行<br>
+<pre>MULTI
+SET user:1 "Alice"
+INCR counter
+EXEC</pre>
+<strong>核心区别一句话：</strong>Pipeline优化网络，事务保证原子性。Lua脚本两者兼有（原子+批量）。</div>
+</div>
+
+<div class="question">
+<h3>Q10：Redis大Key和热Key怎么排查和处理？</h3>
+<div class="answer">
+<strong>大Key发现：</strong><br>
+• <code>redis-cli --bigkeys</code>：扫描所有Key，统计大小<br>
+• <code>MEMORY USAGE keyname</code>：查单个Key内存占用<br>
+• 业务侧：避免用Hash存储几十万字段、避免Set/Lsit无限增长<br><br>
+<strong>大Key处理：</strong><br>
+• Hash→拆成多个小Hash（hash_tag路由到同一节点）<br>
+• List→拆成多个小List<br>
+• 删除用 <code>UNLINK</code>（异步删除）替代 <code>DEL</code><br><br>
+<strong>热Key处理（见Q6）：</strong><br>
+• 本地缓存兜底<br>
+• Key拆分到多节点<br>
+• 读写分离<br><br>
+<strong>面试金句：</strong>"大Key用UNLINK异步删，热Key用本地缓存+Key拆分。Redis的单线程模型决定了热Key就是系统瓶颈，必须用'空间换时间'。"
+</div>
+</div>
+
+<div class="donate">
+<p>☕ 这篇文章帮到你了？</p>
+<p style="color:#94a3b8;font-size:0.9em">请作者喝杯咖啡，支持持续更新</p>
+<img src="../mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏码">
+</div>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部64篇文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../salary-negotiation-script/">💰 薪资谈判脚本生成器</a>
+<a href="../interview-quiz/">☕ 题库</a>
+</div>
+
+<div class="tip" style="text-align:center;margin-top:40px">
+<p style="color:#94a3b8">覆盖率：Java后端面试90%+考点 | 64篇 · 30+工具 · 全部免费</p>
+<p style="color:#64748b;font-size:0.8em">© 2026 Abyte-zym</p>
+</div>
+
+</div>
+</body>
+</html>
