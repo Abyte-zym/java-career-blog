@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>系统设计场景题面试10题 | Java实习2026必考</title>
+<meta name="description" content="2026 Java实习系统设计场景面试10题：短URL/限流器/Feed流/排行榜/秒杀/分布式ID/消息队列选型/缓存架构/搜索引擎/文件存储。每道题含标准答案和架构图。">
+<meta name="keywords" content="系统设计面试题,Java实习,短URL设计,限流器设计,秒杀系统设计,分布式ID,Feed流设计,2026实习面试">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0d1117;color:#c9d1d9;line-height:1.6;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:1.8em;color:#58a6ff;margin:20px 0;text-align:center}
+h2{font-size:1.3em;color:#f0883e;margin:30px 0 15px;border-bottom:1px solid #30363d;padding-bottom:8px}
+.q-card{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:20px;margin:15px 0}
+.q-title{font-weight:bold;color:#58a6ff;font-size:1.1em;margin-bottom:10px}
+.answer{color:#7ee787;font-size:0.95em;margin:10px 0;padding:10px;background:#0d1117;border-radius:6px}
+.tag{display:inline-block;background:#1f6feb22;color:#58a6ff;padding:2px 10px;border-radius:12px;font-size:0.8em;margin:3px}
+.donate{text-align:center;margin:40px 0;padding:30px;background:#161b22;border-radius:12px;border:2px solid #f0883e}
+.donate h3{color:#f0883e;margin-bottom:15px}
+.donate img{width:200px;border-radius:12px;margin:10px}
+.donate p{color:#8b949e;font-size:0.9em}
+.nav{text-align:center;margin:30px 0;padding:20px;background:#161b22;border-radius:8px}
+.nav a{color:#58a6ff;text-decoration:none;margin:0 15px;font-size:0.95em}
+.nav a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🏗️ 系统设计场景题 — 面试10题</h1>
+<p style="text-align:center;color:#8b949e;margin-bottom:30px">2026 Java实习必考 · 每道题附标准答案 · 面试官最爱追问</p>
+
+<div class="q-card">
+<div class="q-title">❓ 1. 如何设计一个短URL系统（TinyURL）？</div>
+<div class="answer">
+<b>核心方案：</b>分布式ID生成 + Base62编码 + 302重定向。<br>
+<b>详细流程：</b>① 接收长URL → ② 用雪花算法生成唯一ID → ③ ID转Base62（0-9a-zA-Z）得短码 → ④ 存MySQL（短码-长URL映射）+ Redis缓存 → ⑤ 用户访问短链时302跳转。<br>
+<b>关键考量：</b>QPS预估、短码长度（7位Base62支持62⁷≈3.5万亿）、过期策略、防止重复生成（布隆过滤器快速判断URL是否存在）。
+<div style="margin-top:8px"><span class="tag">Base62</span><span class="tag">雪花算法</span><span class="tag">302跳转</span><span class="tag">布隆过滤器</span></div>
+</div>
+</div>
+
+<div class="q-card">
+<div class="q-title">❓ 2. 如何设计一个分布式限流器？</div>
+<div class="answer">
+<b>三层架构：</b>网关层（Nginx/Sentinel）+ 服务层（Redis令牌桶）+ 业务层（信号量）。<br>
+<b>算法选型：</b>
+<ul style="margin:8px 0 0 20px;color:#7ee787">
+<li><b>固定窗口：</b>简单但有突刺问题（边界处双倍流量）</li>
+<li><b>滑动窗口：</b>Redis ZSet实现，`zremrangeByScore`清理过期 + `zcard`计数，精准但内存开销大</li>
+<li><b>令牌桶（推荐）：</b>Redis Lua脚本原子操作，`local tokens = min(capacity, lastTokens + rate * (now - lastTime)); if tokens >= 1 then lastTokens = tokens - 1; return 1; else return 0; end`</li>
+<li><b>漏桶：</b>恒定速率处理，适合保护下游</li>
+</ul>
+<div style="margin-top:8px"><span class="tag">滑动窗口</span><span class="tag">令牌桶</span><span class="tag">Redis Lua</span><span class="tag">Sentinel</span></div>
+</div>
+</div>
+
+<div class="q-card">
+<div class="q-title">❓ 3. 如何设计一个实时排行榜系统？</div>
+<div class="answer">
+<b>技术选型：</b>Redis Sorted Set（ZSet）天生适合排行榜。<br>
+<b>实现方案：</b>① 积分变动时 `ZINCRBY leaderboard score userId` → ② 查Top100 `ZREVRANGE leaderboard 0 99 WITHSCORES` → ③ 查用户排名 `ZREVRANK leaderboard userId` → ④ 定时任务每小时归档到MySQL。<br>
+<b>进阶优化：</b>分区排行榜（日榜/周榜/总榜）→ 用不同Key区分。千万用户时用分桶策略（按userId hash分散到多个ZSet，查询时合并Top K）。
+<div style="margin-top:8px"><span class="tag">Redis ZSet</span><span class="tag">ZREVRANGE</span><span class="tag">分桶策略</span></div>
+</div>
+</div>
+
+<div class="q-card">
+<div class="q-title">❓ 4. 如何设计一个Feed流系统（朋友圈/微博）？</div>
+<div class="answer">
+<b>核心模式：</b>推模式 vs 拉模式 vs 推拉结合。<br>
+<b>推模式（写扩散）：</b>发动态时写入所有粉丝的收件箱（Redis List），适合小V。<br>
+<b>拉模式（读扩散）：</b>查询时从关注者列表拉取动态，适合大V。<br>
+<b>推拉结合（推荐）：</b>普通用户推模式，大V拉模式。大V的Feed单独存储，查询时合并。<br>
+<b>技术实现：</b>Redis List存储Feed ID + MySQL存储Feed详情 + 时间线生成定期快照。
+<div style="margin-top:8px"><span class="tag">推拉结合</span><span class="tag">Feed流</span><span class="tag">Redis List</span></div>
+</div>
+</div>
+
+<div class="q-card">
+<div class="q-title">❓ 5. 如何设计一个秒杀系统？</div>
+<div class="answer">
+<b>整体架构：</b>前端限流 → 网关鉴权 → Redis原子扣减 → MQ异步下单 → DB落库。<br>
+<b>核心要点：</b>
+<ul style="margin:8px 0 0 20px;color:#7ee787">
+<li><b>防超卖：</b>Redis Lua脚本原子性扣减库存（检查→扣减→记录用户）</li>
+<li><b>防重复下单：</b>用户ID + 商品ID做Key，setIfAbsent</li>
+<li><b>削峰：</b>RocketMQ消息队列异步处理，订单服务慢慢消费</li>
+<li><b>限流：</b>Sentinel QPS限流 + 前端按钮防抖</li>
+<li><b>缓存预热：</b>秒杀前把库存预加载到Redis</li>
+</ul>
+<div style="margin-top:8px"><span class="tag">秒杀架构</span><span class="tag">Lua原子扣减</span><span class="tag">MQ削峰</span><span class="tag">缓存预热</span></div>
+</div>
+</div>
+
+<div class="q-card">
+<div class="q-title">❓ 6. 如何设计分布式ID生成器？</div>
+<div class="answer">
+<b>四大方案对比：</b>
+<table style="width:100%;margin:10px 0;color:#7ee787;font-size:0.9em;border-collapse:collapse">
+<tr style="background:#0d1117"><td style="padding:5px"><b>方案</b></td><td style="padding:5px"><b>原理</b></td><td style="padding:5px"><b>优点</b></td><td style="padding:5px"><b>缺点</b></td></tr>
+<tr><td style="padding:5px">UUID</td><td style="padding:5px">随机生成</td><td style="padding:5px">简单</td><td style="padding:5px">无序，索引性能差</td></tr>
+<tr style="background:#0d1117"><td style="padding:5px"><b>雪花算法</b></td><td style="padding:5px">时间戳+机器ID+序列号</td><td style="padding:5px">有序高性能</td><td style="padding:5px">时钟回拨问题</td></tr>
+<tr><td style="padding:5px">数据库自增</td><td style="padding:5px">replace into</td><td style="padding:5px">简单可靠</td><td style="padding:5px">单点瓶颈</td></tr>
+<tr style="background:#0d1117"><td style="padding:5px"><b>美团Leaf</b></td><td style="padding:5px">号段模式+双buffer</td><td style="padding:5px">高性能高可用</td><td style="padding:5px">依赖DB</td></tr>
+</table>
+<div style="margin-top:8px"><span class="tag">雪花算法</span><span class="tag">美团Leaf</span><span class="tag">时钟回拨</span></div>
+</div>
+</div>
+
+<div class="q-card">
+<div class="q-title">❓ 7. 消息队列选型：Kafka vs RocketMQ vs RabbitMQ？</div>
+<div class="answer">
+<b>快速决策：</b>
+<ul style="margin:8px 0 0 20px;color:#7ee787">
+<li><b>Kafka：</b>超高吞吐（百万级QPS），适合日志/埋点/流计算，不支持延迟消息和事务消息（新版本支持但复杂）</li>
+<li><b>RocketMQ：</b>阿里出品，支持事务消息+延迟消息+顺序消息，适合电商交易场景</li>
+<li><b>RabbitMQ：</b>Erlang编写，低延迟，管理界面好，适合企业内部微服务通信，吞吐量中等</li>
+</ul>
+<div style="margin-top:8px"><span class="tag">Kafka</span><span class="tag">RocketMQ</span><span class="tag">RabbitMQ</span><span class="tag">事务消息</span></div>
+</div>
+</div>
+
+<div class="q-card">
+<div class="q-title">❓ 8. 如何设计缓存架构？缓存一致性怎么保证？</div>
+<div class="answer">
+<b>缓存模式：</b>Cache Aside（旁路缓存）最常用 → 读：先查缓存，miss查DB并回写；写：先更新DB再删缓存。<br>
+<b>一致性方案：</b>① 先更新DB后删除缓存（推荐）② 延迟双删（删缓存→更新DB→延迟再删一次）③ 订阅MySQL binlog（Canal）异步更新缓存 ④ 设置合理过期时间兜底。<br>
+<b>多级缓存：</b>本地缓存(Caffeine) → Redis → DB。本地缓存用短TTL(5-10s)降低不一致风险。
+<div style="margin-top:8px"><span class="tag">Cache Aside</span><span class="tag">延迟双删</span><span class="tag">Canal</span><span class="tag">多级缓存</span></div>
+</div>
+</div>
+
+<div class="q-card">
+<div class="q-title">❓ 9. 如何设计一个搜索引擎？</div>
+<div class="answer">
+<b>核心组件：</b>爬虫 → 分词器 → 倒排索引 → 检索 → 排序。<br>
+<b>技术选型：</b>Elasticsearch（基于Lucene），内置倒排索引+分布式+近实时搜索。<br>
+<b>倒排索引原理：</b>词→文档ID列表。例如"Java"→[doc1,doc3,doc7]，比正排索引（文档→词列表）检索快N倍。<br>
+<b>实践要点：</b>分词器选择（IK）、同义词处理、相关性打分（TF-IDF/BM25）、分片与副本。
+<div style="margin-top:8px"><span class="tag">Elasticsearch</span><span class="tag">倒排索引</span><span class="tag">TF-IDF</span><span class="tag">Lucene</span></div>
+</div>
+</div>
+
+<div class="q-card">
+<div class="q-title">❓ 10. 如何设计一个文件存储系统（图床/OSS）？</div>
+<div class="answer">
+<b>架构分层：</b>接入层(鉴权+限流) → 业务层(元数据管理) → 存储层(对象存储)。<br>
+<b>核心设计：</b>① 文件上传：前端直传OSS → 回调通知服务器 → 记录元数据 ② 存储方案：MinIO（自建）/阿里云OSS（云服务）③ CDN加速 ④ 图片处理：缩略图/水印/格式转换。<br>
+<b>扩展考量：</b>分片上传大文件、断点续传、去重（MD5校验）、防盗链（签名URL+Referer）。
+<div style="margin-top:8px"><span class="tag">对象存储</span><span class="tag">CDN</span><span class="tag">分片上传</span><span class="tag">MinIO</span></div>
+</div>
+</div>
+
+<div class="donate">
+<h3>☕ 这些内容帮到你了吗？</h3>
+<p>全部免费。如果觉得有用，请我一杯咖啡 ☕</p>
+<img src="mm_facetoface_collect_qrcode_1779427130944.png" alt="赞赏码">
+<p style="margin-top:10px;font-size:0.8em">微信扫码赞赏 · 持续更新更多面试内容</p>
+</div>
+
+<div class="nav">
+<a href="https://Abyte-zym.github.io/java-career-blog/">📚 全部文章(27篇)</a>
+<a href="https://Abyte-zym.github.io/java-resume-builder/">📝 简历生成器</a>
+<a href="https://Abyte-zym.github.io/java-interview-quiz/">☕ 面试题库</a>
+<a href="https://Abyte-zym.github.io/arsenal/">🎯 弹药库入口</a>
+</div>
+
+</div>
+</body>
+</html>
