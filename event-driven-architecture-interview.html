@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>事件驱动架构面试10题 | Java实习面试通关</title>
+<meta name="description" content="Spring Event、消息队列事件驱动、CQRS、Event Sourcing、最终一致性、CDC、Saga编排——Java后端2026必问10题，标准答案直接背。">
+<meta name="keywords" content="事件驱动架构面试题,Spring Event,Event Sourcing,CQRS模式,CDC变更捕获,Saga编排,最终一致性,DDD领域事件,Java后端面试,2026面试">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.8;padding:20px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:1.8em;color:#38bdf8;margin:20px 0 10px;text-align:center}
+.meta{text-align:center;color:#94a3b8;margin-bottom:30px;font-size:0.9em}
+.question{background:#1e293b;border-radius:12px;padding:24px;margin:20px 0;border-left:4px solid #38bdf8}
+.question h3{color:#facc15;margin-bottom:12px;font-size:1.1em}
+.answer{background:#0f172a;border-radius:8px;padding:16px;margin-top:12px;border:1px solid #334155}
+.answer strong{color:#4ade80}
+code{background:#1e293b;padding:2px 6px;border-radius:4px;font-size:0.9em;color:#f472b6}
+pre{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:16px;overflow-x:auto;margin:10px 0}
+.tip{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:12px;margin:10px 0;font-size:0.9em}
+.donate{text-align:center;margin:40px 0;padding:24px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:16px;border:2px solid #facc15}
+.donate p{color:#facc15;font-size:1.2em;margin-bottom:12px}
+.donate img{width:200px;border-radius:12px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:30px 0}
+.nav a{background:#1e293b;color:#94a3b8;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:0.85em;transition:all .2s}
+.nav a:hover{background:#38bdf8;color:#0f172a}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>⚡ 事件驱动架构面试10题</h1>
+<p class="meta">Java后端实习生面试 · 2026年5月 · 每题含标准答案</p>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部文章</a>
+<a href="../arsenal/">🎯 弹药库</a>
+<a href="../interview-quiz/">☕ 题库</a>
+<a href="../resume-builder/">📝 简历</a>
+</div>
+
+<div class="question">
+<h3>Q1：什么是事件驱动架构？和传统的请求-响应模式有什么区别？</h3>
+<div class="answer">
+<strong>事件驱动架构（EDA）：</strong>服务之间通过"事件"通信，而不是直接调用。生产者发布事件→事件总线→消费者订阅处理。<br><br>
+<strong>对比传统RPC/HTTP：</strong><br>
+| 请求-响应 | 事件驱动 |<br>
+| 同步等待 | 异步解耦 |<br>
+| 调用方必须知道被调用方 | 生产者不关心谁消费 |<br>
+| 强依赖，一个挂了全链崩溃 | 松耦合，可独立部署 |<br>
+| 适合读多写少的查询 | 适合异步处理的写操作 |<br><br>
+<strong>面试时说：</strong>"事件驱动就是把'你去做XX'变成'XX发生了'。比如下单后不是直接调库存服务减库存，而是发一个OrderCreated事件，库存服务自己订阅处理。"
+</div>
+</div>
+
+<div class="question">
+<h3>Q2：Spring Event怎么用？@EventListener和@TransactionalEventListener有什么区别？</h3>
+<div class="answer">
+<strong>基本用法：</strong>
+<pre>// 1. 定义事件
+public class OrderCreatedEvent {
+    private Long orderId;
+}
+// 2. 发布事件
+@Autowired private ApplicationEventPublisher publisher;
+publisher.publishEvent(new OrderCreatedEvent(orderId));
+// 3. 监听事件
+@EventListener
+public void handleOrderCreated(OrderCreatedEvent event) {
+    // 处理逻辑
+}</pre>
+<strong>关键区别：</strong><br>
+- <code>@EventListener</code>：事件一发出就执行，不管事务是否提交。如果事件处理失败不影响事务。<br>
+- <code>@TransactionalEventListener(phase=AFTER_COMMIT)</code>：事务提交后才执行。如果事务回滚，事件不处理。<br><br>
+<strong>面试要点：</strong>秒杀项目中，订单创建后发短信通知应该用AFTER_COMMIT——只有订单真写库了才通知用户。
+</div>
+</div>
+
+<div class="question">
+<h3>Q3：CQRS是什么？什么时候该用它？</h3>
+<div class="answer">
+<strong>CQRS（Command Query Responsibility Segregation）：</strong>将读操作和写操作分离到不同模型。<br><br>
+<strong>核心思想：</strong>
+<pre>
+写模型(Command)：处理创建、更新、删除 —— 强一致性
+读模型(Query)：   处理查询、列表、统计 —— 按需优化
+</pre>
+<strong>什么时候用：</strong>
+- 读写比例严重失衡（100:1）→ 分别优化
+- 查询需要多表JOIN → 读模型建宽表，一次查完
+- 读模型可以存Redis/ES，写模型只写MySQL<br><br>
+<strong>秒杀项目例子：</strong>秒杀扣库存是Command（强一致），商品列表展示是Query（走缓存）。
+</div>
+</div>
+
+<div class="question">
+<h3>Q4：Event Sourcing和传统CRUD有什么区别？</h3>
+<div class="answer">
+<strong>Event Sourcing（事件溯源）：</strong>不存当前状态，存所有改变状态的事件。当前状态=重放所有事件。<br><br>
+<strong>对比：</strong>
+<pre>传统CRUD：
+UPDATE account SET balance=500 WHERE id=1;
+→ 存结果，历史不可追溯
+
+Event Sourcing：
+INSERT INTO events VALUES ('存款100', '取款200', '存款600');
+balance = 100-200+600 = 500
+→ 存事件，可审计可回溯可时间旅行</pre>
+<strong>审计场景：</strong>银行交易系统必须知道每笔钱怎么变的，Event Sourcing天然支持。
+</div>
+</div>
+
+<div class="question">
+<h3>Q5：CDC（Change Data Capture）是什么？怎么实现？</h3>
+<div class="answer">
+<strong>CDC = 捕获数据库变更，转为事件流。</strong><br><br>
+<strong>三种实现方式：</strong><br>
+1. <strong>触发器方式：</strong>在表上加trigger，变更时写事件表。侵入性强，性能差。<br>
+2. <strong>日志解析（推荐）：</strong>读MySQL binlog / PostgreSQL WAL，解析出INSERT/UPDATE/DELETE。Debezium是主流开源方案。<br>
+3. <strong>应用层双写：</strong>改数据库同时发消息。问题：可能不一致。<br><br>
+<strong>面试时说：</strong>"秒杀项目中订单落库后，Debezium监听binlog自动发事件到Kafka，下游服务消费处理——零侵入、高性能。"
+</div>
+</div>
+
+<div class="question">
+<h3>Q6：Saga模式怎么保证分布式事务？和Seata AT模式有什么区别？</h3>
+<div class="answer">
+<strong>Saga = 把一个长事务拆成多个本地事务+补偿。</strong><br>
+每个步骤成功→执行下一步；失败→按顺序执行补偿操作（回滚）。<br><br>
+<strong>编排（Choreography）：</strong>每个服务自己知道下一步是谁。事件驱动，无中心协调器。<br>
+<strong>编排（Orchestration）：</strong>一个编排引擎（State Machine）负责调度。有中心协调器。<br><br>
+<strong>Saga vs Seata AT：</strong>
+| Saga | Seata AT |<br>
+| 最终一致性 | 强一致性 |<br>
+| 补偿模式 | 回滚模式 |<br>
+| 无中心/中心均可 | 必须有TC |<br>
+| 适合长事务 | 适合短事务 |<br>
+| 需要写补偿方法 | 自动回滚 |<br>
+<strong>面试时说：</strong>"下单→扣库存→支付 这个流程用Saga，支付失败则取消订单→恢复库存。"
+</div>
+</div>
+
+<div class="question">
+<h3>Q7：事件驱动架构中怎么保证消息顺序性和幂等性？</h3>
+<div class="answer">
+<strong>顺序性：</strong><br>
+- Kafka：同一业务key（如orderId）发到同一partition，单partition内有序<br>
+- RocketMQ：顺序消息模式，同一队列内FIFO<br>
+- RabbitMQ：不支持全局顺序<br><br>
+<strong>幂等性：</strong><br>
+1. <strong>数据库唯一键：</strong>INSERT...ON DUPLICATE KEY UPDATE<br>
+2. <strong>Redis SETNX：</strong>setIfAbsent(事件ID, "处理中")，处理完删掉<br>
+3. <strong>版本号：</strong>UPDATE SET balance=500, version=3 WHERE version=2<br>
+<pre>// 幂等消费示例
+if (redis.setIfAbsent("event:" + eventId, "1", 24, TimeUnit.HOURS)) {
+    process(event);  // 只有第一个消费者执行
+} else {
+    return;  // 重复消息直接丢弃
+}</pre>
+</div>
+</div>
+
+<div class="question">
+<h3>Q8：Spring Cloud Stream是什么？和直接用Kafka有什么区别？</h3>
+<div class="answer">
+<strong>Spring Cloud Stream = 消息中间件的抽象层。</strong>代码只依赖Stream API，底层切换Kafka→RabbitMQ不改业务代码。<br><br>
+<strong>核心概念：</strong>
+<pre>Supplier (生产者) → Binder (绑定器) → Channel (通道) → Consumer (消费者)</pre>
+<strong>优势：</strong>
+- 中间件无关：换MQ只改pom和配置，不改代码
+- 函数式编程：配合Spring Cloud Function，一个Function即消费者
+- 内置重试+死信队列+分区支持<br><br>
+<strong>面试时说：</strong>"秒杀项目的RocketMQ消费就是通过Stream封装的，如果将来切Kafka，改一行配置就行。"
+</div>
+</div>
+
+<div class="question">
+<h3>Q9：事件驱动怎么写单元测试？怎么Mock ApplicationEventPublisher？</h3>
+<div class="answer">
+<strong>单元测试要点：</strong>
+<pre>@ExtendWith(MockitoExtension.class)
+class OrderServiceTest {
+    @Mock ApplicationEventPublisher publisher;
+    @InjectMocks OrderService orderService;
+    
+    @Test void shouldPublishEvent() {
+        orderService.createOrder(orderDto);
+        // 验证事件被发布
+        verify(publisher).publishEvent(argThat(
+            e -> ((OrderCreatedEvent)e).getOrderId().equals(1L)
+        ));
+    }
+}</pre>
+<strong>@EventListener测试：</strong>直接用Spring上下文或Mock方式：<br>
+- 单元测试：用Mockito验证EventListener方法被调用<br>
+- 集成测试：用@SpringBootTest + @TestEventPublisher<br><br>
+<strong>关键点：</strong>测试事件驱动时，验证"事件被发布了什么"比"事件被处理后发生了什么"更重要。
+</div>
+</div>
+
+<div class="question">
+<h3>Q10：复盘一次事件驱动架构在生产中踩过的坑。</h3>
+<div class="answer">
+<strong>场景：订单创建后发积分事件，积分服务消费失败。</strong><br><br>
+<strong>踩坑过程：</strong><br>
+1. 订单创建→发OrderCreated事件<br>
+2. 积分服务消费→调用积分API超时→抛异常<br>
+3. 消息重试3次全失败→进入死信队列<br>
+4. 用户投诉"下单了没给积分"<br><br>
+<strong>解决方案：</strong><br>
+1. 死信队列加监控告警（Prometheus + Grafana）<br>
+2. 消费失败写入补偿表（`event_compensation`）<br>
+3. 定时任务扫描补偿表，重试失败的积分发放<br>
+4. 幂等性保证：积分发放前查`point_log`表防重复<br><br>
+<strong>复盘总结：</strong>"事件驱动不是银弹——必须有死信处理+补偿机制+监控告警三件套。只发事件不等于是最终一致性，得有兜底。"
+</div>
+</div>
+
+<div class="donate">
+<p>☕ 这篇文章帮到你了？</p>
+<p style="color:#94a3b8;font-size:0.9em">请作者喝杯咖啡，支持持续更新73篇面试干货</p>
+<img src="../mm_facetoface_collect_qrcode_1779427130944.png" alt="微信赞赏码">
+<p style="font-size:0.8em;color:#64748b;margin-top:8px">微信扫码赞赏</p>
+</div>
+
+<div class="nav">
+<a href="../java-career-blog/">📚 全部73篇文章</a>
+<a href="../arsenal/">🎯 Java面试弹药库</a>
+<a href="../interview-quiz/">☕ 真题题库</a>
+<a href="../shop/">🛒 装备商店</a>
+</div>
+
+<div class="tip" style="text-align:center;margin-top:40px">
+<p style="color:#94a3b8">73篇 · 35+工具 · 全部免费 · 持续更新</p>
+<p style="color:#64748b;font-size:0.8em">© 2026 Abyte-zym · GitHub Pages</p>
+</div>
+
+</div>
+</body>
+</html>
